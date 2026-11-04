@@ -27,6 +27,32 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"http://43.200.183.75:8080/\""
+            )
+        }
+
+        create("prod") {
+            dimension = "environment"
+
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"\""
+            )
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -45,6 +71,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
