@@ -1,4 +1,4 @@
-package com.jigmnnaga.ui.theme
+package com.jigmnnaga.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
