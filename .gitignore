@@ -1,16 +1,36 @@
+
+# Android Studio / IntelliJ
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
+/.idea/caches/
+/.idea/libraries/
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+
+# Gradle / Build
+.gradle/
+**/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration
 local.properties
+.env
+.env.*
+!.env.example
+
+# Signing keys
+*.jks
+*.keystore
+
+# Build artifacts
+*.apk
+*.aab
+
+# OS
+.DS_Store
+
+# Claude
 .claude/
