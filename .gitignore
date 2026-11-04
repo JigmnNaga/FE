@@ -34,3 +34,6 @@ local.properties
 
 # Claude
 .claude/
+
+# Android Studio device settings
+.idea/deviceManager.xml
