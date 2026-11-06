@@ -1,4 +1,3 @@
-
 package com.jigmnnaga.ui.components
 
 import androidx.compose.foundation.Image
@@ -11,9 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -113,17 +114,19 @@ fun MeetingHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(64.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .height(68.dp)
+            .padding(horizontal = 31.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
             painter = painterResource(R.drawable.chevron_left),
             contentDescription = "뒤로가기",
             modifier = Modifier
-                .size(28.dp)
+                .size(24.dp)
                 .clickable { onBackClick() }
         )
+
+        Spacer(modifier = Modifier.width(20.dp))
 
         Column(
             modifier = Modifier.weight(1f),
@@ -131,33 +134,35 @@ fun MeetingHeader(
         ) {
             Text(
                 text = title,
-                fontSize = 16.sp,
+                fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = AppColors.MainGreen.Green900
+                color = Color(0xFF20251D)
             )
 
             Text(
                 text = subtitle,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 color = AppColors.Monotone.Gray500
             )
         }
 
-        Image(
-            painter = painterResource(R.drawable.calendar),
+        Spacer(modifier = Modifier.width(12.dp))
+
+        MeetingHeaderAction(
+            iconRes = R.drawable.calendar,
             contentDescription = "일정",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onCalendarClick() }
+            onClick = onCalendarClick
         )
 
-        Image(
-            painter = painterResource(R.drawable.place),
+        Spacer(modifier = Modifier.width(12.dp))
+
+        MeetingHeaderAction(
+            iconRes = R.drawable.place,
             contentDescription = "장소",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onPlaceClick() }
+            onClick = onPlaceClick
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
 
         Image(
             painter = painterResource(R.drawable.more_vertical),
@@ -165,6 +170,34 @@ fun MeetingHeader(
             modifier = Modifier
                 .size(24.dp)
                 .clickable { onMoreClick() }
+        )
+    }
+}
+
+@Composable
+private fun MeetingHeaderAction(
+    iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .width(38.dp)
+            .height(28.dp)
+            .background(
+                color = AppColors.MainGreen.Green700,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(iconRes),
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
+                AppColors.MainGreen.Green200
+            )
         )
     }
 }

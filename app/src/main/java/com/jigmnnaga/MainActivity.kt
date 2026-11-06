@@ -14,12 +14,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             JigmnnagaTheme {
-                HomeScreen(
-                    onAddClick = {},
-                    onScheduleClick = {},
-                    onNotificationClick = {},
-                    onProfileClick = {}
-                )
+                HomeScreen()
             }
         }
     }
