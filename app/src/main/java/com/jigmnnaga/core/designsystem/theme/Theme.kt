@@ -1,56 +1,62 @@
 package com.jigmnnaga.core.designsystem.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = AppColors.MainGreen.Green900,
+    onPrimary = AppColors.MainGreen.Green200,
+    primaryContainer = AppColors.MainGreen.Green200,
+    onPrimaryContainer = AppColors.MainGreen.Green900,
+    secondary = AppColors.MainGreen.Green700,
+    onSecondary = AppColors.MainGreen.Green200,
+    secondaryContainer = AppColors.MainGreen.Green300,
+    onSecondaryContainer = AppColors.Monotone.SoftBlack,
+    tertiary = AppColors.SubYellow.Yellow600,
+    onTertiary = AppColors.Monotone.SoftBlack,
+    background = AppColors.MainGreen.Green200,
+    onBackground = AppColors.Monotone.SoftBlack,
+    surface = AppColors.Monotone.White,
+    onSurface = AppColors.Monotone.SoftBlack,
+    surfaceVariant = AppColors.Monotone.Gray100,
+    onSurfaceVariant = AppColors.Monotone.Gray800,
+    error = AppColors.Danger.Red600,
+    onError = AppColors.Monotone.White
 )
 
+// Brand palette mapping; Figma has no separate dark-mode token collection.
+private val DarkColorScheme = darkColorScheme(
+    primary = AppColors.MainGreen.Green300,
+    onPrimary = AppColors.MainGreen.Green900,
+    primaryContainer = AppColors.MainGreen.Green800,
+    onPrimaryContainer = AppColors.MainGreen.Green200,
+    secondary = AppColors.MainGreen.Green400,
+    onSecondary = AppColors.MainGreen.Green900,
+    secondaryContainer = AppColors.MainGreen.Green800,
+    onSecondaryContainer = AppColors.MainGreen.Green200,
+    tertiary = AppColors.SubYellow.Yellow500,
+    onTertiary = AppColors.Monotone.SoftBlack,
+    background = AppColors.Monotone.SoftBlack,
+    onBackground = AppColors.MainGreen.Green200,
+    surface = AppColors.Monotone.Gray900,
+    onSurface = AppColors.MainGreen.Green200,
+    surfaceVariant = AppColors.Monotone.Gray800,
+    onSurfaceVariant = AppColors.Monotone.Gray200,
+    error = AppColors.Danger.Red200,
+    onError = AppColors.Danger.Red600
+)
+
+/** Uses the app palette consistently; system dynamic colors are intentionally disabled. */
 @Composable
 fun JigmnnagaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = false,
+    @Suppress("UNUSED_PARAMETER") dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
         typography = Typography,
         content = content
     )
