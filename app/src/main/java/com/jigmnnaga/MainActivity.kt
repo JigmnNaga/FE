@@ -4,8 +4,8 @@ package com.jigmnnaga
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.ui.screens.HomeScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             JigmnnagaTheme {
-                Text(text = "지금 나가")
+                HomeScreen()
             }
         }
     }
