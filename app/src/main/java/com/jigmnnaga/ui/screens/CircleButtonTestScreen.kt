@@ -17,8 +17,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
+import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.ui.components.CircleButton
 
 @Composable
@@ -28,8 +31,8 @@ fun CircleButtonTestScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(AppColors.Monotone.Gray900)
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(AppDimens.Spacing12),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
     ) {
 
         Text(
@@ -42,16 +45,17 @@ fun CircleButtonTestScreen() {
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = 8.dp),
+                .padding(vertical = AppDimens.Spacing8),
             horizontalArrangement = Arrangement.spacedBy(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // 1. 뒤로 가기 - 38 x 38
+            // Visual catalog only: these variant dimensions remain provisional until each Figma node is measured.
+            // 1. 뒤로 가기
             CircleButton(
                 icon = painterResource(R.drawable.chevron_left),
                 contentDescription = "뒤로 가기",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 38.dp,
                 iconSize = 20.dp,
@@ -59,11 +63,11 @@ fun CircleButtonTestScreen() {
                 contentColor = AppColors.MainGreen.Green900
             )
 
-            // 2. 알림 - 38 x 38
+            // 2. 알림
             CircleButton(
                 icon = painterResource(R.drawable.bell),
                 contentDescription = "알림",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 38.dp,
                 iconSize = 20.dp,
@@ -71,24 +75,24 @@ fun CircleButtonTestScreen() {
                 contentColor = AppColors.MainGreen.Green900
             )
 
-            // 3. 프로필 - 38 x 38
+            // 3. 프로필
             CircleButton(
                 contentDescription = "프로필",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 38.dp,
                 iconSize = 20.dp,
                 backgroundColor = AppColors.MainGreen.Green700,
                 contentColor = AppColors.MainGreen.Green200,
                 text = "나",
-                textSize = 12.sp
+                textSize = 14.sp
             )
 
-            // 4. 일정 - 38 x 28
+            // 4. 일정
             CircleButton(
                 icon = painterResource(R.drawable.calendar),
                 contentDescription = "일정",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 28.dp,
                 iconSize = 20.dp,
@@ -97,11 +101,11 @@ fun CircleButtonTestScreen() {
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             )
 
-            // 5. 장소 - 38 x 28
+            // 5. 장소
             CircleButton(
                 icon = painterResource(R.drawable.place),
                 contentDescription = "장소",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 28.dp,
                 iconSize = 20.dp,
@@ -110,11 +114,11 @@ fun CircleButtonTestScreen() {
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             )
 
-            // 6. 더보기 - 28 x 28
+            // 6. 더보기
             CircleButton(
                 icon = painterResource(R.drawable.more_vertical),
                 contentDescription = "더보기",
-                size = 28.dp,
+                onClick = {},
                 width = 28.dp,
                 height = 28.dp,
                 iconSize = 14.dp,
@@ -122,11 +126,11 @@ fun CircleButtonTestScreen() {
                 contentColor = AppColors.MainGreen.Green900
             )
 
-            // 7. 전송 비활성화 - 38 x 38
+            // 7. 전송 비활성화
             CircleButton(
                 icon = painterResource(R.drawable.send_inactive),
                 contentDescription = "전송 비활성화",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 38.dp,
                 iconSize = 20.dp,
@@ -135,11 +139,11 @@ fun CircleButtonTestScreen() {
                 enabled = false
             )
 
-            // 8. 전송 활성화 - 38 x 38
+            // 8. 전송 활성화
             CircleButton(
                 icon = painterResource(R.drawable.send_active),
                 contentDescription = "전송 활성화",
-                size = 38.dp,
+                onClick = {},
                 width = 38.dp,
                 height = 38.dp,
                 iconSize = 20.dp,
@@ -147,11 +151,11 @@ fun CircleButtonTestScreen() {
                 contentColor = AppColors.MainGreen.Green200
             )
 
-            // 9. 추가 - 56 x 56
+            // 9. 추가
             CircleButton(
                 icon = painterResource(R.drawable.plus),
                 contentDescription = "추가",
-                size = 56.dp,
+                onClick = {},
                 width = 56.dp,
                 height = 56.dp,
                 iconSize = 24.dp,
@@ -160,4 +164,10 @@ fun CircleButtonTestScreen() {
             )
         }
     }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun CircleButtonTestScreenPreview() {
+    JigmnnagaTheme { CircleButtonTestScreen() }
 }

@@ -17,7 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.core.designsystem.theme.AppColors
+import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.ui.components.MainHeader
 import com.jigmnnaga.ui.components.MeetingHeader
 import com.jigmnnaga.ui.components.BackHeader
@@ -30,8 +33,8 @@ fun HeaderTestScreen() {
             .fillMaxSize()
             .background(AppColors.MainGreen.Green200)
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(AppDimens.Spacing20),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing24)
     ) {
 
         // MainHeader
@@ -45,12 +48,11 @@ fun HeaderTestScreen() {
         MainHeader(
             onNotificationClick = {},
             onProfileClick = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 1.dp)
+            profileLabel = "나",
+            modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(AppDimens.Spacing8))
 
         // MeetingHeader
         Text(
@@ -65,11 +67,11 @@ fun HeaderTestScreen() {
             onCalendarClick = {},
             onPlaceClick = {},
             onMoreClick = {},
-            title = "스터디 모임",
+            title = "주말 산행과 맛집 방문을 함께하는 스터디 모임",
             subtitle = "4명 · 텍스트 채팅"
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(AppDimens.Spacing8))
 
         // BackHeader
         Text(
@@ -85,4 +87,10 @@ fun HeaderTestScreen() {
             modifier = Modifier.fillMaxWidth()
         )
     }
+}
+
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+private fun HeaderTestScreenPreview() {
+    JigmnnagaTheme { HeaderTestScreen() }
 }

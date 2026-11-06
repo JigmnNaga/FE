@@ -2,10 +2,12 @@
 package com.jigmnnaga.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,16 +18,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.R
 import java.util.Locale
 
 @Composable
@@ -36,8 +44,8 @@ fun DesignSystemTestScreen() {
             .fillMaxSize()
             .background(Color.White)
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+            .padding(AppDimens.Spacing20),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing24)
     ) {
 
         Text(
@@ -124,12 +132,9 @@ fun DesignSystemTestScreen() {
             dimensions = listOf(
                 "Spacing4" to AppDimens.Spacing4,
                 "Spacing8" to AppDimens.Spacing8,
-                "Spacing10" to AppDimens.Spacing10,
                 "Spacing12" to AppDimens.Spacing12,
-                "Spacing14" to AppDimens.Spacing14,
                 "Spacing16" to AppDimens.Spacing16,
                 "Spacing20" to AppDimens.Spacing20,
-                "Spacing21" to AppDimens.Spacing21,
                 "Spacing24" to AppDimens.Spacing24,
                 "Spacing32" to AppDimens.Spacing32,
                 "Spacing40" to AppDimens.Spacing40
@@ -166,8 +171,10 @@ fun DesignSystemTestScreen() {
         DimensionGroup(
             title = "Main Buttons",
             dimensions = listOf(
-                "ButtonHeight" to AppDimens.ButtonHeight,
-                "StartButtonHeight" to AppDimens.StartButtonHeight
+                "StartButtonWidth" to AppDimens.StartButtonWidth,
+                "StartButtonHeight" to AppDimens.StartButtonHeight,
+                "ButtonWidth" to AppDimens.ButtonWidth,
+                "ButtonHeight" to AppDimens.ButtonHeight
             )
         )
 
@@ -176,10 +183,40 @@ fun DesignSystemTestScreen() {
             dimensions = listOf(
                 "MainHeaderHeight" to AppDimens.MainHeaderHeight,
                 "MeetingHeaderHeight" to AppDimens.MeetingHeaderHeight,
-                "BackHeaderHeight" to AppDimens.BackHeaderHeight
+                "BackHeaderHeight" to AppDimens.BackHeaderHeight,
+                "HeaderHorizontalPadding" to AppDimens.HeaderHorizontalPadding,
+                "HeaderActionSize" to AppDimens.HeaderActionSize,
+                "HeaderIconSize" to AppDimens.HeaderIconSize
             )
         )
+
+        Text(
+            text = "Typography",
+            fontSize = 20.sp,
+            color = AppColors.MainGreen.Green900
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+            Text("버튼 / Bold · 16/24 (sans fallback)", style = MaterialTheme.typography.labelLarge)
+            Text("헤더 / Bold · 16/20", style = MaterialTheme.typography.titleMedium)
+            Text("부제 / Regular · 12/16", style = MaterialTheme.typography.labelSmall)
+        }
+
+        val drawableResources = remember {
+            R.drawable::class.java.fields.mapNotNull { field ->
+                runCatching { field.name to field.getInt(null) }.getOrNull()
+            }.filterNot { (name, _) -> name.startsWith("ic_launcher") }
+                .sortedBy { it.first }
+        }
+        DrawableCatalogGroup("Icons", drawableResources.filterNot { it.first.startsWith("logo") || it.first.startsWith("error_") })
+        DrawableCatalogGroup("Logos", drawableResources.filter { it.first.startsWith("logo") })
+        DrawableCatalogGroup("Error illustrations", drawableResources.filter { it.first.startsWith("error_") })
     }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun DesignSystemTestScreenPreview() {
+    JigmnnagaTheme { DesignSystemTestScreen() }
 }
 
 @Composable
@@ -200,7 +237,7 @@ private fun ColorGroup(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
             ) {
                 Box(
                     modifier = Modifier
@@ -251,7 +288,7 @@ private fun DimensionGroup(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
             ) {
                 Box(
                     modifier = Modifier
@@ -268,6 +305,43 @@ private fun DimensionGroup(
                     fontSize = 12.sp,
                     color = AppColors.Monotone.Gray900
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DrawableCatalogGroup(
+    title: String,
+    resources: List<Pair<String, Int>>
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+        Text(title, fontSize = 16.sp, color = AppColors.Monotone.SoftBlack)
+        resources.chunked(4).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                rowItems.forEach { (name, resourceId) ->
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing4)
+                    ) {
+                        Image(
+                            painter = painterResource(resourceId),
+                            contentDescription = name,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Text(
+                            text = name,
+                            fontSize = 9.sp,
+                            color = AppColors.Monotone.Gray700,
+                            maxLines = 2
+                        )
+                    }
+                }
+                repeat(4 - rowItems.size) { Spacer(modifier = Modifier.weight(1f)) }
             }
         }
     }

@@ -1,8 +1,7 @@
-
 package com.jigmnnaga.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,27 +9,38 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
+import com.jigmnnaga.core.designsystem.theme.AppDimens
 
+enum class BottomNavigationTab {
+    NONE,
+    HOME,
+    SCHEDULE
+}
+
+/** Parent Scaffold/screen owns navigation-bar insets; this component renders only its 80dp bar. */
 @Composable
 fun BottomNavigationBar(
-    selectedTab: String,
+    selectedTab: BottomNavigationTab,
     onHomeClick: () -> Unit,
     onAddClick: () -> Unit,
     onScheduleClick: () -> Unit,
@@ -39,96 +49,95 @@ fun BottomNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(AppDimens.BottomNavigationHeight)
             .background(AppColors.MainGreen.Green200)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 68.dp),
+                .padding(horizontal = AppDimens.BottomNavigationHorizontalPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable(onClick = onHomeClick)
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.home),
-                    contentDescription = "홈",
-                    modifier = Modifier.size(22.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                        if (selectedTab == "home") {
-                            AppColors.MainGreen.Green900
-                        } else {
-                            AppColors.Monotone.Gray400
-                        }
-                    )
-                )
-
-                Text(
-                    text = "홈",
-                    fontSize = 10.sp,
-                    color = if (selectedTab == "home") {
-                        AppColors.MainGreen.Green900
-                    } else {
-                        AppColors.Monotone.Gray400
-                    }
-                )
-            }
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable(onClick = onScheduleClick)
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.calendar),
-                    contentDescription = "일정",
-                    modifier = Modifier.size(22.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                        if (selectedTab == "schedule") {
-                            AppColors.MainGreen.Green900
-                        } else {
-                            AppColors.Monotone.Gray400
-                        }
-                    )
-                )
-
-                Text(
-                    text = "일정",
-                    fontSize = 10.sp,
-                    color = if (selectedTab == "schedule") {
-                        AppColors.MainGreen.Green900
-                    } else {
-                        AppColors.Monotone.Gray400
-                    }
-                )
-            }
+            BottomNavigationItem(
+                label = "홈",
+                icon = R.drawable.home,
+                selected = selectedTab == BottomNavigationTab.HOME,
+                onClick = onHomeClick
+            )
+            BottomNavigationItem(
+                label = "일정",
+                icon = R.drawable.calendar_gray,
+                preserveIconColors = true,
+                selected = selectedTab == BottomNavigationTab.SCHEDULE,
+                onClick = onScheduleClick
+            )
         }
 
-        Surface(
+        CircleButton(
+            contentDescription = "약속 추가",
             onClick = onAddClick,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .size(56.dp),
-            shape = CircleShape,
-            color = AppColors.MainGreen.Green900,
-            shadowElevation = 8.dp
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(R.drawable.plus),
-                    contentDescription = "약속 추가",
-                    modifier = Modifier.size(24.dp),
-                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                        AppColors.MainGreen.Green200
-                    )
-                )
-            }
-        }
+            width = AppDimens.CircleButtonLarge,
+            icon = painterResource(R.drawable.plus),
+            iconSize = AppDimens.IconLarge,
+            backgroundColor = AppColors.MainGreen.Green900,
+            contentColor = AppColors.MainGreen.Green200,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
+/** Compatibility overload for existing dev HomeScreen; new callers should use the enum API. */
+@Composable
+fun BottomNavigationBar(
+    selectedTab: String,
+    onHomeClick: () -> Unit,
+    onAddClick: () -> Unit,
+    onScheduleClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val tab = when (selectedTab.lowercase()) {
+        "home" -> BottomNavigationTab.HOME
+        "schedule" -> BottomNavigationTab.SCHEDULE
+        else -> BottomNavigationTab.NONE
+    }
+    BottomNavigationBar(tab, onHomeClick, onAddClick, onScheduleClick, modifier)
+}
+
+@Composable
+private fun BottomNavigationItem(
+    label: String,
+    icon: Int,
+    preserveIconColors: Boolean = false,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val tint = if (selected) AppColors.MainGreen.Green900 else AppColors.Monotone.Gray400
+    Column(
+        modifier = Modifier
+            .selectable(selected = selected, onClick = onClick, role = Role.Tab)
+            .semantics { this.selected = selected },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(icon),
+            contentDescription = null,
+            modifier = Modifier.size(AppDimens.BottomNavigationIconSize),
+            colorFilter = if (preserveIconColors) null else
+                androidx.compose.ui.graphics.ColorFilter.tint(tint)
+        )
+        androidx.compose.foundation.layout.Spacer(
+            modifier = Modifier.height(AppDimens.BottomNavigationLabelGap)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = tint
+        )
+    }
+}
+
+/** IME insets are owned by the parent screen; this bar maps IME Send to the same action. */
 @Composable
 fun ChatInputBar(
     value: String,
@@ -136,12 +145,13 @@ fun ChatInputBar(
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val canSend = value.isNotBlank()
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .height(AppDimens.BottomNavigationHeight)
             .background(AppColors.MainGreen.Green200)
-            .padding(horizontal = 20.dp, vertical = 15.dp),
+            .padding(horizontal = AppDimens.Spacing20, vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         BasicTextField(
@@ -149,13 +159,12 @@ fun ChatInputBar(
             onValueChange = onValueChange,
             modifier = Modifier
                 .weight(1f)
-                .height(50.dp)
-                .background(Color.White, CircleShape)
-                .padding(horizontal = 14.dp),
+                .height(AppDimens.InputHeight)
+                .background(AppColors.Monotone.White, CircleShape)
+                .padding(horizontal = AppDimens.InputHorizontalPadding),
             singleLine = true,
-            textStyle = androidx.compose.ui.text.TextStyle(
-                fontSize = 14.sp,
-                color = AppColors.Monotone.Gray900
+            textStyle = MaterialTheme.typography.bodySmall.copy(
+                color = AppColors.Monotone.Gray800
             ),
             decorationBox = { innerTextField ->
                 Box(
@@ -165,52 +174,39 @@ fun ChatInputBar(
                     if (value.isEmpty()) {
                         Text(
                             text = "메시지를 입력하세요...",
-                            fontSize = 14.sp,
-                            color = AppColors.Monotone.Gray400
+                            style = MaterialTheme.typography.bodySmall,
+                            color = AppColors.Monotone.Gray400,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     innerTextField()
                 }
             }
         )
-
-        Box(
-            modifier = Modifier
-                .padding(start = 10.dp)
-                .size(50.dp)
-                .background(
-                    color = if (value.isNotBlank()) {
-                        AppColors.MainGreen.Green700
-                    } else {
-                        AppColors.Monotone.Gray400
-                    },
-                    shape = CircleShape
-                )
-                .clickable(
-                    enabled = value.isNotBlank(),
-                    onClick = onSendClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(
-                    if (value.isNotBlank()) {
-                        R.drawable.send_active
-                    } else {
-                        R.drawable.send_inactive
-                    }
-                ),
-                contentDescription = "메시지 전송",
-                modifier = Modifier.size(22.dp),
-                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(Color.White)
-            )
-        }
+        androidx.compose.foundation.layout.Spacer(
+            modifier = Modifier.width(AppDimens.InputSendGap)
+        )
+        CircleButton(
+            contentDescription = "메시지 전송",
+            onClick = onSendClick,
+            width = AppDimens.SendButtonSize,
+            icon = painterResource(
+                if (canSend) R.drawable.send_active else R.drawable.send_inactive
+            ),
+            iconSize = AppDimens.SendIconSize,
+            backgroundColor = if (canSend) AppColors.MainGreen.Green700 else AppColors.Monotone.Gray100,
+            contentColor = if (canSend) AppColors.MainGreen.Green200 else AppColors.Monotone.Gray400,
+            disabledBackgroundColor = AppColors.Monotone.Gray100,
+            disabledContentColor = AppColors.Monotone.Gray400,
+            enabled = canSend
+        )
     }
 }
 
 @Composable
 fun LeaveMeetingBar(
-    isEnabled: Boolean,
+    enabled: Boolean,
     onLeaveClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String = "지금 나가기"
@@ -218,18 +214,20 @@ fun LeaveMeetingBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(80.dp)
+            .heightIn(min = AppDimens.BottomNavigationHeight)
             .background(AppColors.MainGreen.Green200)
-            .padding(horizontal = 21.dp, vertical = 8.dp),
+            .padding(
+                start = AppDimens.Spacing20,
+                end = AppDimens.Spacing20,
+                top = AppDimens.LeaveButtonTopPadding,
+                bottom = AppDimens.LeaveButtonBottomPadding
+            ),
         contentAlignment = Alignment.Center
     ) {
         AppButton(
             text = text,
-            variant = if (isEnabled) {
-                ButtonVariant.DEFAULT
-            } else {
-                ButtonVariant.DISABLED
-            },
+            variant = ButtonVariant.DEFAULT,
+            enabled = enabled,
             onClick = onLeaveClick,
             modifier = Modifier.fillMaxWidth()
         )

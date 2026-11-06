@@ -2,7 +2,6 @@ package com.jigmnnaga.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,192 +12,158 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
+import com.jigmnnaga.core.designsystem.theme.AppDimens
 
+/** Parent supplies the 20dp horizontal screen inset; the header owns its 68dp content height. */
 @Composable
 fun MainHeader(
-    onNotificationClick: () -> Unit = {},
-    onProfileClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onNotificationClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    profileLabel: String? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp),
+            .height(AppDimens.MainHeaderHeight)
+            .background(AppColors.MainGreen.Green200)
+            .padding(vertical = 15.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
             painter = painterResource(R.drawable.logo_mark),
             contentDescription = "지금 나가 로고",
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(38.dp)
         )
-
-        Spacer(modifier = Modifier.width(4.dp))
-
+        Spacer(Modifier.width(AppDimens.Spacing8))
         Image(
             painter = painterResource(R.drawable.logo_text),
             contentDescription = "지금 나가",
-            modifier = Modifier.size(
-                width = 52.dp,
-                height = 18.dp
-            )
+            modifier = Modifier.size(width = 69.dp, height = 24.dp)
         )
+        Spacer(Modifier.weight(1f))
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier
-                .size(28.dp)
-                .background(
-                    AppColors.Monotone.Gray100,
-                    CircleShape
-                )
-                .clickable { onNotificationClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(R.drawable.bell),
-                contentDescription = "알림",
-                modifier = Modifier.size(14.dp),
-                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                    AppColors.MainGreen.Green900
-                )
-            )
-        }
-
-        Spacer(modifier = Modifier.width(8.dp))
-
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .background(
-                    AppColors.MainGreen.Green700,
-                    CircleShape
-                )
-                .clickable { onProfileClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "나",
-                color = AppColors.MainGreen.Green200,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        CircleButton(
+            contentDescription = "알림",
+            onClick = onNotificationClick,
+            width = AppDimens.HeaderActionSize,
+            height = AppDimens.HeaderActionSize,
+            icon = painterResource(R.drawable.bell),
+            iconSize = AppDimens.HeaderIconSize,
+            backgroundColor = AppColors.Monotone.Gray100,
+            contentColor = AppColors.MainGreen.Green900
+        )
+        Spacer(Modifier.width(AppDimens.Spacing8))
+        CircleButton(
+            contentDescription = "프로필",
+            onClick = onProfileClick,
+            width = AppDimens.HeaderActionSize,
+            height = AppDimens.HeaderActionSize,
+            icon = if (profileLabel.isNullOrBlank()) painterResource(R.drawable.profile) else null,
+            iconSize = if (profileLabel.isNullOrBlank()) AppDimens.HeaderIconSize else null,
+            text = profileLabel,
+            textSize = MaterialTheme.typography.titleSmall.fontSize,
+            backgroundColor = AppColors.MainGreen.Green700,
+            contentColor = AppColors.MainGreen.Green200
+        )
     }
 }
 
+/** Insets for the system navigation bar and IME are owned by the parent Scaffold/screen. */
 @Composable
 fun MeetingHeader(
     onBackClick: () -> Unit,
     onCalendarClick: () -> Unit,
     onPlaceClick: () -> Unit,
     onMoreClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    title: String = "스터디 모임",
-    subtitle: String = "4명 · 텍스트 채팅"
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(68.dp)
-            .padding(horizontal = 31.dp),
+            .height(AppDimens.MeetingHeaderHeight)
+            .padding(horizontal = AppDimens.HeaderHorizontalPadding),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(R.drawable.chevron_left),
+        CircleButton(
             contentDescription = "뒤로가기",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onBackClick() }
+            onClick = onBackClick,
+            width = AppDimens.HeaderActionSize,
+            height = AppDimens.HeaderActionSize,
+            icon = painterResource(R.drawable.chevron_left),
+            iconSize = AppDimens.HeaderIconSize,
+            backgroundColor = AppColors.MainGreen.Green200,
+            contentColor = AppColors.Monotone.SoftBlack
         )
-
-        Spacer(modifier = Modifier.width(20.dp))
-
+        Spacer(Modifier.width(AppDimens.HeaderActionGap))
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = title,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF20251D)
+                style = MaterialTheme.typography.titleMedium,
+                color = AppColors.Monotone.SoftBlack,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-
             Text(
                 text = subtitle,
-                fontSize = 14.sp,
-                color = AppColors.Monotone.Gray500
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.Monotone.Gray500,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        MeetingHeaderAction(
-            iconRes = R.drawable.calendar,
+        Spacer(Modifier.width(AppDimens.HeaderActionGap))
+        CircleButton(
             contentDescription = "일정",
-            onClick = onCalendarClick
+            onClick = onCalendarClick,
+            width = AppDimens.HeaderActionSize,
+            height = 28.dp,
+            icon = painterResource(R.drawable.calendar),
+            iconSize = AppDimens.HeaderIconSize,
+            iconTint = null,
+            backgroundColor = AppColors.MainGreen.Green600,
+            contentColor = AppColors.MainGreen.Green200,
+            shape = RoundedCornerShape(14.dp)
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        MeetingHeaderAction(
-            iconRes = R.drawable.place,
+        Spacer(Modifier.width(AppDimens.HeaderActionGap))
+        CircleButton(
             contentDescription = "장소",
-            onClick = onPlaceClick
+            onClick = onPlaceClick,
+            width = AppDimens.HeaderActionSize,
+            height = 28.dp,
+            icon = painterResource(R.drawable.place),
+            iconSize = AppDimens.HeaderIconSize,
+            iconTint = null,
+            backgroundColor = AppColors.MainGreen.Green600,
+            contentColor = AppColors.MainGreen.Green200,
+            shape = RoundedCornerShape(14.dp)
         )
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        Image(
-            painter = painterResource(R.drawable.more_vertical),
-            contentDescription = "더보기",
-            modifier = Modifier
-                .size(24.dp)
-                .clickable { onMoreClick() }
-        )
-    }
-}
-
-@Composable
-private fun MeetingHeaderAction(
-    iconRes: Int,
-    contentDescription: String,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .width(38.dp)
-            .height(28.dp)
-            .background(
-                color = AppColors.MainGreen.Green700,
-                shape = RoundedCornerShape(14.dp)
+        Spacer(Modifier.width(AppDimens.HeaderActionGap))
+        IconButton(onClick = onMoreClick, modifier = Modifier.size(48.dp)) {
+            Image(
+                painter = painterResource(R.drawable.more_vertical),
+                contentDescription = null,
+                modifier = Modifier.size(width = 4.dp, height = 18.dp)
             )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(iconRes),
-            contentDescription = contentDescription,
-            modifier = Modifier.size(20.dp),
-            colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(
-                AppColors.MainGreen.Green200
-            )
-        )
+        }
     }
 }
 
@@ -211,26 +176,30 @@ fun BackHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
+            .height(AppDimens.BackHeaderHeight)
+            .background(AppColors.MainGreen.Green200)
+            .padding(horizontal = AppDimens.HeaderHorizontalPadding),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(R.drawable.chevron_left),
+        CircleButton(
             contentDescription = "뒤로가기",
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .size(28.dp)
-                .clickable { onBackClick() }
+            onClick = onBackClick,
+            width = AppDimens.HeaderActionSize,
+            height = AppDimens.HeaderActionSize,
+            icon = painterResource(R.drawable.chevron_left),
+            iconSize = AppDimens.HeaderIconSize,
+            backgroundColor = AppColors.MainGreen.Green200,
+            contentColor = AppColors.Monotone.SoftBlack,
+            modifier = Modifier.align(Alignment.CenterStart)
         )
-
         Text(
             text = title,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp),
             textAlign = TextAlign.Center,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = AppColors.MainGreen.Green900
+            style = MaterialTheme.typography.labelLarge,
+            color = AppColors.Monotone.SoftBlack,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
