@@ -2,9 +2,8 @@ package com.jigmnnaga.core.designsystem.theme
 
 import androidx.compose.ui.unit.dp
 
-/** Figma spacing tokens and measured component dimensions. */
 object AppDimens {
-    // Figma spacing variables
+    // Figma 간격 변수
     val Spacing4 = 4.dp
     val Spacing8 = 8.dp
     val Spacing12 = 12.dp
@@ -14,7 +13,7 @@ object AppDimens {
     val Spacing32 = 32.dp
     val Spacing40 = 40.dp
 
-    // Measured component dimensions from PR review/Figma comparisons
+    // PR 리뷰/Figma 측정값
     val StartButtonWidth = 165.dp
     val StartButtonHeight = 55.33.dp
     val ButtonWidth = 175.dp
@@ -45,8 +44,7 @@ object AppDimens {
     val LeaveButtonTopPadding = 1.dp
     val LeaveButtonBottomPadding = 15.dp
 
-    // Component variant dimensions not yet verified across all Figma variants.
-    // Retained for existing visual catalog examples only.
+    // Figma 미검증 치수. 카탈로그 예시 전용.
     val CircleButtonSmall = 28.dp
     val CircleButtonMedium = 38.dp
     val CircleButtonLarge = 56.dp

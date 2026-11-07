@@ -25,10 +25,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
-import com.jigmnnaga.ui.screens.CircleButtonTestScreen
-import com.jigmnnaga.ui.screens.ComponentTestScreen
-import com.jigmnnaga.ui.screens.DesignSystemTestScreen
-import com.jigmnnaga.ui.screens.HeaderTestScreen
+import com.jigmnnaga.catalog.screens.CircleButtonTestScreen
+import com.jigmnnaga.catalog.screens.ComponentTestScreen
+import com.jigmnnaga.catalog.screens.DesignSystemTestScreen
+import com.jigmnnaga.catalog.screens.HeaderTestScreen
 
 class ComponentCatalogActivity : ComponentActivity() {
     @Suppress("DEPRECATION")

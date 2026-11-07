@@ -1,5 +1,5 @@
 
-package com.jigmnnaga.ui.screens
+package com.jigmnnaga.catalog.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,9 +21,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
-import com.jigmnnaga.ui.components.MainHeader
-import com.jigmnnaga.ui.components.MeetingHeader
-import com.jigmnnaga.ui.components.BackHeader
+import com.jigmnnaga.core.designsystem.component.MainHeader
+import com.jigmnnaga.core.designsystem.component.MeetingHeader
+import com.jigmnnaga.core.designsystem.component.BackHeader
 
 @Composable
 fun HeaderTestScreen() {

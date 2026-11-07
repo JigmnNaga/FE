@@ -26,7 +26,7 @@ private val LightColorScheme = lightColorScheme(
     onError = AppColors.Monotone.White
 )
 
-// Brand palette mapping; Figma has no separate dark-mode token collection.
+// 브랜드 팔레트 매핑. Figma 다크 모드 토큰 없음.
 private val DarkColorScheme = darkColorScheme(
     primary = AppColors.MainGreen.Green300,
     onPrimary = AppColors.MainGreen.Green900,

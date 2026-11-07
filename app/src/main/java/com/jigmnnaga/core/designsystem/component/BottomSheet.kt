@@ -1,4 +1,4 @@
-package com.jigmnnaga.ui.components
+package com.jigmnnaga.core.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,9 +27,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 
 enum class BottomNavigationTab {
     NONE,
@@ -37,7 +43,7 @@ enum class BottomNavigationTab {
     SCHEDULE
 }
 
-/** Parent Scaffold/screen owns navigation-bar insets; this component renders only its 80dp bar. */
+// 네비게이션 바 inset은 부모 Screen 담당. 이 컴포넌트는 80dp 바 영역만 담당.
 @Composable
 fun BottomNavigationBar(
     selectedTab: BottomNavigationTab,
@@ -87,7 +93,7 @@ fun BottomNavigationBar(
     }
 }
 
-/** Compatibility overload for existing dev HomeScreen; new callers should use the enum API. */
+// 기존 HomeScreen 호환용 오버로드. 신규 코드는 enum API 사용.
 @Composable
 fun BottomNavigationBar(
     selectedTab: String,
@@ -137,7 +143,7 @@ private fun BottomNavigationItem(
     }
 }
 
-/** IME insets are owned by the parent screen; this bar maps IME Send to the same action. */
+// IME inset은 부모 Screen 담당. IME 전송 액션을 동일 동작에 연결.
 @Composable
 fun ChatInputBar(
     value: String,
@@ -231,5 +237,48 @@ fun LeaveMeetingBar(
             onClick = onLeaveClick,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun BottomNavigationBarPreview() {
+    JigmnnagaTheme {
+        Column {
+            BottomNavigationBar(
+                selectedTab = BottomNavigationTab.NONE,
+                onHomeClick = {}, onAddClick = {}, onScheduleClick = {}
+            )
+            BottomNavigationBar(
+                selectedTab = BottomNavigationTab.HOME,
+                onHomeClick = {}, onAddClick = {}, onScheduleClick = {}
+            )
+            BottomNavigationBar(
+                selectedTab = BottomNavigationTab.SCHEDULE,
+                onHomeClick = {}, onAddClick = {}, onScheduleClick = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun ChatInputBarPreview() {
+    JigmnnagaTheme {
+        Column {
+            ChatInputBar(value = "", onValueChange = {}, onSendClick = {})
+            ChatInputBar(value = "보낼 메시지 예시", onValueChange = {}, onSendClick = {})
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun LeaveMeetingBarPreview() {
+    JigmnnagaTheme {
+        Column {
+            LeaveMeetingBar(enabled = true, onLeaveClick = {})
+            LeaveMeetingBar(enabled = false, onLeaveClick = {})
+        }
     }
 }

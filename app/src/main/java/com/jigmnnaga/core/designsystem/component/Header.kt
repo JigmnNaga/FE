@@ -1,4 +1,4 @@
-package com.jigmnnaga.ui.components
+package com.jigmnnaga.core.designsystem.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,11 +23,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 
-/** Parent supplies the 20dp horizontal screen inset; the header owns its 68dp content height. */
+// 좌우 20dp inset은 부모 담당. 헤더는 68dp 콘텐츠 영역만 담당.
 @Composable
 fun MainHeader(
     onNotificationClick: () -> Unit,
@@ -74,7 +76,7 @@ fun MainHeader(
             height = AppDimens.HeaderActionSize,
             icon = if (profileLabel.isNullOrBlank()) painterResource(R.drawable.profile) else null,
             iconSize = if (profileLabel.isNullOrBlank()) AppDimens.HeaderIconSize else null,
-            text = profileLabel,
+            text = profileLabel?.takeIf { it.isNotBlank() },
             textSize = MaterialTheme.typography.titleSmall.fontSize,
             backgroundColor = AppColors.MainGreen.Green700,
             contentColor = AppColors.MainGreen.Green200
@@ -82,7 +84,7 @@ fun MainHeader(
     }
 }
 
-/** Insets for the system navigation bar and IME are owned by the parent Scaffold/screen. */
+// 네비게이션 바·IME inset은 부모 Scaffold 담당.
 @Composable
 fun MeetingHeader(
     onBackClick: () -> Unit,
@@ -160,7 +162,7 @@ fun MeetingHeader(
         IconButton(onClick = onMoreClick, modifier = Modifier.size(48.dp)) {
             Image(
                 painter = painterResource(R.drawable.more_vertical),
-                contentDescription = null,
+                contentDescription = "더보기",
                 modifier = Modifier.size(width = 4.dp, height = 18.dp)
             )
         }
@@ -201,5 +203,36 @@ fun BackHeader(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun MainHeaderPreview() {
+    JigmnnagaTheme {
+        Column {
+            MainHeader(onNotificationClick = {}, onProfileClick = {})
+            MainHeader(onNotificationClick = {}, onProfileClick = {}, profileLabel = "나")
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun MeetingHeaderPreview() {
+    JigmnnagaTheme {
+        MeetingHeader(
+            onBackClick = {}, onCalendarClick = {}, onPlaceClick = {}, onMoreClick = {},
+            title = "주말 산행과 맛집 방문을 함께하는 스터디 모임",
+            subtitle = "4명 · 텍스트 채팅"
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun BackHeaderPreview() {
+    JigmnnagaTheme {
+        BackHeader(title = "약속 만들기", onBackClick = {})
     }
 }

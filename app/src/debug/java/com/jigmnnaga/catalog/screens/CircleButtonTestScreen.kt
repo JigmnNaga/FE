@@ -1,5 +1,5 @@
 
-package com.jigmnnaga.ui.screens
+package com.jigmnnaga.catalog.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -22,7 +22,7 @@ import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
-import com.jigmnnaga.ui.components.CircleButton
+import com.jigmnnaga.core.designsystem.component.CircleButton
 
 @Composable
 fun CircleButtonTestScreen() {
@@ -50,7 +50,7 @@ fun CircleButtonTestScreen() {
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // Visual catalog only: these variant dimensions remain provisional until each Figma node is measured.
+            // 비주얼 확인용. Figma 측정 전 임시 치수.
             // 1. 뒤로 가기
             CircleButton(
                 icon = painterResource(R.drawable.chevron_left),

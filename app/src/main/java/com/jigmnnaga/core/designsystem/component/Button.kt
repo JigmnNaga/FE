@@ -1,4 +1,4 @@
-package com.jigmnnaga.ui.components
+package com.jigmnnaga.core.designsystem.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -22,8 +22,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
+import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 
 enum class ButtonVariant {
     START,
@@ -115,5 +121,19 @@ private fun StartArrowIcon() {
             lineTo(size.width * 0.55f, size.height * 0.78f)
         }
         drawPath(path, AppColors.MainGreen.Green200, style = Stroke(strokeWidth))
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412)
+@Composable
+private fun AppButtonPreview() {
+    JigmnnagaTheme {
+        Column(modifier = Modifier.padding(AppDimens.Spacing20)) {
+            AppButton(text = "시작하기", variant = ButtonVariant.START, onClick = {})
+            AppButton(text = "기본 버튼", variant = ButtonVariant.DEFAULT, onClick = {})
+            AppButton(text = "비활성화", variant = ButtonVariant.DEFAULT, enabled = false, onClick = {})
+            AppButton(text = "PRIMARY", variant = ButtonVariant.PRIMARY, onClick = {})
+            AppButton(text = "SECONDARY", variant = ButtonVariant.SECONDARY, onClick = {})
+        }
     }
 }
