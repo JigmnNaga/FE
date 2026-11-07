@@ -37,3 +37,6 @@ local.properties
 
 # Android Studio device settings
 .idea/deviceManager.xml
+
+# Android Studio inspection settings
+/.idea/inspectionProfiles/
