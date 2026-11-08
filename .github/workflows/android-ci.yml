@@ -31,5 +31,25 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x gradlew
 
+      - name: Download Gradle distribution with retries
+        shell: bash
+        run: |
+          set -uo pipefail
+          for attempt in 1 2 3; do
+            if ./gradlew --version; then
+              exit 0
+            else
+              status=$?
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              exit "$status"
+            fi
+
+            delay=$((10 * attempt))
+            echo "::warning::Gradle bootstrap failed; retrying in ${delay}s (attempt ${attempt}/3)."
+            sleep "$delay"
+          done
+
       - name: Build and Test
         run: ./gradlew assembleDevDebug testDevDebugUnitTest --no-daemon
