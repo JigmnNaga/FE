@@ -14,4 +14,35 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
+    <string name="appointment_schedule_next">다음</string>
+    <string name="appointment_schedule_go_to_chat">채팅방으로 이동</string>
+    <string name="appointment_schedule_select_dates">날짜를 선택하세요</string>
+    <string name="appointment_schedule_dates_helper">가능한 날짜를 선택해 주세요.</string>
+    <string name="appointment_schedule_previous_month">이전 달</string>
+    <string name="appointment_schedule_next_month">다음 달</string>
+    <plurals name="appointment_schedule_selected_dates_count">
+        <item quantity="one">선택된 날짜 (%d일)</item>
+        <item quantity="other">선택된 날짜 (%d일)</item>
+    </plurals>
+    <string name="appointment_schedule_time_helper">날짜별 가능한 시간을 설정해주세요</string>
+    <string name="appointment_schedule_start_time">시작 시간</string>
+    <string name="appointment_schedule_end_time">종료 시간</string>
+    <string name="appointment_schedule_selected_time">선택된 시간</string>
+    <string name="appointment_schedule_time_range">%1$s – %2$s</string>
+    <string name="appointment_schedule_quick_times">빠른 시간 선택</string>
+    <string name="appointment_schedule_select_time">시간을 선택해주세요</string>
+    <string name="appointment_schedule_cancel">취소</string>
+    <string name="appointment_schedule_apply">적용</string>
+    <string name="appointment_schedule_complete_title">약속 일정 선택을 완료했어요</string>
+    <string name="appointment_schedule_complete_description">방장이 약속 시간과 장소를 확정하면 일정으로 알려드릴게요</string>
+    <string name="appointment_schedule_completion_status">완전 선택 현황</string>
+    <string-array name="appointment_schedule_weekdays">
+        <item>일</item>
+        <item>월</item>
+        <item>화</item>
+        <item>수</item>
+        <item>목</item>
+        <item>금</item>
+        <item>토</item>
+    </string-array>
 </resources>
