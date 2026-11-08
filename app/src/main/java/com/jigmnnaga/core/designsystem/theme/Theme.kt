@@ -1,7 +1,6 @@
 package com.jigmnnaga.core.designsystem.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
@@ -26,29 +25,10 @@ private val LightColorScheme = lightColorScheme(
     onError = AppColors.Monotone.White
 )
 
-// 브랜드 팔레트 매핑. Figma 다크 모드 토큰 없음.
-private val DarkColorScheme = darkColorScheme(
-    primary = AppColors.MainGreen.Green300,
-    onPrimary = AppColors.MainGreen.Green900,
-    primaryContainer = AppColors.MainGreen.Green800,
-    onPrimaryContainer = AppColors.MainGreen.Green200,
-    secondary = AppColors.MainGreen.Green400,
-    onSecondary = AppColors.MainGreen.Green900,
-    secondaryContainer = AppColors.MainGreen.Green800,
-    onSecondaryContainer = AppColors.MainGreen.Green200,
-    tertiary = AppColors.SubYellow.Yellow500,
-    onTertiary = AppColors.Monotone.SoftBlack,
-    background = AppColors.Monotone.SoftBlack,
-    onBackground = AppColors.MainGreen.Green200,
-    surface = AppColors.Monotone.Gray900,
-    onSurface = AppColors.MainGreen.Green200,
-    surfaceVariant = AppColors.Monotone.Gray800,
-    onSurfaceVariant = AppColors.Monotone.Gray200,
-    error = AppColors.Danger.Red200,
-    onError = AppColors.Danger.Red600
-)
-
-/** Uses the app palette consistently; system dynamic colors are intentionally disabled. */
+/**
+ * Applies the light app palette regardless of the system appearance.
+ * [darkTheme] and [dynamicColor] remain for source compatibility and are intentionally ignored.
+ */
 @Composable
 fun JigmnnagaTheme(
     darkTheme: Boolean = false,
@@ -56,7 +36,7 @@ fun JigmnnagaTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
+        colorScheme = LightColorScheme,
         typography = Typography,
         content = content
     )

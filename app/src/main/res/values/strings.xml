@@ -1,3 +1,17 @@
 <resources>
     <string name="app_name">jigmnnaga</string>
+    <string name="bottom_navigation_home">홈</string>
+    <string name="bottom_navigation_schedule">일정</string>
+    <string name="add_appointment_description">약속 추가</string>
+    <string name="chat_input_hint">메시지를 입력하세요...</string>
+    <string name="send_message_description">메시지 전송</string>
+    <string name="leave_meeting_label">지금 나가기</string>
+    <string name="app_logo_mark_description">지금 나가 로고</string>
+    <string name="app_logo_text_description">지금 나가</string>
+    <string name="notification_description">알림</string>
+    <string name="profile_description">프로필</string>
+    <string name="back_description">뒤로가기</string>
+    <string name="schedule_description">일정</string>
+    <string name="place_description">장소</string>
+    <string name="more_description">더보기</string>
 </resources>

@@ -22,6 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import kotlin.math.ceil
 
 enum class ButtonVariant {
     START,
@@ -57,9 +61,26 @@ fun AppButton(
         variant == ButtonVariant.SECONDARY -> AppColors.Monotone.Gray400
         else -> AppColors.MainGreen.Green900
     }
+    val startTextWidth = if (variant == ButtonVariant.START) {
+        val textLayout = rememberTextMeasurer().measure(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1
+        )
+        with(LocalDensity.current) {
+            val measuredWidth =
+                textLayout.size.width.toDp() +
+                    AppDimens.Spacing40 * 2 +
+                    AppDimens.StartButtonArrowGap +
+                    AppDimens.StartButtonArrowSize
+            ceil(measuredWidth.toPx()).toInt().toDp().coerceAtLeast(AppDimens.StartButtonWidth)
+        }
+    } else {
+        null
+    }
     val sizeModifier = when (variant) {
         ButtonVariant.START -> modifier
-            .width(AppDimens.StartButtonWidth)
+            .width(startTextWidth!!)
             .heightIn(min = AppDimens.StartButtonHeight)
         ButtonVariant.SECONDARY, ButtonVariant.PRIMARY -> modifier
             .width(AppDimens.ButtonWidth)
@@ -86,7 +107,18 @@ fun AppButton(
                         AppDimens.ButtonHeight
                     }
                 )
-                .padding(horizontal = AppDimens.Spacing16, vertical = AppDimens.Spacing12),
+                .padding(
+                    horizontal = if (variant == ButtonVariant.START) {
+                        AppDimens.Spacing40
+                    } else {
+                        AppDimens.Spacing16
+                    },
+                    vertical = if (variant == ButtonVariant.START) {
+                        AppDimens.Spacing16
+                    } else {
+                        AppDimens.Spacing12
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -95,6 +127,11 @@ fun AppButton(
             ) {
                 Text(
                     text = text,
+                    modifier = if (variant == ButtonVariant.START) {
+                        Modifier.weight(1f, fill = false)
+                    } else {
+                        Modifier
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = if (variant == ButtonVariant.START) 1 else 2,
                     overflow = TextOverflow.Ellipsis
@@ -112,7 +149,11 @@ fun AppButton(
 
 @Composable
 private fun StartArrowIcon() {
-    Canvas(modifier = Modifier.size(AppDimens.StartButtonArrowSize)) {
+    Canvas(
+        modifier = Modifier
+            .size(AppDimens.StartButtonArrowSize)
+            .testTag("start-button-arrow")
+    ) {
         val strokeWidth = 1.7.dp.toPx()
         val path = Path().apply {
             moveTo(size.width * 0.15f, size.height * 0.5f)

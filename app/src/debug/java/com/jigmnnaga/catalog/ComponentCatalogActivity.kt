@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
@@ -58,7 +59,7 @@ private enum class CatalogPage(val label: String) {
 @Composable
 private fun ComponentCatalogHost() {
     var selectedPage by remember { mutableStateOf(CatalogPage.COMPONENTS) }
-    Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+    Column(Modifier.fillMaxSize().safeDrawingPadding().imePadding()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
