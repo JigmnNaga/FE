@@ -14,4 +14,18 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
+    <string name="host_confirmation_header">약속 확정</string>
+    <string name="host_confirmation_review_title">최종 약속을 확인해 주세요</string>
+    <string name="host_confirmation_date_time_title">날짜와 시간</string>
+    <string name="host_confirmation_place_title">장소</string>
+    <string name="host_confirmation_detail_location">세부 위치</string>
+    <string name="host_confirmation_detail_location_title">세부 위치를 선택해 주세요</string>
+    <string name="host_confirmation_detail_location_pending">세부 위치를 아직 선택하지 않았어요.</string>
+    <string name="host_confirmation_choose_later">세부 위치는 나중에 선택</string>
+    <string name="host_confirmation_change">변경</string>
+    <string name="host_confirmation_value_missing">선택된 정보가 없습니다</string>
+    <string name="host_confirmation_confirm">최종 확정</string>
+    <string name="host_confirmation_complete_title">약속 일정 선택이 완료했어요</string>
+    <string name="host_confirmation_complete_message">멤버들에게 알림이 전송됐어요</string>
+    <string name="host_confirmation_done">채팅방으로 이동</string>
 </resources>
