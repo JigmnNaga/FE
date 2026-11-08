@@ -14,4 +14,19 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
+    <string name="invite_headline">%1$s%2$s 약속에 초대했어요</string>
+    <string name="invite_participant_count">%1$d명이 참여했어요</string>
+    <string name="invite_members_heading">현재 참여 멤버 %1$d명</string>
+    <string name="invite_member_host">방장</string>
+    <string name="invite_member_accepted">수락</string>
+    <string name="invite_member_declined">거절</string>
+    <string name="invite_member_waiting">대기</string>
+    <string name="invite_decline">거절하기</string>
+    <string name="invite_accept">수락하기</string>
+    <string name="invite_accepted_title">약속을 수락했어요!</string>
+    <string name="invite_accepted_message">멤버들과 일정을 조율해 보세요</string>
+    <string name="invite_declined_title">약속을 거절했어요</string>
+    <string name="invite_declined_message">방장에게 거절 알림이 전송돼요</string>
+    <string name="invite_open_chat">채팅방으로 이동</string>
+    <string name="invite_return_home">홈으로 돌아가기</string>
 </resources>
