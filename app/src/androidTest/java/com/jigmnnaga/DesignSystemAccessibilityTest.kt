@@ -1,9 +1,12 @@
 package com.jigmnnaga
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.click
@@ -15,17 +18,26 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.geometry.Offset
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -49,6 +61,62 @@ import org.junit.runner.RunWith
 class DesignSystemAccessibilityTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test
+    fun startButtonShowsDefaultLabelAtAccessibleFontScales() {
+        val fontScale = mutableFloatStateOf(1f)
+        composeRule.setContent {
+            val baseDensity = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(baseDensity.density, fontScale.floatValue)) {
+                JigmnnagaTheme {
+                    Box(Modifier.width(320.dp)) {
+                        AppButton(text = "시작하기", variant = ButtonVariant.START, onClick = {})
+                    }
+                }
+            }
+        }
+
+        var previousButtonWidth = 0f
+        listOf(1f, 1.3f, 1.5f).forEach { scale ->
+            composeRule.runOnIdle { fontScale.floatValue = scale }
+            composeRule.waitForIdle()
+            val button = composeRule.onNode(hasClickAction())
+            button.assertWidthIsAtLeast(165.dp)
+            val buttonWidth = button.fetchSemanticsNode().boundsInRoot.width
+            assertTrue("START width should grow as the font scale grows", buttonWidth >= previousButtonWidth)
+            previousButtonWidth = buttonWidth
+
+            val textLayoutResults = mutableListOf<TextLayoutResult>()
+            composeRule.onNodeWithText("시작하기", useUnmergedTree = true)
+                .performSemanticsAction(SemanticsActions.GetTextLayoutResult) { getResult ->
+                    assertTrue(getResult(textLayoutResults))
+                }
+            composeRule.runOnIdle {
+                assertEquals(
+                    "START label was ellipsized at font scale $scale",
+                    "시작하기".length,
+                    textLayoutResults.single().getLineEnd(0, visibleEnd = true)
+                )
+            }
+        }
+    }
+
+    @Test
+    fun startButtonKeepsArrowVisibleForLongLabelInNarrowWidth() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                Box(Modifier.width(320.dp)) {
+                    AppButton(
+                        text = "긴 시작 문구로 화살표 공간을 확인합니다",
+                        variant = ButtonVariant.START,
+                        onClick = {}
+                    )
+                }
+            }
+        }
+
+        composeRule.onNodeWithTag("start-button-arrow", useUnmergedTree = true).assertExists()
+    }
 
     @Test
     fun chatInputBlocksEmptyAndWhitespaceForImeAndSendButton() {

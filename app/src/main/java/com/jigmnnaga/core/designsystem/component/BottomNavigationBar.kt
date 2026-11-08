@@ -112,7 +112,7 @@ private fun BottomNavigationItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val tint = if (selected) AppColors.Brown.Brown950 else AppColors.Monotone.Gray400
+    val tint = if (selected) AppColors.MainGreen.Green900 else AppColors.Monotone.Gray400
     Column(
         modifier = Modifier
             .heightIn(min = 48.dp)

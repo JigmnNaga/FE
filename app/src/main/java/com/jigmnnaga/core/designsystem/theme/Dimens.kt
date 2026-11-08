@@ -19,7 +19,7 @@ object AppDimens {
     val ButtonWidth = 175.dp
     val ButtonHeight = 64.dp
     val ButtonCornerRadius = 16.dp
-    val StartButtonArrowSize = 18.dp
+    val StartButtonArrowSize = 16.dp
     val StartButtonArrowGap = 10.dp
 
     val MainHeaderHeight = 68.dp
