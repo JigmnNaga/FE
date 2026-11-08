@@ -48,7 +48,10 @@ private val DarkColorScheme = darkColorScheme(
     onError = AppColors.Danger.Red600
 )
 
-/** Uses the app palette consistently; system dynamic colors are intentionally disabled. */
+/**
+ * Uses the app palette consistently; system dynamic colors are intentionally disabled.
+ * [dynamicColor] remains for source compatibility but is intentionally ignored.
+ */
 @Composable
 fun JigmnnagaTheme(
     darkTheme: Boolean = false,

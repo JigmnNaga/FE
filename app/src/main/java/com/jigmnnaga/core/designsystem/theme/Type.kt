@@ -2,16 +2,18 @@ package com.jigmnnaga.core.designsystem.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.jigmnnaga.R
 
-/**
- * Typography metrics provided in PR #16 review (Figma comparison).
- * The repository does not include a Noto Sans KR font resource, so Android's
- * sans-serif family is used until the licensed design font is added to the app.
- */
-private val BrandSans = FontFamily.SansSerif
+/** Typography metrics provided in PR #16 review (Figma comparison). */
+private val BrandSans = FontFamily(
+    Font(R.font.noto_sans_kr_regular, weight = FontWeight.Normal),
+    Font(R.font.noto_sans_kr_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.noto_sans_kr_bold, weight = FontWeight.Bold)
+)
 
 val Typography = Typography(
     bodyLarge = TextStyle(

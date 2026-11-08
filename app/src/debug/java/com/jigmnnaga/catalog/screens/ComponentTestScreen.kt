@@ -81,6 +81,12 @@ fun ComponentTestScreen() {
             )
 
             AppButton(
+                text = "긴 시작 문구로 화살표 공간을 확인합니다",
+                variant = ButtonVariant.START,
+                onClick = {}
+            )
+
+            AppButton(
                 text = "button",
                 variant = ButtonVariant.DEFAULT,
                 onClick = {},

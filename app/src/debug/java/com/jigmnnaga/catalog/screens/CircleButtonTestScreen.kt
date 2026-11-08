@@ -46,7 +46,7 @@ fun CircleButtonTestScreen() {
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
                 .padding(vertical = AppDimens.Spacing8),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 

@@ -95,6 +95,11 @@ fun AppButton(
             ) {
                 Text(
                     text = text,
+                    modifier = if (variant == ButtonVariant.START) {
+                        Modifier.weight(1f, fill = false)
+                    } else {
+                        Modifier
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = if (variant == ButtonVariant.START) 1 else 2,
                     overflow = TextOverflow.Ellipsis

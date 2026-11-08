@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,19 +48,19 @@ fun MainHeader(
     ) {
         Image(
             painter = painterResource(R.drawable.logo_mark),
-            contentDescription = "지금 나가 로고",
+            contentDescription = stringResource(R.string.app_logo_mark_description),
             modifier = Modifier.size(38.dp)
         )
         Spacer(Modifier.width(AppDimens.Spacing8))
         Image(
             painter = painterResource(R.drawable.logo_text),
-            contentDescription = "지금 나가",
+            contentDescription = stringResource(R.string.app_logo_text_description),
             modifier = Modifier.size(width = 69.dp, height = 24.dp)
         )
         Spacer(Modifier.weight(1f))
 
         CircleButton(
-            contentDescription = "알림",
+            contentDescription = stringResource(R.string.notification_description),
             onClick = onNotificationClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.HeaderActionSize,
@@ -70,7 +71,7 @@ fun MainHeader(
         )
         Spacer(Modifier.width(AppDimens.Spacing8))
         CircleButton(
-            contentDescription = "프로필",
+            contentDescription = stringResource(R.string.profile_description),
             onClick = onProfileClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.HeaderActionSize,
@@ -103,7 +104,7 @@ fun MeetingHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         CircleButton(
-            contentDescription = "뒤로가기",
+            contentDescription = stringResource(R.string.back_description),
             onClick = onBackClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.HeaderActionSize,
@@ -134,7 +135,7 @@ fun MeetingHeader(
         }
         Spacer(Modifier.width(AppDimens.HeaderActionGap))
         CircleButton(
-            contentDescription = "일정",
+            contentDescription = stringResource(R.string.schedule_description),
             onClick = onCalendarClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.CompactHeaderActionHeight,
@@ -147,7 +148,7 @@ fun MeetingHeader(
         )
         Spacer(Modifier.width(AppDimens.HeaderActionGap))
         CircleButton(
-            contentDescription = "장소",
+            contentDescription = stringResource(R.string.place_description),
             onClick = onPlaceClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.CompactHeaderActionHeight,
@@ -162,7 +163,7 @@ fun MeetingHeader(
         IconButton(onClick = onMoreClick, modifier = Modifier.size(48.dp)) {
             Image(
                 painter = painterResource(R.drawable.more_vertical),
-                contentDescription = "더보기",
+                contentDescription = stringResource(R.string.more_description),
                 modifier = Modifier.size(width = 4.dp, height = 18.dp)
             )
         }
@@ -184,7 +185,7 @@ fun BackHeader(
         contentAlignment = Alignment.Center
     ) {
         CircleButton(
-            contentDescription = "뒤로가기",
+            contentDescription = stringResource(R.string.back_description),
             onClick = onBackClick,
             width = AppDimens.HeaderActionSize,
             height = AppDimens.HeaderActionSize,
