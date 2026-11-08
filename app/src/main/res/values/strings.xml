@@ -14,4 +14,18 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
+    <string name="host_room_tab_chat">채팅</string>
+    <string name="host_room_tab_map_status">지도 · 현황</string>
+    <string name="host_room_summary_title">약속 정보</string>
+    <string name="host_room_summary_expand">약속 정보 펼치기</string>
+    <string name="host_room_summary_collapse">약속 정보 접기</string>
+    <string name="host_room_date_label">날짜·시간</string>
+    <string name="host_room_place_label">장소</string>
+    <string name="host_room_response_title">날짜·시간 선택 현황</string>
+    <string name="host_room_response_count">%1$d/%2$d명</string>
+    <string name="host_room_response_done_count">선택 완료 · %1$d명</string>
+    <string name="host_room_response_pending_count">미응답 · %1$d명</string>
+    <string name="host_room_participants_title">참여 멤버 현황</string>
+    <string name="host_room_host_badge">방장</string>
+    <string name="host_room_map_not_connected">지도 SDK 연결 영역</string>
 </resources>
