@@ -185,4 +185,9 @@
         <item>금</item>
         <item>토</item>
     </string-array>
+
+<string name="place_vote_search_hint">장소 검색</string>
+<string name="place_vote_map_unavailable">지도는 연결 후 표시됩니다</string>
+<string name="place_vote_count">투표 %1$d</string>
+<string name="place_vote_remove_candidate">삭제</string>
 </resources>
