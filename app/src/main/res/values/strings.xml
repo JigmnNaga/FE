@@ -215,4 +215,12 @@
 <string name="final_confirmation_attending">참석</string>
 <string name="final_confirmation_not_attending">불참</string>
 <string name="final_confirmation_confirm">확인할게요</string>
+
+<string name="existing_add_reschedule">다시 약속 잡기</string>
+<string name="existing_add_request">약속 요청하기</string>
+<string name="existing_add_member_status">멤버 현황</string>
+<string name="existing_add_scheduled_time">모임 예정 시간</string>
+<string name="existing_add_chat_tab">채팅</string>
+<string name="existing_add_map_status_tab">지도·현황</string>
+<string name="existing_add_map_area">지도 영역</string>
 </resources>
