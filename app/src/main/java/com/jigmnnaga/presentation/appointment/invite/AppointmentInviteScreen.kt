@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -162,12 +163,21 @@ private fun PendingInviteContent(
                 .padding(horizontal = AppDimens.Spacing20),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            if (state.decisionError != null) {
+                Text(
+                    text = stringResource(R.string.invite_decision_failed),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Danger.Red600,
+                    modifier = Modifier.padding(bottom = AppDimens.Spacing8)
+                )
+            }
             TextButton(
                 onClick = onDecline,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .testTag("invite-decline")
+                    .testTag("invite-decline"),
+                enabled = !state.isSubmitting
             ) {
                 Text(
                     text = stringResource(R.string.invite_decline),
@@ -176,8 +186,27 @@ private fun PendingInviteContent(
                 )
             }
             Spacer(Modifier.height(AppDimens.Spacing8))
+            if (state.isSubmitting) {
+                Row(
+                    modifier = Modifier.padding(bottom = AppDimens.Spacing8),
+                    horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = AppColors.MainGreen.Green900,
+                        strokeWidth = 2.dp
+                    )
+                    Text(
+                        text = stringResource(R.string.invite_processing),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = AppColors.Monotone.Gray700
+                    )
+                }
+            }
             AppButton(
                 text = stringResource(R.string.invite_accept),
+                enabled = !state.isSubmitting,
                 modifier = Modifier.fillMaxWidth().testTag("invite-accept"),
                 onClick = onAccept
             )
@@ -193,18 +222,21 @@ private fun InviteMemberRow(member: AppointmentInviteMember, modifier: Modifier 
         AppointmentInviteMemberStatus.ACCEPTED -> AppColors.MainGreen.Green300
         AppointmentInviteMemberStatus.DECLINED -> AppColors.Monotone.Gray200
         AppointmentInviteMemberStatus.WAITING -> AppColors.MainGreen.Green900
+        AppointmentInviteMemberStatus.UNKNOWN -> AppColors.Monotone.Gray200
     }
     val badgeBackground = when (member.status) {
         AppointmentInviteMemberStatus.HOST -> AppColors.Monotone.Gray100
         AppointmentInviteMemberStatus.ACCEPTED -> AppColors.MainGreen.Green200
         AppointmentInviteMemberStatus.DECLINED -> AppColors.Danger.Red200
         AppointmentInviteMemberStatus.WAITING -> AppColors.Monotone.Gray100
+        AppointmentInviteMemberStatus.UNKNOWN -> AppColors.Monotone.Gray100
     }
     val badgeForeground = when (member.status) {
         AppointmentInviteMemberStatus.HOST -> AppColors.MainGreen.Green700
         AppointmentInviteMemberStatus.ACCEPTED -> AppColors.MainGreen.Green700
         AppointmentInviteMemberStatus.DECLINED -> AppColors.Danger.Red600
         AppointmentInviteMemberStatus.WAITING -> AppColors.Monotone.Gray700
+        AppointmentInviteMemberStatus.UNKNOWN -> AppColors.Monotone.Gray700
     }
 
     Row(
@@ -260,6 +292,7 @@ private val AppointmentInviteMemberStatus.labelRes: Int
         AppointmentInviteMemberStatus.ACCEPTED -> R.string.invite_member_accepted
         AppointmentInviteMemberStatus.DECLINED -> R.string.invite_member_declined
         AppointmentInviteMemberStatus.WAITING -> R.string.invite_member_waiting
+        AppointmentInviteMemberStatus.UNKNOWN -> R.string.invite_member_unknown
     }
 
 private fun String.subjectParticle(): String {

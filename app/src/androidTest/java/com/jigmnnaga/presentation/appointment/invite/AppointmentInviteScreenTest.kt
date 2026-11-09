@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -94,6 +95,37 @@ class AppointmentInviteScreenTest {
         composeRule.onNodeWithText("약속을 거절했어요").assertExists()
         composeRule.onNodeWithText("홈으로 돌아가기").performClick()
         composeRule.runOnIdle { assertEquals(0, openChat); assertEquals(1, returnHome) }
+    }
+
+    @Test
+    fun submittingStateDisablesBothDecisionButtonsAndShowsProgressLabel() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentInviteScreen(
+                    inviteState().copy(isSubmitting = true),
+                    {}, {}, {}, {}, {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("invite-accept").assertIsNotEnabled()
+        composeRule.onNodeWithTag("invite-decline").assertIsNotEnabled()
+        composeRule.onNodeWithText("처리 중").assertExists()
+    }
+
+    @Test
+    fun failedDecisionShowsRetryableErrorWithoutShowingResultScreen() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentInviteScreen(
+                    inviteState().copy(decisionError = AppointmentInviteDecisionError.REQUEST_FAILED),
+                    {}, {}, {}, {}, {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("요청을 처리하지 못했어요. 다시 시도해 주세요.").assertExists()
+        composeRule.onNodeWithText("약속을 수락했어요!").assertDoesNotExist()
     }
 
     @Test

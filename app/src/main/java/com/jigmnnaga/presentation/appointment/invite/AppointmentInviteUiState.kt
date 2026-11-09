@@ -5,7 +5,10 @@ data class AppointmentInviteUiState(
     val appointmentName: String,
     val inviterName: String,
     val members: List<AppointmentInviteMember>,
-    val result: AppointmentInviteResult = AppointmentInviteResult.PENDING
+    val result: AppointmentInviteResult = AppointmentInviteResult.PENDING,
+    val appointmentId: Long? = null,
+    val isSubmitting: Boolean = false,
+    val decisionError: AppointmentInviteDecisionError? = null
 ) {
     val participatingMemberCount: Int
         get() = members.count {
@@ -23,7 +26,12 @@ enum class AppointmentInviteMemberStatus {
     HOST,
     ACCEPTED,
     DECLINED,
-    WAITING
+    WAITING,
+    UNKNOWN
+}
+
+enum class AppointmentInviteDecisionError {
+    REQUEST_FAILED
 }
 
 /** 결과 화면은 실제 응답을 받은 상위 계층이 전달합니다. */
