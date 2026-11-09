@@ -144,13 +144,14 @@ fun AppointmentCreateScreen(
         }
 
         if (state.step != AppointmentCreateStep.INVITATION) {
-            val ready = state.isReadyForCurrentStep()
+            val ready = state.canContinue()
             val footerPadding = Modifier.padding(
                 start = AppDimens.Spacing20,
                 end = AppDimens.Spacing20,
                 bottom = AppDimens.Spacing16
             )
-            val continueAction: () -> Unit = {
+            val continueAction: () -> Unit = continueAction@{
+                if (!state.canContinue()) return@continueAction
                 focusManager.clearFocus()
                 if (state.step == AppointmentCreateStep.RESPONSE_DEADLINE) {
                     state.toDraftOrNull()?.let(onCreate)
@@ -217,39 +218,6 @@ fun AppointmentCreateScreen(
             }
         )
     }
-}
-private fun AppointmentCreateUiState.isReadyForCurrentStep(): Boolean = when (step) {
-    AppointmentCreateStep.APPOINTMENT_NAME -> appointmentName.isNotBlank()
-    AppointmentCreateStep.SCHEDULE -> when (scheduleType) {
-        AppointmentScheduleType.SINGLE_DAY -> selectedStartDate != null
-        AppointmentScheduleType.DATE_RANGE -> selectedStartDate != null &&
-            selectedEndDate != null && selectedEndDate > selectedStartDate
-        AppointmentScheduleType.SPECIFIC_DATES -> selectedDates.isNotEmpty()
-        null -> false
-    }
-    AppointmentCreateStep.LOCATIONS -> selectedLocations.isNotEmpty()
-    AppointmentCreateStep.RESPONSE_DEADLINE -> when (deadlineChoice) {
-        AppointmentDeadlineChoice.CUSTOM_DATE -> customDeadline != null
-        null -> false
-        else -> true
-    }
-    AppointmentCreateStep.INVITATION -> false
-}
-
-private fun AppointmentCreateUiState.toDraftOrNull(): AppointmentCreateDraft? {
-    val selectedSchedule = scheduleType ?: return null
-    val selectedDeadline = deadlineChoice ?: return null
-    if (!isReadyForCurrentStep()) return null
-    return AppointmentCreateDraft(
-        name = appointmentName,
-        scheduleType = selectedSchedule,
-        startDate = selectedStartDate,
-        endDate = selectedEndDate,
-        specificDates = selectedDates,
-        locations = selectedLocations,
-        deadlineChoice = selectedDeadline,
-        customDeadline = customDeadline
-    )
 }
 
 @Composable
@@ -615,8 +583,6 @@ private fun AppointmentLocationsStep(
         }
     }
 }
-
-private const val MAX_SELECTED_LOCATIONS = 5
 
 @Composable
 private fun LocationCandidateCard(
