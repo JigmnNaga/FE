@@ -14,4 +14,13 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
+    <string name="final_confirmation_header">약속 최종 확인</string>
+    <string name="final_confirmation_date">날짜</string>
+    <string name="final_confirmation_time">시간</string>
+    <string name="final_confirmation_place">장소</string>
+    <string name="final_confirmation_detail_location">세부 위치</string>
+    <string name="final_confirmation_attendance_question">참석할 수 있어요?</string>
+    <string name="final_confirmation_attending">참석</string>
+    <string name="final_confirmation_not_attending">불참</string>
+    <string name="final_confirmation_confirm">확인할게요</string>
 </resources>
