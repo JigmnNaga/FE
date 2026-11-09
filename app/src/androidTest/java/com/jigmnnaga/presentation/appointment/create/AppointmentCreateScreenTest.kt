@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -151,6 +152,38 @@ class AppointmentCreateScreenTest {
     }
 
     @Test
+    fun invalidDirectDateKeepsCreateButtonDisabledAndDoesNotCreateDraft() {
+        val state = AppointmentCreateUiState(
+            step = AppointmentCreateStep.RESPONSE_DEADLINE,
+            appointmentName = "모임",
+            scheduleType = AppointmentScheduleType.SINGLE_DAY,
+            selectedStartDate = AppointmentDate(2026, 2, 30),
+            selectedLocations = listOf(AppointmentLocation("강남역", "주소")),
+            deadlineChoice = AppointmentDeadlineChoice.ONE_DAY
+        )
+        var createCallbackCount = 0
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentCreateScreen(
+                    state = state,
+                    onStateChange = {},
+                    onBack = {},
+                    onNext = {},
+                    onCreate = { createCallbackCount++ },
+                    onShare = { _, _ -> },
+                    onDismissCopyConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("appointment-next").assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertNull(state.toDraftOrNull())
+            assertEquals(0, createCallbackCount)
+        }
+    }
+
+    @Test
     fun locationPickerAllowsAtMostFiveSelectedCandidates() {
         val candidates = (1..6).map { AppointmentLocation("장소 $it", "주소 $it") }
         val state = mutableStateOf(
@@ -238,8 +271,42 @@ class AppointmentCreateScreenTest {
         }
 
         composeRule.onNodeWithTag("appointment-copy-link").performClick()
+        composeRule.onNodeWithTag("appointment-share-kakao").performClick()
         composeRule.runOnIdle {
-            assertEquals(listOf(AppointmentShareAction.COPY_LINK to inviteLink), actions)
+            assertEquals(
+                listOf(
+                    AppointmentShareAction.COPY_LINK to inviteLink,
+                    AppointmentShareAction.KAKAO_TALK to inviteLink
+                ),
+                actions
+            )
         }
+    }
+
+    @Test
+    fun existingInviteLinkCanBeSharedAgainForReinviting() {
+        val inviteLink = "https://example.invalid/issued-link"
+        val state = AppointmentCreateUiState(
+            step = AppointmentCreateStep.INVITATION,
+            inviteLink = inviteLink
+        )
+        val sharedLinks = mutableListOf<String>()
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentCreateScreen(
+                    state = state,
+                    onStateChange = {},
+                    onBack = {},
+                    onNext = {},
+                    onCreate = {},
+                    onShare = { _, link -> sharedLinks += link },
+                    onDismissCopyConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("appointment-share-kakao").performClick()
+        composeRule.onNodeWithTag("appointment-share-kakao").performClick()
+        composeRule.runOnIdle { assertEquals(listOf(inviteLink, inviteLink), sharedLinks) }
     }
 }
