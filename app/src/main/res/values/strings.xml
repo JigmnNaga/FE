@@ -14,22 +14,6 @@
     <string name="schedule_description">일정</string>
     <string name="place_description">장소</string>
     <string name="more_description">더보기</string>
-<<<<<<< HEAD
-    <string name="host_room_tab_chat">채팅</string>
-    <string name="host_room_tab_map_status">지도 · 현황</string>
-    <string name="host_room_summary_title">약속 정보</string>
-    <string name="host_room_summary_expand">약속 정보 펼치기</string>
-    <string name="host_room_summary_collapse">약속 정보 접기</string>
-    <string name="host_room_date_label">날짜·시간</string>
-    <string name="host_room_place_label">장소</string>
-    <string name="host_room_response_title">날짜·시간 선택 현황</string>
-    <string name="host_room_response_count">%1$d/%2$d명</string>
-    <string name="host_room_response_done_count">선택 완료 · %1$d명</string>
-    <string name="host_room_response_pending_count">미응답 · %1$d명</string>
-    <string name="host_room_participants_title">참여 멤버 현황</string>
-    <string name="host_room_host_badge">방장</string>
-    <string name="host_room_map_not_connected">지도 SDK 연결 영역</string>
-=======
     <string name="invite_headline">%1$s%2$s 약속에 초대했어요</string>
     <string name="invite_participant_count">%1$d명이 참여했어요</string>
     <string name="invite_members_heading">현재 참여 멤버 %1$d명</string>
@@ -129,5 +113,19 @@
     <string name="invite_load_failed_title">초대 정보를 불러오지 못했어요</string>
     <string name="invite_load_failed_message">네트워크를 확인한 뒤 다시 시도해 주세요.</string>
     <string name="invite_retry">다시 시도</string>
->>>>>>> origin/dev
+
+    <string name="host_room_tab_chat">채팅</string>
+    <string name="host_room_tab_map_status">지도 · 현황</string>
+    <string name="host_room_summary_title">약속 정보</string>
+    <string name="host_room_summary_expand">약속 정보 펼치기</string>
+    <string name="host_room_summary_collapse">약속 정보 접기</string>
+    <string name="host_room_date_label">날짜·시간</string>
+    <string name="host_room_place_label">장소</string>
+    <string name="host_room_response_title">날짜·시간 선택 현황</string>
+    <string name="host_room_response_count">%1$d/%2$d명</string>
+    <string name="host_room_response_done_count">선택 완료 · %1$d명</string>
+    <string name="host_room_response_pending_count">미응답 · %1$d명</string>
+    <string name="host_room_participants_title">참여 멤버 현황</string>
+    <string name="host_room_host_badge">방장</string>
+    <string name="host_room_map_not_connected">지도 SDK 연결 영역</string>
 </resources>
