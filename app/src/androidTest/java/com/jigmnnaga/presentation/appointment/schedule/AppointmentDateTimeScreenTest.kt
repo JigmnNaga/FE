@@ -91,7 +91,7 @@ class AppointmentDateTimeScreenTest {
             JigmnnagaTheme {
                 AppointmentDateTimeScreen(
                     state = state,
-                    onBack = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
+                    onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
                     onStartTimeClick = {
                         state = state.copy(
                             timePicker = TimePickerUiState(
@@ -133,6 +133,41 @@ class AppointmentDateTimeScreenTest {
     }
 
     @Test
+    fun statusCardExpansionIsOwnedByCallback() {
+        var state by mutableStateOf(
+            dateState().copy(
+                memberResponses = listOf(
+                    MemberResponseUiState("1", "태양", MemberResponseStatus.COMPLETED),
+                    MemberResponseUiState("2", "나", MemberResponseStatus.PENDING, isMe = true),
+                    MemberResponseUiState("3", "하은", MemberResponseStatus.PENDING)
+                )
+            )
+        )
+
+        composeRule.setContent {
+            JigmnnagaTheme {
+                screen(
+                    state = state,
+                    onStatusToggle = { state = state.copy(isStatusExpanded = !state.isStatusExpanded) }
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("1명 선택 완료", substring = true).assertExists()
+        composeRule.onNodeWithText("2명 더 선택하면 돼요!", substring = true).assertExists()
+        composeRule.onNodeWithText("날짜·시간 선택 현황", substring = true).assertDoesNotExist()
+
+        composeRule.onNodeWithContentDescription("선택 현황 펼치기").performClick()
+
+        composeRule.onNodeWithText("날짜·시간 선택 현황", substring = true).assertExists()
+        composeRule.onNodeWithText("1/3명", substring = true).assertExists()
+        composeRule.onNodeWithText("선택 완료 · 1명", substring = true).assertExists()
+        composeRule.onNodeWithText("미완료 · 2명", substring = true).assertExists()
+        composeRule.onNodeWithText("태양", substring = true).assertExists()
+        composeRule.onNodeWithText("하은", substring = true).assertExists()
+    }
+
+    @Test
     fun narrowLayoutKeepsCoreControlsAvailableAtLargerFontScales() {
         var currentScale by mutableFloatStateOf(1f)
         composeRule.setContent {
@@ -141,7 +176,7 @@ class AppointmentDateTimeScreenTest {
                     Box(Modifier.width(320.dp).height(720.dp)) {
                         AppointmentDateTimeScreen(
                             state = dateState(),
-                            onBack = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
+                            onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
                             onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
                             onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},
                             onNext = {}, onGoToChat = {}
@@ -162,12 +197,13 @@ class AppointmentDateTimeScreenTest {
     private fun screen(
         state: AppointmentDateTimeUiState,
         onDateToggle: (AppointmentDateValue) -> Unit = {},
+        onStatusToggle: () -> Unit = {},
         onNext: () -> Unit = {},
         onGoToChat: () -> Unit = {}
     ) {
         AppointmentDateTimeScreen(
             state = state,
-            onBack = {}, onMonthChange = {}, onDateToggle = onDateToggle, onActiveDateSelect = {},
+            onBack = {}, onStatusToggle = onStatusToggle, onMonthChange = {}, onDateToggle = onDateToggle, onActiveDateSelect = {},
             onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
             onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},
             onNext = onNext, onGoToChat = onGoToChat
@@ -176,7 +212,6 @@ class AppointmentDateTimeScreenTest {
 
     private fun dateState() = AppointmentDateTimeUiState(
         appointmentTitle = "중간고사 카공 모임",
-        completionStatusLabel = "1명 선택 완료",
         displayedMonth = AppointmentCalendarMonth(2026, 9)
     )
 }

@@ -1,6 +1,8 @@
 package com.jigmnnaga.presentation.appointment.schedule
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -75,6 +77,7 @@ import com.jigmnnaga.core.designsystem.component.BackHeader
 fun AppointmentDateTimeScreen(
     state: AppointmentDateTimeUiState,
     onBack: () -> Unit,
+    onStatusToggle: () -> Unit,
     onMonthChange: (AppointmentCalendarMonth) -> Unit,
     onDateToggle: (AppointmentDateValue) -> Unit,
     onActiveDateSelect: (AppointmentDateValue) -> Unit,
@@ -95,8 +98,8 @@ fun AppointmentDateTimeScreen(
     ) {
         BackHeader(title = state.appointmentTitle, onBackClick = onBack)
 
-        if (state.step != AppointmentDateTimeStep.COMPLETE) {
-            SelectionStatus(state.completionStatusLabel)
+        if (state.step != AppointmentDateTimeStep.COMPLETE && state.memberResponses.isNotEmpty()) {
+            MemberSelectionStatus(state = state, onToggle = onStatusToggle)
         }
 
         when (state.step) {
@@ -158,25 +161,234 @@ fun AppointmentDateTimeScreen(
 }
 
 @Composable
-private fun SelectionStatus(label: String) {
-    Row(
-        modifier = Modifier
+private fun MemberSelectionStatus(
+    state: AppointmentDateTimeUiState,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing8),
-        horizontalArrangement = Arrangement.End
+            .padding(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing8)
     ) {
+        StatusSummaryBar(state = state, onToggle = onToggle)
+        if (state.isStatusExpanded) {
+            Spacer(Modifier.height(AppDimens.Spacing8))
+            StatusDetailCard(state = state)
+        }
+    }
+}
+
+@Composable
+private fun StatusSummaryBar(
+    state: AppointmentDateTimeUiState,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val completedCount = state.completedMembers.size
+    val pendingCount = state.pendingMembers.size
+    val toggleLabel = stringResource(
+        if (state.isStatusExpanded) R.string.appointment_schedule_status_collapse
+        else R.string.appointment_schedule_status_expand
+    )
+    val progressLabel = stringResource(
+        if (state.step == AppointmentDateTimeStep.DATES) R.string.appointment_schedule_status_date_in_progress
+        else R.string.appointment_schedule_status_time_in_progress
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppColors.Monotone.White)
+            .border(1.dp, AppColors.Monotone.Gray200, shape)
+            .clickable(onClickLabel = toggleLabel, role = Role.Button, onClick = onToggle)
+            .padding(AppDimens.Spacing12),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+            state.memberResponses.take(4).forEach { member ->
+                MemberAvatar(member = member)
+            }
+        }
+        Spacer(Modifier.width(AppDimens.Spacing12))
+        Column(modifier = Modifier.weight(1f)) {
+            if (pendingCount == 0) {
+                Text(
+                    text = stringResource(R.string.appointment_schedule_status_all_completed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.Monotone.Gray900
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.appointment_schedule_status_completed_title, completedCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = AppColors.Monotone.Gray900
+                )
+                Text(
+                    text = stringResource(R.string.appointment_schedule_status_remaining_title, pendingCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = AppColors.Monotone.Gray600
+                )
+            }
+        }
         Surface(
             shape = RoundedCornerShape(50),
-            color = AppColors.MainGreen.Green200,
-            border = BorderStroke(1.dp, AppColors.Monotone.Gray200)
+            color = AppColors.SubYellow.Yellow200
         ) {
             Text(
-                text = label,
+                text = progressLabel,
                 style = MaterialTheme.typography.labelSmall,
-                color = AppColors.Monotone.Gray600,
+                color = AppColors.SubYellow.Yellow700,
                 modifier = Modifier.padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4)
             )
         }
+        Spacer(Modifier.width(AppDimens.Spacing8))
+        Image(
+            painter = painterResource(
+                if (state.isStatusExpanded) R.drawable.chevron_up else R.drawable.chevron_down
+            ),
+            contentDescription = toggleLabel,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun StatusDetailCard(
+    state: AppointmentDateTimeUiState,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(16.dp)
+    val completed = state.completedMembers
+    val pending = state.pendingMembers
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(AppColors.Monotone.White)
+            .border(1.dp, AppColors.Monotone.Gray200, shape)
+            .padding(AppDimens.Spacing16)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.appointment_schedule_status_card_title),
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.Monotone.Gray900
+            )
+            Surface(
+                shape = RoundedCornerShape(50),
+                color = AppColors.MainGreen.Green200
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.appointment_schedule_status_count_badge,
+                        completed.size,
+                        state.memberResponses.size
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.MainGreen.Green900,
+                    modifier = Modifier.padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4)
+                )
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = AppDimens.Spacing12),
+            verticalAlignment = Alignment.Top
+        ) {
+            MemberGroup(
+                title = stringResource(R.string.appointment_schedule_status_completed_group, completed.size),
+                members = completed,
+                modifier = Modifier.weight(1f)
+            )
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.Spacing12)
+                    .width(1.dp)
+                    .height(64.dp)
+                    .background(AppColors.Monotone.Gray200)
+            )
+            MemberGroup(
+                title = stringResource(R.string.appointment_schedule_status_pending_group, pending.size),
+                members = pending,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        Text(
+            text = stringResource(R.string.appointment_schedule_status_footer),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.Monotone.Gray500,
+            modifier = Modifier.padding(top = AppDimens.Spacing12)
+        )
+    }
+}
+
+@Composable
+private fun MemberGroup(
+    title: String,
+    members: List<MemberResponseUiState>,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.Monotone.Gray600
+        )
+        Row(
+            modifier = Modifier
+                .padding(top = AppDimens.Spacing8)
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+        ) {
+            members.forEach { member ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    MemberAvatar(member = member)
+                    Text(
+                        text = member.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.Monotone.Gray700,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = AppDimens.Spacing4)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemberAvatar(
+    member: MemberResponseUiState,
+    modifier: Modifier = Modifier
+) {
+    val background = when {
+        member.isMe -> AppColors.MainGreen.Green900
+        member.status == MemberResponseStatus.COMPLETED -> AppColors.MainGreen.Green400
+        else -> AppColors.Monotone.Gray300
+    }
+    Box(
+        modifier = modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(background)
+            .border(2.dp, AppColors.Monotone.White, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = member.initial,
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.Monotone.White
+        )
     }
 }
 
@@ -822,7 +1034,7 @@ private fun AppointmentDateTimeDatePreview() {
     JigmnnagaTheme {
         AppointmentDateTimeScreen(
             state = previewDateTimeState(),
-            onBack = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
+            onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
             onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
             onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},
             onNext = {}, onGoToChat = {}
@@ -844,7 +1056,7 @@ private fun AppointmentDateTimeTimePreview() {
                 selectedTimeRange = AppointmentTimeRange(AppointmentTimeValue(12, 0), AppointmentTimeValue(17, 0)),
                 selectedQuickTimeIds = setOf("afternoon")
             ),
-            onBack = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
+            onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
             onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
             onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},
             onNext = {}, onGoToChat = {}
@@ -854,12 +1066,17 @@ private fun AppointmentDateTimeTimePreview() {
 
 private fun previewDateTimeState() = AppointmentDateTimeUiState(
     appointmentTitle = "중간고사 카공 모임",
-    completionStatusLabel = "1명 선택 완료",
     displayedMonth = AppointmentCalendarMonth(2026, 9),
     selectedDates = setOf(AppointmentDateValue(2026, 9, 5)),
     canAdvance = true,
     quickTimeOptions = previewQuickTimes(),
-    completionMemberLabels = listOf("나", "태양", "하루 대기")
+    completionMemberLabels = listOf("나", "태양", "하루 대기"),
+    memberResponses = listOf(
+        MemberResponseUiState("1", "태양", MemberResponseStatus.COMPLETED),
+        MemberResponseUiState("2", "나", MemberResponseStatus.PENDING, isMe = true),
+        MemberResponseUiState("3", "하은", MemberResponseStatus.PENDING)
+    ),
+    isStatusExpanded = true
 )
 
 private fun previewQuickTimes() = listOf(

@@ -176,6 +176,18 @@
 <string name="appointment_schedule_complete_title">약속 일정 선택을 완료했어요</string>
 <string name="appointment_schedule_complete_description">방장이 약속 시간과 장소를 확정하면 일정으로 알려드릴게요</string>
 <string name="appointment_schedule_completion_status">완전 선택 현황</string>
+    <string name="appointment_schedule_status_completed_title">%1$d명 선택 완료</string>
+    <string name="appointment_schedule_status_remaining_title">%1$d명 더 선택하면 돼요!</string>
+    <string name="appointment_schedule_status_all_completed">모두 선택을 완료했어요!</string>
+    <string name="appointment_schedule_status_date_in_progress">날짜 선택중</string>
+    <string name="appointment_schedule_status_time_in_progress">시간 선택중</string>
+    <string name="appointment_schedule_status_card_title">날짜·시간 선택 현황</string>
+    <string name="appointment_schedule_status_count_badge">%1$d/%2$d명</string>
+    <string name="appointment_schedule_status_completed_group">선택 완료 · %1$d명</string>
+    <string name="appointment_schedule_status_pending_group">미완료 · %1$d명</string>
+    <string name="appointment_schedule_status_footer">조율 중 · 저장된 응답만 시간표에 반영돼요.</string>
+    <string name="appointment_schedule_status_expand">선택 현황 펼치기</string>
+    <string name="appointment_schedule_status_collapse">선택 현황 접기</string>
 <string-array name="appointment_schedule_weekdays">
         <item>일</item>
         <item>월</item>
