@@ -1,4 +1,4 @@
-package com.jigmnnaga.features.placevote
+package com.jigmnnaga.presentation.appointment.placevote
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -25,6 +25,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
@@ -218,13 +220,13 @@ private fun SearchGlyph(modifier: Modifier = Modifier) {
         drawCircle(
             color = AppColors.Monotone.Gray700,
             radius = size.minDimension * 0.3f,
-            center = androidx.compose.ui.geometry.Offset(size.width * 0.42f, size.height * 0.42f),
+            center = Offset(size.width * 0.42f, size.height * 0.42f),
             style = Stroke(width = stroke)
         )
         drawLine(
             color = AppColors.Monotone.Gray700,
-            start = androidx.compose.ui.geometry.Offset(size.width * 0.64f, size.height * 0.64f),
-            end = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.9f),
+            start = Offset(size.width * 0.64f, size.height * 0.64f),
+            end = Offset(size.width * 0.9f, size.height * 0.9f),
             strokeWidth = stroke,
             cap = StrokeCap.Round
         )
@@ -341,7 +343,7 @@ private fun SelectionMark(selected: Boolean) {
     ) {
         if (selected) {
             Canvas(Modifier.size(12.dp)) {
-                val path = androidx.compose.ui.graphics.Path().apply {
+                val path = Path().apply {
                     moveTo(size.width * 0.18f, size.height * 0.52f)
                     lineTo(size.width * 0.42f, size.height * 0.76f)
                     lineTo(size.width * 0.84f, size.height * 0.24f)

@@ -1,4 +1,4 @@
-package com.jigmnnaga.features.appointment.hostconfirmation
+package com.jigmnnaga.presentation.appointment.hostconfirmation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -297,13 +298,13 @@ private fun CompleteContent(modifier: Modifier = Modifier) {
             text = stringResource(R.string.host_confirmation_complete_title),
             style = MaterialTheme.typography.titleMedium,
             color = AppColors.Monotone.SoftBlack,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
         Text(
             text = stringResource(R.string.host_confirmation_complete_message),
             style = MaterialTheme.typography.bodyMedium,
             color = AppColors.Monotone.Gray700,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            textAlign = TextAlign.Center
         )
     }
 }

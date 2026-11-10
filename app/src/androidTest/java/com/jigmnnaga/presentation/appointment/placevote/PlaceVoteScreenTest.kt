@@ -1,11 +1,11 @@
-package com.jigmnnaga.features.placevote
+package com.jigmnnaga.presentation.appointment.placevote
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -124,7 +124,7 @@ class PlaceVoteScreenTest {
             val baseDensity = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(baseDensity.density, fontScale.floatValue)) {
                 JigmnnagaTheme {
-                    androidx.compose.foundation.layout.Box(Modifier.width(320.dp)) {
+                    Box(Modifier.width(320.dp)) {
                         PlaceVoteScreen(
                             state = PlaceVoteUiState(
                                 role = PlaceVoteRole.PARTICIPANT,
