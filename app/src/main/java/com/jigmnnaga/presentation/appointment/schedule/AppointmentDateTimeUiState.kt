@@ -76,11 +76,24 @@ data class TimePickerUiState(
     val selectedTime: AppointmentTimeValue
 )
 
+enum class MemberResponseStatus {
+    COMPLETED,
+    PENDING
+}
+
+data class MemberResponseUiState(
+    val id: String,
+    val name: String,
+    val status: MemberResponseStatus,
+    val isMe: Boolean = false
+) {
+    val initial: String get() = name.take(1)
+}
+
 /** UI-only state. Availability and selection rules are supplied by the owning feature. */
 data class AppointmentDateTimeUiState(
     val step: AppointmentDateTimeStep = AppointmentDateTimeStep.DATES,
     val appointmentTitle: String,
-    val completionStatusLabel: String,
     val displayedMonth: AppointmentCalendarMonth,
     val selectedDates: Set<AppointmentDateValue> = emptySet(),
     val activeDate: AppointmentDateValue? = null,
@@ -88,7 +101,15 @@ data class AppointmentDateTimeUiState(
     val quickTimeOptions: List<QuickTimeOptionUiState> = emptyList(),
     val selectedQuickTimeIds: Set<String> = emptySet(),
     val completionMemberLabels: List<String> = emptyList(),
+    val memberResponses: List<MemberResponseUiState> = emptyList(),
+    val isStatusExpanded: Boolean = false,
     val timePicker: TimePickerUiState? = null,
     val canAdvance: Boolean = false,
     val errorMessage: String? = null
-)
+) {
+    val completedMembers: List<MemberResponseUiState>
+        get() = memberResponses.filter { it.status == MemberResponseStatus.COMPLETED }
+
+    val pendingMembers: List<MemberResponseUiState>
+        get() = memberResponses.filter { it.status == MemberResponseStatus.PENDING }
+}
