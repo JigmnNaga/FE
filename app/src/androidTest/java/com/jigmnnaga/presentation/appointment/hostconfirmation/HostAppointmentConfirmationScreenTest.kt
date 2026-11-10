@@ -1,4 +1,4 @@
-package com.jigmnnaga.features.appointment.hostconfirmation
+package com.jigmnnaga.presentation.appointment.hostconfirmation
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
