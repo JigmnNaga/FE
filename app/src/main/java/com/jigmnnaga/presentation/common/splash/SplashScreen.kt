@@ -1,7 +1,6 @@
 
 package com.jigmnnaga.presentation.common.splash
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -13,44 +12,44 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.component.AppButton
 import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.common.LogoSection
 
 @Composable
 fun SplashScreen(
     onStartClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    BoxWithConstraints(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(AppColors.MainGreen.Green200)
     ) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
         val isSmallScreen = maxHeight < 700.dp
 
-        val logoSize = if (isSmallScreen) 72.dp else 100.dp
-        val logoOffsetX = if (isSmallScreen) 6.dp else 9.dp
-        val logoTextWidth = if (isSmallScreen) 112.dp else 148.dp
-        val logoTextHeight = if (isSmallScreen) 33.dp else 44.dp
-
-        val logoSpacing = if (isSmallScreen) 10.dp else AppDimens.Spacing16
         val featureSpacing = if (isSmallScreen) 28.dp else 50.dp
         val tagSpacing = if (isSmallScreen) 8.dp else AppDimens.Spacing12
         val buttonBottomPadding = if (isSmallScreen) 55.dp else 100.dp
@@ -62,36 +61,7 @@ fun SplashScreen(
                 .padding(horizontal = AppDimens.Spacing20),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.drawable.logo_mark),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(logoSize)
-                    .offset(x = logoOffsetX)
-            )
-
-            Spacer(Modifier.height(logoSpacing))
-
-            Image(
-                painter = painterResource(R.drawable.logo_text),
-                contentDescription = "지금 나가",
-                modifier = Modifier.size(
-                    width = logoTextWidth,
-                    height = logoTextHeight
-                )
-            )
-
-            Spacer(Modifier.height(if (isSmallScreen) 4.dp else 5.dp))
-
-            Text(
-                text = "약속, 이제 묻지 않아도 돼요",
-                style = if (isSmallScreen) {
-                    MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp)
-                } else {
-                    MaterialTheme.typography.bodySmall
-                },
-                color = AppColors.MainGreen.Green900
-            )
+            LogoSection(isSmallScreen = isSmallScreen)
 
             Spacer(Modifier.height(featureSpacing))
 
@@ -125,6 +95,7 @@ fun SplashScreen(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = buttonBottomPadding)
         )
+    }
     }
 }
 
