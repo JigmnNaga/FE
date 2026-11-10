@@ -1,4 +1,4 @@
-package com.jigmnnaga.features.appointment.hostconfirmation
+package com.jigmnnaga.presentation.appointment.hostconfirmation
 
 /** The visible part of the host-only final appointment confirmation flow. */
 enum class HostConfirmationStep {
