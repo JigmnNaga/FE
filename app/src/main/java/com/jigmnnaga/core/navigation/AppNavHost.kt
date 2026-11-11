@@ -14,6 +14,17 @@ import androidx.navigation.compose.rememberNavController
  * The start destination and route types are supplied by the app/feature layer so this foundation
  * does not choose an authentication flow or product route policy. Destinations should pass
  * [AppNavigator] callbacks to screen composables instead of exposing a [NavHostController] there.
+ *
+ * 이동 정책
+ * - 시스템 UI: MainActivity가 edge-to-edge를 켠다. 이 호스트는 Scaffold나 inset을 입히지 않으며,
+ *   상태바·내비게이션 바·키보드(IME) inset은 각 화면(부모 Screen)이 처리한다. BottomNavigationBar 같은
+ *   공통 컴포넌트는 자기 영역만 담당한다.
+ * - 약속방: 목적지는 약속 ID만 인자로 받는다. 방장/참여자 화면은 약속 상세 조회의 내 역할(myRole)로
+ *   화면 안에서 결정하고, 역할을 Route 인자로 넘기지 않는다(역할이 바뀌어도 오래된 값이 남지 않도록).
+ * - 초대 링크: 링크에서 꺼낸 초대 코드를 초대 수락 목적지의 인자로 전달한다. 링크 형식과 앱 진입
+ *   설정은 초대 수락 기능(#49)에서 확정한다.
+ * - 로그인이 필요한 목적지: 로그인 후 원래 가려던 목적지로 돌아온다. 복귀 연결은 #49와 카카오 로그인
+ *   기능(#24)에서 구현한다.
  */
 @Composable
 fun AppNavHost(
