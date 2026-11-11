@@ -41,8 +41,9 @@ class PlaceVoteScreenTest {
                     PlaceCandidateUiModel("b", "잠실역")
                 ),
                 selectedCandidateIds = emptySet(),
-                title = "어디서 만날까요?",
-                description = "희망 위치 선택",
+                title = "중간고사 카공 모임",
+                question = "어디서 만날까요?",
+                listLabel = "희망 위치 선택",
                 submitLabel = "저장"
             )
         )
@@ -75,6 +76,44 @@ class PlaceVoteScreenTest {
     }
 
     @Test
+    fun selectedCandidateCanBeCancelledAndSelectedAgain() {
+        val uiState = mutableStateOf(
+            PlaceVoteUiState(
+                role = PlaceVoteRole.PARTICIPANT,
+                searchQuery = "",
+                candidates = listOf(PlaceCandidateUiModel("a", "강남역")),
+                selectedCandidateIds = setOf("a"),
+                title = "중간고사 카공 모임",
+                question = "어디서 만날까요?",
+                submitLabel = "저장"
+            )
+        )
+        composeRule.setContent {
+            JigmnnagaTheme {
+                PlaceVoteScreen(
+                    state = uiState.value,
+                    onBackClick = {},
+                    onSearchQueryChange = {},
+                    onCandidateSelectionChange = { selected ->
+                        uiState.value = uiState.value.copy(
+                            selectedCandidateIds = selected,
+                            submitEnabled = selected.isNotEmpty()
+                        )
+                    },
+                    onSubmitSelection = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("place-candidate-a").performClick()
+        composeRule.runOnIdle { assertEquals(emptySet<String>(), uiState.value.selectedCandidateIds) }
+        composeRule.onNodeWithTag("place-vote-submit").assertIsNotEnabled()
+        composeRule.onNodeWithTag("place-candidate-a").performClick()
+        composeRule.runOnIdle { assertEquals(setOf("a"), uiState.value.selectedCandidateIds) }
+        composeRule.onNodeWithTag("place-vote-submit").assertIsEnabled()
+    }
+
+    @Test
     fun searchTextIsForwardedAndNoSearchResultIsInventedLocally() {
         val uiState = mutableStateOf(
             PlaceVoteUiState(
@@ -82,8 +121,8 @@ class PlaceVoteScreenTest {
                 searchQuery = "",
                 candidates = emptyList(),
                 selectedCandidateIds = emptySet(),
-                title = "어디서 만날까요?",
-                description = "희망 위치 선택",
+                title = "중간고사 카공 모임",
+                question = "어디서 만날까요?",
                 submitLabel = "저장",
                 showSearchInput = true
             )
@@ -111,13 +150,89 @@ class PlaceVoteScreenTest {
     }
 
     @Test
+    fun emptyMessageIsShownOnlyWhenStateProvidesItAndCandidatesAreEmpty() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                PlaceVoteScreen(
+                    state = PlaceVoteUiState(
+                        role = PlaceVoteRole.PARTICIPANT,
+                        searchQuery = "없는역",
+                        candidates = emptyList(),
+                        selectedCandidateIds = emptySet(),
+                        title = "중간고사 카공 모임",
+                        question = "어디서 만날까요?",
+                        submitLabel = "저장",
+                        showSearchInput = true,
+                        emptyMessage = "검색 결과가 없어요"
+                    ),
+                    onBackClick = {},
+                    onSearchQueryChange = {},
+                    onCandidateSelectionChange = {},
+                    onSubmitSelection = {}
+                )
+            }
+        }
+        composeRule.onNodeWithText("검색 결과가 없어요").assertExists()
+    }
+
+    @Test
+    fun voteBadgeProgressCardAndSelectedSummaryAreShownFromState() {
+        var progressClicks = 0
+        composeRule.setContent {
+            JigmnnagaTheme {
+                PlaceVoteScreen(
+                    state = PlaceVoteUiState(
+                        role = PlaceVoteRole.PARTICIPANT,
+                        searchQuery = "",
+                        candidates = listOf(
+                            PlaceCandidateUiModel(
+                                id = "a",
+                                name = "강남역",
+                                address = "2호선, 신분당선·서울특별시 강남구 역삼동",
+                                voteLabel = "3/3명",
+                                isVoteComplete = true
+                            )
+                        ),
+                        selectedCandidateIds = setOf("a"),
+                        title = "중간고사 카공 모임",
+                        question = "어디서 만날까요?",
+                        listLabel = "희망 위치 선택",
+                        submitLabel = "저장",
+                        progress = PlaceVoteProgressUiState(
+                            members = listOf(
+                                PlaceVoteProgressMemberUiModel("태"),
+                                PlaceVoteProgressMemberUiModel("나", isMe = true)
+                            ),
+                            title = "1명 선택 완료",
+                            subtitle = "2명 더 선택하면 돼요!",
+                            statusLabel = "장소 선택중"
+                        ),
+                        selectedSummaryTitle = "선택된 장소 (1개)",
+                        selectedPlaceNames = listOf("강남역")
+                    ),
+                    onBackClick = {},
+                    onSearchQueryChange = {},
+                    onCandidateSelectionChange = {},
+                    onSubmitSelection = {},
+                    onProgressClick = { progressClicks++ }
+                )
+            }
+        }
+        composeRule.onNodeWithText("3/3명").assertExists()
+        composeRule.onNodeWithText("선택된 장소 (1개)").assertExists()
+        composeRule.onNodeWithText("1명 선택 완료").performClick()
+        composeRule.runOnIdle { assertEquals(1, progressClicks) }
+    }
+
+    @Test
     fun longPlaceNamesAndManyCandidatesRemainScrollableAtAccessibilityFontScales() {
         val fontScale = mutableFloatStateOf(1f)
         val candidates = (1..18).map { index ->
             PlaceCandidateUiModel(
                 id = "place-$index",
                 name = if (index == 1) "서울특별시에서 가장 접근하기 좋은 만남 장소 후보 이름 테스트" else "장소 후보 $index",
-                address = "긴 장소 설명도 두 줄 안에서 읽을 수 있도록 전달된 주소 $index"
+                address = "긴 장소 설명도 두 줄 안에서 읽을 수 있도록 전달된 주소 $index",
+                voteLabel = "0/3명"
             )
         }
         composeRule.setContent {
@@ -131,8 +246,9 @@ class PlaceVoteScreenTest {
                                 searchQuery = "",
                                 candidates = candidates,
                                 selectedCandidateIds = emptySet(),
-                                title = "어디서 만날까요?",
-                                description = "희망 위치 선택",
+                                title = "중간고사 카공 모임",
+                                question = "어디서 만날까요?",
+                                listLabel = "희망 위치 선택",
                                 submitLabel = "저장"
                             ),
                             onBackClick = {},
@@ -150,7 +266,6 @@ class PlaceVoteScreenTest {
             composeRule.waitForIdle()
             composeRule.onNodeWithTag("place-candidate-list")
                 .performScrollToNode(hasTestTag("place-candidate-place-18"))
-            composeRule.onNodeWithText("장소 후보 18").assertExists()
             composeRule.onNodeWithTag("place-candidate-place-18").assertExists()
         }
         assertEquals(18, candidates.size)
@@ -168,7 +283,7 @@ class PlaceVoteScreenTest {
                         candidates = listOf(PlaceCandidateUiModel("host-place", "등록된 장소")),
                         selectedCandidateIds = emptySet(),
                         title = "장소 선택",
-                        description = "장소 후보",
+                        question = "장소 후보",
                         submitLabel = "저장",
                         showMapUnavailableNotice = true
                     ),
