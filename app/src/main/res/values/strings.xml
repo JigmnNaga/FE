@@ -188,6 +188,11 @@
     <string name="appointment_schedule_status_footer">조율 중 · 저장된 응답만 시간표에 반영돼요.</string>
     <string name="appointment_schedule_status_expand">선택 현황 펼치기</string>
     <string name="appointment_schedule_status_collapse">선택 현황 접기</string>
+    <string name="appointment_schedule_heatmap_title">시간표</string>
+    <string name="appointment_schedule_heatmap_unit">1시간 단위</string>
+    <string name="appointment_schedule_heatmap_legend_title">가능 인원</string>
+    <string name="appointment_schedule_heatmap_legend_count">%1$d명</string>
+    <string name="appointment_schedule_heatmap_cell_description">%1$s %2$s %3$d명 가능</string>
 <string-array name="appointment_schedule_weekdays">
         <item>일</item>
         <item>월</item>
