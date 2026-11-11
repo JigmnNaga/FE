@@ -1,4 +1,3 @@
-
 package com.jigmnnaga
 
 import android.os.Bundle
@@ -10,6 +9,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.core.navigation.AppNavHost
 import com.jigmnnaga.core.navigation.AppNavigator
+import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
 import com.jigmnnaga.presentation.common.login.LoginRoute
 import com.jigmnnaga.presentation.common.login.LoginScreen
 import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyRoute
@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
                     composable<PrivacyPolicyRoute> {
                         PrivacyPolicyScreen(onBackClick = { navigator.navigateBack() })
                     }
+                    AppointmentNavigationGraph.register(this, navigator)
                 }
             }
         }
