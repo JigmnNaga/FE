@@ -26,13 +26,14 @@ private val LightColorScheme = lightColorScheme(
 )
 
 /**
- * Applies the light app palette regardless of the system appearance.
- * [darkTheme] and [dynamicColor] remain for source compatibility and are intentionally ignored.
+ * 앱 테마. 현재 디자인은 라이트 모드만 지원하며, 시스템 다크 모드나 동적 색상(Material You)과
+ * 관계없이 항상 라이트 팔레트를 적용한다.
+ *
+ * 다크 모드를 지원하게 되면 공통 컴포넌트에 고정된 색상을 [MaterialTheme.colorScheme]의
+ * 역할별 색상으로 먼저 바꾼 뒤 다크 팔레트를 추가한다.
  */
 @Composable
 fun JigmnnagaTheme(
-    darkTheme: Boolean = false,
-    @Suppress("UNUSED_PARAMETER") dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
