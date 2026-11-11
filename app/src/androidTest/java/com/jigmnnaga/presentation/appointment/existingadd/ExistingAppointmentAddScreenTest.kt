@@ -101,6 +101,33 @@ class ExistingAppointmentAddScreenTest {
     }
 
     @Test
+    fun memberTrailingValueAndCaptionAreShown() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                ExistingAppointmentAddScreen(
+                    state = testState(ExistingAppointmentAddPage.RESCHEDULE).copy(
+                        members = listOf(
+                            ExistingAppointmentMemberUiState(
+                                id = "member-2",
+                                name = "태양",
+                                statusLabel = "도착",
+                                detailLabel = "장소에 도착했어요",
+                                trailingValue = "2분",
+                                trailingCaption = "지각"
+                            )
+                        )
+                    ),
+                    onBackClick = {}, onCalendarClick = {}, onPlaceClick = {}, onMoreClick = {},
+                    onChatTabClick = {}, onMapAndStatusTabClick = {}, onMemberSelectionChange = { _, _ -> },
+                    onRescheduleClick = {}, onRequestClick = {}
+                )
+            }
+        }
+        composeRule.onNodeWithText("2분").assertExists()
+        composeRule.onNodeWithText("지각").assertExists()
+    }
+
+    @Test
     fun requestScreenFitsNarrowWidthAtAccessibleFontScales() {
         val fontScale = mutableFloatStateOf(1f)
         composeRule.setContent {
