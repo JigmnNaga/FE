@@ -86,24 +86,6 @@ fun BottomNavigationBar(
     }
 }
 
-// 기존 HomeScreen 호환용 오버로드. 신규 코드는 enum API 사용.
-@Deprecated("Use the BottomNavigationTab overload instead.")
-@Composable
-fun BottomNavigationBar(
-    selectedTab: String,
-    onHomeClick: () -> Unit,
-    onAddClick: () -> Unit,
-    onScheduleClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val tab = when (selectedTab.lowercase()) {
-        "home" -> BottomNavigationTab.HOME
-        "schedule" -> BottomNavigationTab.SCHEDULE
-        else -> BottomNavigationTab.NONE
-    }
-    BottomNavigationBar(tab, onHomeClick, onAddClick, onScheduleClick, modifier)
-}
-
 @Composable
 private fun BottomNavigationItem(
     label: String,

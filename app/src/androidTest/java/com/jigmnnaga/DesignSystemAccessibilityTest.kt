@@ -301,7 +301,7 @@ class DesignSystemAccessibilityTest {
     }
 
     @Test
-    fun useAppContext() {
+    fun targetContextUsesApplicationId() {
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
         assertEquals(BuildConfig.APPLICATION_ID, appContext.packageName)
     }

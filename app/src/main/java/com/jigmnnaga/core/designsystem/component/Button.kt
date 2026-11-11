@@ -56,10 +56,18 @@ fun AppButton(
     } else {
         RoundedCornerShape(AppDimens.ButtonCornerRadius)
     }
+    // SECONDARY는 활성 상태가 이미 회색이라, 비활성은 더 옅은 배경과 글자색으로 구분한다.
+    val isDisabledSecondary = !enabled && variant == ButtonVariant.SECONDARY
     val backgroundColor = when {
+        isDisabledSecondary -> AppColors.Monotone.Gray100
         !enabled -> AppColors.Monotone.Gray400
         variant == ButtonVariant.SECONDARY -> AppColors.Monotone.Gray400
         else -> AppColors.MainGreen.Green900
+    }
+    val textColor = if (isDisabledSecondary) {
+        AppColors.Monotone.Gray400
+    } else {
+        AppColors.MainGreen.Green200
     }
     val startTextWidth = if (variant == ButtonVariant.START) {
         val textLayout = rememberTextMeasurer().measure(
@@ -70,9 +78,9 @@ fun AppButton(
         with(LocalDensity.current) {
             val measuredWidth =
                 textLayout.size.width.toDp() +
-                    AppDimens.Spacing40 * 2 +
-                    AppDimens.StartButtonArrowGap +
-                    AppDimens.StartButtonArrowSize
+                        AppDimens.Spacing40 * 2 +
+                        AppDimens.StartButtonArrowGap +
+                        AppDimens.StartButtonArrowSize
             ceil(measuredWidth.toPx()).toInt().toDp().coerceAtLeast(AppDimens.StartButtonWidth)
         }
     } else {
@@ -96,7 +104,7 @@ fun AppButton(
         modifier = sizeModifier,
         shape = shape,
         color = backgroundColor,
-        contentColor = AppColors.MainGreen.Green200
+        contentColor = textColor
     ) {
         Box(
             modifier = Modifier
@@ -176,6 +184,12 @@ private fun AppButtonPreview() {
             AppButton(text = "비활성화", variant = ButtonVariant.DEFAULT, enabled = false, onClick = {})
             AppButton(text = "PRIMARY", variant = ButtonVariant.PRIMARY, onClick = {})
             AppButton(text = "SECONDARY", variant = ButtonVariant.SECONDARY, onClick = {})
+            AppButton(
+                text = "SECONDARY 비활성",
+                variant = ButtonVariant.SECONDARY,
+                enabled = false,
+                onClick = {}
+            )
         }
     }
 }
