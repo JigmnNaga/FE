@@ -1,6 +1,6 @@
 package com.jigmnnaga.core.designsystem.component
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,18 +19,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
@@ -78,7 +74,8 @@ fun AppButton(
         with(LocalDensity.current) {
             val measuredWidth =
                 textLayout.size.width.toDp() +
-                        AppDimens.Spacing40 * 2 +
+                        AppDimens.Spacing40 +
+                        AppDimens.StartButtonEndPadding +
                         AppDimens.StartButtonArrowGap +
                         AppDimens.StartButtonArrowSize
             ceil(measuredWidth.toPx()).toInt().toDp().coerceAtLeast(AppDimens.StartButtonWidth)
@@ -96,6 +93,11 @@ fun AppButton(
         ButtonVariant.DEFAULT -> modifier
             .fillMaxWidth()
             .heightIn(min = AppDimens.ButtonHeight)
+    }
+    val verticalPadding = if (variant == ButtonVariant.START) {
+        AppDimens.Spacing16
+    } else {
+        AppDimens.Spacing12
     }
 
     Surface(
@@ -116,16 +118,18 @@ fun AppButton(
                     }
                 )
                 .padding(
-                    horizontal = if (variant == ButtonVariant.START) {
+                    start = if (variant == ButtonVariant.START) {
                         AppDimens.Spacing40
                     } else {
                         AppDimens.Spacing16
                     },
-                    vertical = if (variant == ButtonVariant.START) {
-                        AppDimens.Spacing16
+                    end = if (variant == ButtonVariant.START) {
+                        AppDimens.StartButtonEndPadding
                     } else {
-                        AppDimens.Spacing12
-                    }
+                        AppDimens.Spacing16
+                    },
+                    top = verticalPadding,
+                    bottom = verticalPadding
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -155,23 +159,16 @@ fun AppButton(
     }
 }
 
+// Figma 시작하기 버튼의 Icon(18x18 SVG)을 그대로 옮긴 arrow_right 드로어블을 쓴다.
 @Composable
 private fun StartArrowIcon() {
-    Canvas(
+    Image(
+        painter = painterResource(R.drawable.arrow_right),
+        contentDescription = null,
         modifier = Modifier
             .size(AppDimens.StartButtonArrowSize)
             .testTag("start-button-arrow")
-    ) {
-        val strokeWidth = 1.7.dp.toPx()
-        val path = Path().apply {
-            moveTo(size.width * 0.15f, size.height * 0.5f)
-            lineTo(size.width * 0.82f, size.height * 0.5f)
-            moveTo(size.width * 0.55f, size.height * 0.22f)
-            lineTo(size.width * 0.82f, size.height * 0.5f)
-            lineTo(size.width * 0.55f, size.height * 0.78f)
-        }
-        drawPath(path, AppColors.MainGreen.Green200, style = Stroke(strokeWidth))
-    }
+    )
 }
 
 @Preview(showBackground = true, widthDp = 412)
