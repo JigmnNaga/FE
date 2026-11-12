@@ -45,7 +45,7 @@ object AppDimens {
     val LeaveButtonTopPadding = 1.dp
     val LeaveButtonBottomPadding = 15.dp
 
-    // Figma 미검증 치수. 실제 적용 전 Figma 확인 필요.
+    // 공용 치수. CircleButtonLarge(56)는 Figma 하단 탭 중앙 버튼으로 확인함. 나머지는 Figma 미검증.
     val CircleButtonSmall = 28.dp
     val CircleButtonMedium = 38.dp
     val CircleButtonLarge = 56.dp
