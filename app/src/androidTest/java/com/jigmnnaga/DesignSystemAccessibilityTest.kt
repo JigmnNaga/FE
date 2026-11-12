@@ -187,14 +187,14 @@ class DesignSystemAccessibilityTest {
     }
 
     @Test
-    fun mainHeaderShowsNormalProfileName() {
+    fun mainHeaderShowsFirstCharacterOfProfileName() {
         composeRule.setContent {
             JigmnnagaTheme {
                 MainHeader(onNotificationClick = {}, onProfileClick = {}, profileLabel = "민지")
             }
         }
         composeRule.onNodeWithContentDescription("프로필").assertHasClickAction()
-        composeRule.onNodeWithText("민지").assertExists()
+        composeRule.onNodeWithText("민").assertExists()
     }
 
     @Test

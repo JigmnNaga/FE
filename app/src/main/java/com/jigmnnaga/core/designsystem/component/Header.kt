@@ -30,7 +30,7 @@ import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 
-// 좌우 20dp inset은 부모 담당. 헤더는 68dp 콘텐츠 영역만 담당.
+// 좌우 20dp inset은 부모 담당. 헤더는 68dp 콘텐츠 영역만 담당. 프로필 라벨은 원 안에 첫 글자만 표시한다.
 @Composable
 fun MainHeader(
     onNotificationClick: () -> Unit,
@@ -77,7 +77,7 @@ fun MainHeader(
             height = AppDimens.HeaderActionSize,
             icon = if (profileLabel.isNullOrBlank()) painterResource(R.drawable.profile) else null,
             iconSize = if (profileLabel.isNullOrBlank()) AppDimens.HeaderIconSize else null,
-            text = profileLabel?.takeIf { it.isNotBlank() },
+            text = profileLabel?.trim()?.takeIf { it.isNotEmpty() }?.let { it.substring(0, it.offsetByCodePoints(0, 1)) },
             textSize = MaterialTheme.typography.titleSmall.fontSize,
             backgroundColor = AppColors.MainGreen.Green700,
             contentColor = AppColors.MainGreen.Green200
