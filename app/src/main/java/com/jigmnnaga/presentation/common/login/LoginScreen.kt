@@ -2,6 +2,7 @@ package com.jigmnnaga.presentation.common.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -47,6 +48,7 @@ fun LoginScreen(
     onKakaoLoginClick: () -> Unit,
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -90,6 +92,7 @@ fun LoginScreen(
         ) {
             Surface(
                 onClick = onKakaoLoginClick,
+                enabled = !isLoading,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
                 color = KakaoYellow,
@@ -150,6 +153,19 @@ fun LoginScreen(
                         .firstOrNull()?.let { onPrivacyClick() }
                 }
             )
+        }
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = AppColors.MainGreen.Green700,
+                    strokeWidth = 3.dp
+                )
+            }
         }
     }
     }
