@@ -5,6 +5,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
+import com.jigmnnaga.presentation.calendar.CalendarRoute
 
 /**
  * 홈 기능이 소유하는 네비게이션 그래프.
@@ -17,7 +18,7 @@ object HomeNavigationGraph : AppNavigationGraph {
         builder.composable<HomeRoute> {
             HomeRoute(
                 onAddClick = { navigator.navigate(AppointmentCreateDestination) },
-                onScheduleClick = { /* TODO: CAL-001 캘린더 화면 연결 */ },
+                onScheduleClick = { navigator.navigateSingleTop(CalendarRoute) },
                 onNotificationClick = { /* TODO: HOM-003 알림 화면 연결 */ },
                 onProfileClick = { /* TODO: 마이페이지 화면 연결 */ },
                 onAppointmentClick = { /* TODO: 약속 상세 화면 연결 */ },

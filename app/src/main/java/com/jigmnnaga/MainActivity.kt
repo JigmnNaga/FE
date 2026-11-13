@@ -11,6 +11,7 @@ import com.jigmnnaga.core.navigation.AppNavHost
 import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
+import com.jigmnnaga.presentation.calendar.CalendarNavigationGraph
 import com.jigmnnaga.presentation.home.HomeNavigationGraph
 import com.jigmnnaga.presentation.home.HomeRoute
 import com.jigmnnaga.presentation.common.login.LoginRoute
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
                     }
                     AppointmentNavigationGraph.register(this, navigator)
                     HomeNavigationGraph.register(this, navigator)
+                    CalendarNavigationGraph.register(this, navigator)
                 }
             }
         }
