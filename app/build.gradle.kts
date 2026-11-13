@@ -1,3 +1,11 @@
+import java.util.Properties
+
+val localProperties = Properties().also { props ->
+    rootProject.file("local.properties").takeIf { it.exists() }
+        ?.inputStream()?.use(props::load)
+}
+val kakaoNativeAppKey: String = localProperties.getProperty("kakao.native.app.key", "")
+
 plugins {
     // Android
     alias(libs.plugins.android.application)
@@ -24,6 +32,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        manifestPlaceholders["kakaoNativeAppKey"] = kakaoNativeAppKey
     }
 
     flavorDimensions += "environment"
@@ -116,6 +127,9 @@ dependencies {
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
+
+    // Kakao
+    implementation(libs.kakao.user)
 
     // Unit Test
     testImplementation(libs.junit)

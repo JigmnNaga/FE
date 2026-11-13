@@ -11,7 +11,6 @@ import com.jigmnnaga.core.navigation.AppNavHost
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
 import com.jigmnnaga.presentation.common.login.LoginRoute
-import com.jigmnnaga.presentation.common.login.LoginScreen
 import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyRoute
 import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyScreen
 import com.jigmnnaga.presentation.common.login.terms.TermsOfServiceRoute
@@ -41,9 +40,9 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     composable<LoginRoute> {
-                        LoginScreen(
-                            onKakaoLoginClick = {
-                                // TODO: 카카오 로그인 구현 후 연결
+                        LoginRoute(
+                            onLoginSuccess = {
+                                // TODO: 백엔드 로그인 API 연동 후 홈 화면으로 이동
                             },
                             onTermsClick = { navigator.navigate(TermsOfServiceRoute) },
                             onPrivacyClick = { navigator.navigate(PrivacyPolicyRoute) }
