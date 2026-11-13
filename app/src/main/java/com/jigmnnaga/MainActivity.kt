@@ -8,8 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.composable
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.core.navigation.AppNavHost
+import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
+import com.jigmnnaga.presentation.home.HomeNavigationGraph
+import com.jigmnnaga.presentation.home.HomeRoute
 import com.jigmnnaga.presentation.common.login.LoginRoute
 import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyRoute
 import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyScreen
@@ -42,7 +45,16 @@ class MainActivity : ComponentActivity() {
                     composable<LoginRoute> {
                         LoginRoute(
                             onLoginSuccess = {
-                                // TODO: 백엔드 로그인 API 연동 후 홈 화면으로 이동
+                                // TODO: 백엔드 로그인 API 연동 완료 후 서버 JWT 저장 로직 추가 필요.
+                                // 현재는 #25 홈 화면 UI 테스트를 위한 임시 Navigation 연결입니다.
+                                navigator.navigate(
+                                    destination = HomeRoute,
+                                    options = AppNavigationOptions(
+                                        popUpTo = SplashRoute,
+                                        inclusive = true,
+                                        launchSingleTop = true
+                                    )
+                                )
                             },
                             onTermsClick = { navigator.navigate(TermsOfServiceRoute) },
                             onPrivacyClick = { navigator.navigate(PrivacyPolicyRoute) }
@@ -55,6 +67,7 @@ class MainActivity : ComponentActivity() {
                         PrivacyPolicyScreen(onBackClick = { navigator.navigateBack() })
                     }
                     AppointmentNavigationGraph.register(this, navigator)
+                    HomeNavigationGraph.register(this, navigator)
                 }
             }
         }
