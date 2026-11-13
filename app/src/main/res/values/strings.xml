@@ -255,4 +255,9 @@
     <string name="home_late_minutes">%d분 지각</string>
     <string name="home_participant_count">%d명</string>
     <string name="home_appointment_detail">약속 상세</string>
+
+    <!-- 캘린더 화면 (HOM-002) -->
+    <string name="calendar_empty_title">아직 일정이 없어요!</string>
+    <string name="calendar_empty_subtitle">약속을 만들어보세요</string>
+    <string name="calendar_this_month_section_title">이번 달 약속</string>
 </resources>
