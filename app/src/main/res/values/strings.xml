@@ -84,6 +84,14 @@
     <string name="appointment_create_api_unavailable">약속 생성 API가 아직 연결되지 않아 서버로 생성 요청을 보내지 않았습니다. 입력한 내용은 준비된 상태로 보존됩니다.</string>
     <string name="appointment_share_chooser_title">초대 링크 공유</string>
     <string name="appointment_share_unavailable">이 기기에서 공유 기능을 사용할 수 없습니다.</string>
+    <string name="appointment_create_invalid_dates">선택한 날짜로는 약속을 만들 수 없습니다. 지난 날짜가 있는지 확인해 주세요.</string>
+    <string name="appointment_create_invalid_deadline">응답 기한은 지금 이후이면서 첫 후보 날짜 이전이어야 합니다. 기한을 다시 선택해 주세요.</string>
+    <string name="appointment_create_invalid_locations">후보 장소를 확인해 주세요. 위치 정보가 없는 장소는 선택할 수 없습니다.</string>
+    <string name="appointment_create_invalid_previous_members">이전 약속에 함께한 멤버만 초대할 수 있습니다.</string>
+    <string name="appointment_create_invalid_input">입력한 내용을 다시 확인해 주세요.</string>
+    <string name="appointment_create_failed">약속을 만들지 못했습니다. 입력한 내용은 그대로 남아 있습니다.</string>
+    <string name="appointment_create_failed_retry">네트워크나 서버 문제로 약속을 만들지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
+    <string name="appointment_location_search_failed">장소를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.</string>
     <string name="appointment_confirm">확인</string>
     <string name="appointment_link_unavailable">초대 링크가 아직 준비되지 않았어요.</string>
     <string name="appointment_date_format">%1$d월 %2$d일</string>

@@ -31,7 +31,8 @@ import com.jigmnnaga.R
 fun AppointmentCreateRoute(
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: AppointmentCreateViewModel = viewModel()
+    viewModel: AppointmentCreateViewModel = viewModel(),
+    onLoginRequired: (resume: () -> Unit) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
@@ -39,16 +40,28 @@ fun AppointmentCreateRoute(
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(notice) {
-        val messageResource = when (notice) {
+        val current = notice ?: return@LaunchedEffect
+        if (current == AppointmentCreateNotice.LOGIN_REQUIRED) {
+            viewModel.clearNotice()
+            onLoginRequired(viewModel::resumeAfterLogin)
+            return@LaunchedEffect
+        }
+        val messageResource = when (current) {
             AppointmentCreateNotice.CREATE_API_NOT_CONNECTED -> R.string.appointment_create_api_unavailable
             AppointmentCreateNotice.INVITE_LINK_UNAVAILABLE -> R.string.appointment_invite_link_pending
             AppointmentCreateNotice.SHARE_UNAVAILABLE -> R.string.appointment_share_unavailable
-            null -> null
+            AppointmentCreateNotice.INVALID_DATES -> R.string.appointment_create_invalid_dates
+            AppointmentCreateNotice.INVALID_DEADLINE -> R.string.appointment_create_invalid_deadline
+            AppointmentCreateNotice.INVALID_LOCATIONS -> R.string.appointment_create_invalid_locations
+            AppointmentCreateNotice.INVALID_PREVIOUS_MEMBERS -> R.string.appointment_create_invalid_previous_members
+            AppointmentCreateNotice.INVALID_INPUT -> R.string.appointment_create_invalid_input
+            AppointmentCreateNotice.CREATE_FAILED -> R.string.appointment_create_failed
+            AppointmentCreateNotice.CREATE_FAILED_RETRY -> R.string.appointment_create_failed_retry
+            AppointmentCreateNotice.LOCATION_SEARCH_FAILED -> R.string.appointment_location_search_failed
+            AppointmentCreateNotice.LOGIN_REQUIRED -> return@LaunchedEffect
         }
-        if (messageResource != null) {
-            snackbarHostState.showSnackbar(context.getString(messageResource))
-            viewModel.clearNotice()
-        }
+        snackbarHostState.showSnackbar(context.getString(messageResource))
+        viewModel.clearNotice()
     }
 
     Box(modifier = modifier.fillMaxSize()) {

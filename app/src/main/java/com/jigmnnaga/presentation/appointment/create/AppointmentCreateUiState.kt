@@ -30,8 +30,8 @@ enum class AppointmentShareAction {
 }
 
 /**
- * Local submission boundary. This flow deliberately stops at API_UNAVAILABLE until the #35 API
- * contract is connected; SUCCEEDED is only entered after an externally issued invite link arrives.
+ * Submission boundary. API_UNAVAILABLE is only used when no create repository is connected;
+ * SUCCEEDED is only entered after the server answers a create request.
  */
 enum class AppointmentCreateSubmissionStatus {
     READY,
@@ -72,9 +72,17 @@ data class AppointmentDate(
     }
 }
 
+/**
+ * 약속 후보 장소. [name]과 [address]는 화면에 보이는 문구이고, 나머지는 서버로 보낼 때 쓴다.
+ * 위치([latitude], [longitude])가 없는 장소는 서버가 받지 않는다.
+ */
 data class AppointmentLocation(
     val name: String,
-    val address: String
+    val address: String,
+    val lineNames: String? = null,
+    val roadAddress: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
 /** UI-only draft. It intentionally has no server ID or invite URI contract. */
@@ -99,6 +107,8 @@ data class AppointmentCreateUiState(
     val selectedDates: List<AppointmentDate> = emptyList(),
     val locationQuery: String = "",
     val locationCandidates: List<AppointmentLocation> = emptyList(),
+    /** true면 [locationCandidates]가 서버 검색 결과라서 화면에서 한 번 더 거르지 않는다. */
+    val locationCandidatesFromServer: Boolean = false,
     val selectedLocations: List<AppointmentLocation> = emptyList(),
     val deadlineChoice: AppointmentDeadlineChoice? = null,
     val customDeadline: AppointmentDate? = null,
