@@ -130,6 +130,7 @@ dependencies {
 
     // Kakao
     implementation(libs.kakao.user)
+    implementation(libs.kakao.map)
 
     // Unit Test
     testImplementation(libs.junit)
