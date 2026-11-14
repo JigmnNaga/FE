@@ -18,6 +18,7 @@ import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
 import com.jigmnnaga.di.AttendanceEntryPoint
+import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentMemberRole
@@ -150,12 +151,12 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             }
         }
 
-        // TODO: 투표 결과 API 연동 시 후보 목록을 넘긴다.
         // 약속방에서 이 화면으로 가는 연결은 방장 약속방의 확정 진입점이 정해질 때 함께 붙인다.
         // 이 화면은 약속 제목만 필요해서 약속 상세 조회 결과의 제목만 쓴다.
         builder.composable<HostAppointmentConfirmationDestination> { entry ->
             val appointmentId = entry.toRoute<HostAppointmentConfirmationDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
+            val applicationContext = LocalContext.current.applicationContext
             AppointmentDetailLoader(
                 viewModel = loader,
                 onBack = { navigator.navigateBack() },
@@ -166,12 +167,25 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     factory = remember(detail) {
                         viewModelFactory {
                             initializer {
+                                val confirmationEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    ConfirmationEntryPoint::class.java
+                                )
+                                val searchEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    PlaceSearchEntryPoint::class.java
+                                )
                                 HostConfirmationViewModel(
-                                    HostConfirmationUiState(
+                                    initialState = HostConfirmationUiState(
                                         appointmentTitle = detail.title,
                                         selectedDateTime = null,
                                         selectedPlace = null
-                                    )
+                                    ),
+                                    isHost = detail.myRole != AppointmentMemberRole.MEMBER,
+                                    appointmentId = appointmentId,
+                                    candidateLocations = detail.candidateLocations,
+                                    confirmationRepository = confirmationEntryPoint.confirmationRepository(),
+                                    placeSearchRepository = searchEntryPoint.placeSearchRepository()
                                 )
                             }
                         }
@@ -179,7 +193,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 )
                 HostAppointmentConfirmationRoute(
                     viewModel = viewModel,
-                    onExit = { navigator.navigateBack() }
+                    onExit = { navigator.navigateBack() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }

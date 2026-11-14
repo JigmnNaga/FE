@@ -230,6 +230,12 @@
 <string name="host_confirmation_confirm">최종 확정</string>
 <string name="host_confirmation_complete_title">약속 일정 선택이 완료했어요</string>
 <string name="host_confirmation_complete_message">멤버들에게 알림이 전송됐어요</string>
+<string name="host_confirmation_detail_search_hint">상호명 검색...</string>
+<string name="host_confirmation_not_host">방장만 약속을 확정할 수 있어요</string>
+<string name="host_confirmation_canceled">취소된 약속이에요</string>
+<string name="host_confirmation_invalid_selection">선택한 날짜나 장소를 확정할 수 없어요. 다시 선택해 주세요</string>
+<string name="host_confirmation_failure_retry">약속을 확정하지 못했어요. 잠시 후 다시 시도해 주세요</string>
+<string name="host_confirmation_failure">약속을 확정하지 못했어요</string>
 <string name="host_confirmation_done">채팅방으로 이동</string>
 
 <string name="final_confirmation_header">약속 최종 확인</string>
