@@ -29,7 +29,6 @@ import com.jigmnnaga.presentation.common.login.terms.PrivacyPolicyScreen
 import com.jigmnnaga.presentation.common.login.terms.TermsOfServiceRoute
 import com.jigmnnaga.presentation.common.login.terms.TermsOfServiceScreen
 import com.jigmnnaga.presentation.common.splash.SplashRoute
-import com.jigmnnaga.presentation.common.splash.SplashScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -49,7 +48,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             JigmnnagaTheme {
                 AppNavHost(
-                    startDestination = SplashRoute,
+                    startDestination = LoginRoute,
                     navigatorEffects = { navigator ->
                         val inviteCode = pendingInviteCode
                         LaunchedEffect(inviteCode) {
@@ -61,8 +60,27 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { navigator: AppNavigator ->
                     composable<SplashRoute> {
-                        SplashScreen(
-                            onStartClick = { navigator.navigate(LoginRoute) }
+                        SplashRoute(
+                            onAuthenticated = {
+                                navigator.navigate(
+                                    destination = HomeRoute,
+                                    options = AppNavigationOptions(
+                                        popUpTo = SplashRoute,
+                                        inclusive = true,
+                                        launchSingleTop = true
+                                    )
+                                )
+                            },
+                            onUnauthenticated = {
+                                navigator.navigate(
+                                    destination = LoginRoute,
+                                    options = AppNavigationOptions(
+                                        popUpTo = SplashRoute,
+                                        inclusive = true,
+                                        launchSingleTop = true
+                                    )
+                                )
+                            }
                         )
                     }
                     composable<LoginRoute> {

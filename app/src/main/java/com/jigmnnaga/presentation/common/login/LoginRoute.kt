@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 
 /** 네비게이션 목적지 타입. */
@@ -43,8 +44,9 @@ fun LoginRoute(
     LaunchedEffect(uiState) {
         when (val state = uiState) {
             is LoginUiState.Success -> {
+                delay(1_000)
                 onLoginSuccess()
-                // Success 상태를 즉시 소비하여 Activity 재생성·화면 재진입 시
+                // Success 상태를 소비하여 Activity 재생성·화면 재진입 시
                 // onLoginSuccess()가 중복 호출되지 않도록 합니다.
                 viewModel.clearSuccess()
             }
@@ -67,7 +69,8 @@ fun LoginRoute(
             onKakaoLoginClick = { viewModel.login(activity) },
             onTermsClick = onTermsClick,
             onPrivacyClick = onPrivacyClick,
-            isLoading = uiState is LoginUiState.Loading
+            isLoading = uiState is LoginUiState.Loading,
+            isSuccess = uiState is LoginUiState.Success
         )
         SnackbarHost(
             hostState = snackbarHostState,

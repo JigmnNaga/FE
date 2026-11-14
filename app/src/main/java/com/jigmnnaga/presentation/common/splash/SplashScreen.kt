@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -25,8 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jigmnnaga.core.designsystem.component.AppButton
-import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
@@ -34,7 +31,6 @@ import com.jigmnnaga.presentation.common.LogoSection
 
 @Composable
 fun SplashScreen(
-    onStartClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -52,7 +48,6 @@ fun SplashScreen(
 
         val featureSpacing = if (isSmallScreen) 28.dp else 50.dp
         val tagSpacing = if (isSmallScreen) 8.dp else AppDimens.Spacing12
-        val buttonBottomPadding = if (isSmallScreen) 55.dp else 100.dp
 
         Column(
             modifier = Modifier
@@ -86,15 +81,6 @@ fun SplashScreen(
                 isSmallScreen = isSmallScreen
             )
         }
-
-        AppButton(
-            text = "시작하기",
-            variant = ButtonVariant.START,
-            onClick = onStartClick,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = buttonBottomPadding)
-        )
     }
     }
 }
@@ -142,7 +128,7 @@ private fun SplashFeatureTag(
 @Composable
 private fun SplashScreenPreview() {
     JigmnnagaTheme {
-        SplashScreen(onStartClick = {})
+        SplashScreen()
     }
 }
 
@@ -155,6 +141,6 @@ private fun SplashScreenPreview() {
 @Composable
 private fun SplashScreenSmallPreview() {
     JigmnnagaTheme {
-        SplashScreen(onStartClick = {})
+        SplashScreen()
     }
 }
