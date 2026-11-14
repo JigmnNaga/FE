@@ -290,4 +290,23 @@
     <string name="notification_screen_retry">다시 시도</string>
     <string name="notification_screen_invited_fallback">약속에 초대했어요</string>
     <string name="notification_screen_invite_avatar_fallback">?</string>
+
+    <string name="appointment_detail_loading">약속 정보를 불러오는 중이에요</string>
+    <string name="appointment_detail_failed">약속 정보를 불러오지 못했어요</string>
+    <string name="appointment_detail_retry">다시 시도</string>
+    <string name="appointment_detail_login_required">로그인이 필요해요</string>
+    <string name="appointment_detail_login_action">로그인하기</string>
+    <string name="appointment_detail_not_participant">참여 중인 약속이 아니에요</string>
+    <string name="appointment_detail_back">돌아가기</string>
+    <string name="appointment_status_before_confirm">확정 전</string>
+    <string name="appointment_status_confirmed">확정</string>
+    <string name="appointment_status_canceled">취소된 약속</string>
+    <string name="appointment_member_schedule_submitted">일정 제출</string>
+    <string name="appointment_member_schedule_pending">일정 미제출</string>
+    <string name="appointment_member_attending">참석</string>
+    <string name="appointment_member_not_attending">불참</string>
+    <string name="appointment_member_attendance_pending">응답 전</string>
+    <string name="appointment_member_reschedule_requested">재조율 요청</string>
+    <string name="appointment_room_subtitle">%1$d명 · 약속방</string>
+    <string name="appointment_member_count">%1$d명</string>
 </resources>
