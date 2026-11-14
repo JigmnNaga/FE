@@ -17,6 +17,9 @@ import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
+import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationRoute
+import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationUiState
+import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationViewModel
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomRoute
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomViewModel
@@ -62,6 +65,10 @@ data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
 /** 방장 최종 확정 화면. 약속 ID를 인자로 받는다. */
 @Serializable
 data class HostAppointmentConfirmationDestination(val appointmentId: Long)
+
+/** 약속 확정 확인 화면(APT-005-05). 약속 ID를 인자로 받는다. */
+@Serializable
+data class AppointmentFinalConfirmationDestination(val appointmentId: Long)
 
 /** 희망 날짜·시간 선택 화면. 약속 ID를 인자로 받는다. */
 @Serializable
@@ -177,6 +184,35 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
                 onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
                 onManagementClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+            )
+        }
+
+        // TODO: 약속 상세·확정 API(시트 56·59번) 연동 시 확정된 날짜·시간·장소와 세부 위치를 서버 값으로 채운다.
+        // 약속방에서 이 화면으로 가는 연결은 약속방에 확정 확인 진입점이 정해질 때 함께 붙인다.
+        builder.composable<AppointmentFinalConfirmationDestination> { entry ->
+            val appointmentId = entry.toRoute<AppointmentFinalConfirmationDestination>().appointmentId
+            val title = stringResource(R.string.appointment_room_default_title)
+            val placeholder = stringResource(R.string.final_confirmation_placeholder)
+            val viewModel: AppointmentFinalConfirmationViewModel = viewModel(
+                key = "final-confirmation-$appointmentId",
+                factory = remember(appointmentId) {
+                    viewModelFactory {
+                        initializer {
+                            AppointmentFinalConfirmationViewModel(
+                                AppointmentFinalConfirmationUiState(
+                                    appointmentTitle = title,
+                                    dateLabel = placeholder,
+                                    timeLabel = placeholder,
+                                    placeName = placeholder
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            AppointmentFinalConfirmationRoute(
+                viewModel = viewModel,
+                onExit = { navigator.navigateBack() }
             )
         }
 
