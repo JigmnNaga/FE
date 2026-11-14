@@ -3,6 +3,11 @@
     <string name="bottom_navigation_home">홈</string>
     <string name="bottom_navigation_schedule">일정</string>
     <string name="add_appointment_description">약속 추가</string>
+    <string name="chat_notice_login_required">로그인이 필요해요. 다시 로그인해 주세요.</string>
+    <string name="chat_notice_not_participant">이 약속방의 참여자가 아니에요.</string>
+    <string name="chat_notice_load_failed">메시지를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="chat_notice_send_failed">메시지를 보내지 못했어요. 연결을 확인해 주세요. 입력한 내용은 그대로 남아 있어요.</string>
+    <string name="chat_notice_too_long">메시지는 1000자까지 보낼 수 있어요.</string>
     <string name="chat_input_hint">메시지를 입력하세요...</string>
     <string name="send_message_description">메시지 전송</string>
     <string name="leave_meeting_label">지금 나가기</string>

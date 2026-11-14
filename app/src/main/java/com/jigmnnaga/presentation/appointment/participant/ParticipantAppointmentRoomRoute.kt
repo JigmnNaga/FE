@@ -16,6 +16,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.chat.AppointmentChatViewModel
+import com.jigmnnaga.presentation.chat.ChatReadingEffect
+import com.jigmnnaga.presentation.chat.NoChat
+import com.jigmnnaga.presentation.chat.toMessageResource
+import com.jigmnnaga.presentation.chat.toParticipantRoomMessage
 
 /**
  * 참여자 약속방 화면과 [ParticipantAppointmentRoomViewModel]을 연결한다.
@@ -28,10 +33,19 @@ fun ParticipantAppointmentRoomRoute(
     onCalendarClick: () -> Unit,
     onPlaceClick: () -> Unit,
     onManagementClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    chatViewModel: AppointmentChatViewModel? = null
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val roomState by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
+    val chatState by (chatViewModel?.uiState ?: NoChat.state).collectAsState()
+    val chatNotice by (chatViewModel?.notice ?: NoChat.notice).collectAsState()
+    val state = if (chatViewModel == null) {
+        roomState
+    } else {
+        roomState.copy(messages = chatState.messages.map { it.toParticipantRoomMessage() })
+    }
+    ChatReadingEffect(chatViewModel, chatTabSelected = state.selectedTab == ParticipantAppointmentRoomTab.CHAT)
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -47,6 +61,14 @@ fun ParticipantAppointmentRoomRoute(
         }
     }
 
+    LaunchedEffect(chatNotice) {
+        val messageResource = chatNotice?.toMessageResource()
+        if (messageResource != null) {
+            snackbarHostState.showSnackbar(context.getString(messageResource))
+            chatViewModel?.clearNotice()
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         ParticipantAppointmentRoomScreen(
             state = state,
@@ -57,8 +79,17 @@ fun ParticipantAppointmentRoomRoute(
             onTabSelected = viewModel::onTabSelected,
             onSummaryExpandedChange = viewModel::onSummaryExpandedChange,
             onMessageChange = viewModel::onMessageChange,
-            onSendMessage = viewModel::onSendMessage,
-            onDepartureClick = viewModel::onDepartureClick
+            onSendMessage = {
+                if (chatViewModel == null) {
+                    viewModel.onSendMessage()
+                } else if (chatViewModel.sendMessage(state.draftMessage)) {
+                    // 보낸 메시지는 서버에서 되돌아와 목록에 붙는다. 보냈을 때만 입력창을 비운다.
+                    viewModel.onMessageChange("")
+                }
+            },
+            onDepartureClick = viewModel::onDepartureClick,
+            canLoadMoreMessages = chatViewModel != null && chatState.hasMore && !chatState.isLoadingMore,
+            onLoadMoreMessages = { chatViewModel?.loadMore() }
         )
         SnackbarHost(
             hostState = snackbarHostState,

@@ -12,5 +12,7 @@ data class ChatMessageUiState(
     val body: String,
     val isMine: Boolean,
     val senderName: String? = null,
-    val timeLabel: String? = null
+    val timeLabel: String? = null,
+    val unreadCount: Int = 0,
+    val isSystem: Boolean = false
 )

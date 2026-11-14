@@ -20,6 +20,7 @@ import com.jigmnnaga.di.AppointmentCreateEntryPoint
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
 import com.jigmnnaga.di.AppointmentManageEntryPoint
 import com.jigmnnaga.di.AttendanceEntryPoint
+import com.jigmnnaga.di.ChatEntryPoint
 import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
@@ -43,6 +44,7 @@ import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAdd
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationRoute
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationViewModel
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomRoute
+import com.jigmnnaga.presentation.chat.AppointmentChatViewModel
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomViewModel
 import com.jigmnnaga.presentation.appointment.hostconfirmation.HostAppointmentConfirmationRoute
 import com.jigmnnaga.presentation.appointment.hostconfirmation.HostConfirmationUiState
@@ -519,7 +521,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onBackClick = { navigator.navigateBack() },
             onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
             onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
-            onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) }
+            onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) },
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
         )
     }
 
@@ -548,6 +551,35 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
             onManagementClick = {
                 navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
+            },
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
+        )
+    }
+
+    /**
+     * 약속방 채팅 ViewModel. 약속 정보가 다시 불러와져 방 화면이 새로 만들어져도 채팅은 유지되도록
+     * 약속 ID로만 키를 둔다. 약속방을 떠나 백스택에서 빠지면 연결도 함께 정리된다.
+     */
+    @Composable
+    private fun rememberAppointmentChatViewModel(appointmentId: Long): AppointmentChatViewModel {
+        val applicationContext = LocalContext.current.applicationContext
+        return viewModel(
+            key = "appointment-chat-$appointmentId",
+            factory = remember(appointmentId) {
+                viewModelFactory {
+                    initializer {
+                        val entryPoint = EntryPointAccessors.fromApplication(
+                            applicationContext,
+                            ChatEntryPoint::class.java
+                        )
+                        AppointmentChatViewModel(
+                            appointmentId = appointmentId,
+                            repository = entryPoint.chatRepository(),
+                            realtime = entryPoint.chatRealtime(),
+                            memberIdProvider = entryPoint.myMemberIdProvider()
+                        )
+                    }
+                }
             }
         )
     }

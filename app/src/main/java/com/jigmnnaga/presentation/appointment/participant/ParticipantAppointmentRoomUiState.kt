@@ -23,7 +23,9 @@ data class ParticipantRoomMessageUiState(
     val body: String,
     val senderName: String? = null,
     val timeLabel: String? = null,
-    val isMine: Boolean = false
+    val isMine: Boolean = false,
+    val unreadCount: Int = 0,
+    val isSystem: Boolean = false
 )
 
 data class ParticipantAppointmentRoomUiState(
