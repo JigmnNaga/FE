@@ -29,6 +29,9 @@ import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointment
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomViewModel
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentStatus
+import com.jigmnnaga.presentation.appointment.schedule.AppointmentCalendarMonth
+import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeRoute
+import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeViewModel
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRole
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRoute
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteUiState
@@ -38,6 +41,7 @@ import com.jigmnnaga.presentation.common.splash.SplashRoute
 import com.jigmnnaga.presentation.home.HomeRoute
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.serialization.Serializable
+import java.util.Calendar
 
 /** 약속 생성 화면(APT-001). */
 @Serializable
@@ -58,6 +62,10 @@ data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
 /** 방장 최종 확정 화면. 약속 ID를 인자로 받는다. */
 @Serializable
 data class HostAppointmentConfirmationDestination(val appointmentId: Long)
+
+/** 희망 날짜·시간 선택 화면. 약속 ID를 인자로 받는다. */
+@Serializable
+data class AppointmentDateTimeDestination(val appointmentId: Long)
 
 /** 장소 검색·투표 화면. 약속 ID와 방장 여부를 인자로 받는다. */
 @Serializable
@@ -92,7 +100,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
         }
 
         // TODO: 약속 상세 API(시트 41·44번) 연동 시 하나의 약속방 목적지로 합치고, 내 역할(myRole)로 방장·참여자 화면을 정한다.
-        // 화면 이동 연결(날짜·시간, 장소 투표, 관리)은 각 기능의 목적지가 등록될 때 함께 연결한다.
+        // 날짜·시간, 장소 투표 화면은 연결했고, 약속 관리 화면은 목적지가 등록될 때 함께 연결한다.
         builder.composable<HostAppointmentRoomDestination> { entry ->
             val appointmentId = entry.toRoute<HostAppointmentRoomDestination>().appointmentId
             val title = stringResource(R.string.appointment_room_default_title)
@@ -111,8 +119,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             HostAppointmentRoomRoute(
                 viewModel = viewModel,
                 onBackClick = { navigator.navigateBack() },
-                onCalendarClick = { /* TODO: 희망 날짜·시간 화면 등록 후 연결 */ },
-                onPlaceClick = { /* TODO: 장소 투표 화면 등록 후 연결 */ },
+                onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+                onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
                 onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
             )
         }
@@ -166,9 +174,33 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             ParticipantAppointmentRoomRoute(
                 viewModel = viewModel,
                 onBackClick = { navigator.navigateBack() },
-                onCalendarClick = { /* TODO: 희망 날짜·시간 화면 등록 후 연결 */ },
-                onPlaceClick = { /* TODO: 장소 투표 화면 등록 후 연결 */ },
+                onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+                onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
                 onManagementClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+            )
+        }
+
+        // TODO: 약속 상세·일정 조율 API 연동 시 약속 제목과 참여자 응답 현황(memberResponses)을 서버 값으로 채운다.
+        builder.composable<AppointmentDateTimeDestination> { entry ->
+            val appointmentId = entry.toRoute<AppointmentDateTimeDestination>().appointmentId
+            val title = stringResource(R.string.appointment_room_default_title)
+            val viewModel: AppointmentDateTimeViewModel = viewModel(
+                key = "date-time-$appointmentId",
+                factory = remember(appointmentId) {
+                    viewModelFactory {
+                        initializer {
+                            AppointmentDateTimeViewModel(
+                                appointmentTitle = title,
+                                initialMonth = currentCalendarMonth()
+                            )
+                        }
+                    }
+                }
+            )
+            AppointmentDateTimeRoute(
+                viewModel = viewModel,
+                onExit = { navigator.navigateBack() },
+                onGoToChat = { navigator.navigateBack() }
             )
         }
 
@@ -233,4 +265,9 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             AppointmentInviteViewModel(entryPoint.appointmentInviteRepository())
         }
     }
+}
+
+private fun currentCalendarMonth(): AppointmentCalendarMonth {
+    val now = Calendar.getInstance()
+    return AppointmentCalendarMonth(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1)
 }
