@@ -24,12 +24,12 @@ internal fun AppointmentCreateDraft.toNewAppointment(
     previousMembers: PreviousMembers? = null
 ): NewAppointment? {
     val candidateLocations = locations.map { it.toNewCandidateLocation() ?: return null }
-    val (dateType, dates) = candidateDates() ?: return null
-    val deadline = responseDeadlineText(nowMillis) ?: return null
+    val (dateType, dates) = candidateDateRequest(scheduleType, startDate, endDate, specificDates) ?: return null
+    val deadline = responseDeadlineRequest(deadlineChoice, customDeadline, nowMillis) ?: return null
     return NewAppointment(
         title = name.trim(),
         dateType = dateType,
-        candidateDates = dates.map { it.toRequestText() },
+        candidateDates = dates,
         candidateLocations = candidateLocations,
         responseDeadline = deadline,
         previousMembers = previousMembers
@@ -49,27 +49,33 @@ private fun AppointmentLocation.toNewCandidateLocation(): NewCandidateLocation? 
 }
 
 /**
- * 날짜 선택 방식에 맞는 후보 날짜 목록을 만든다. 서버는 "날짜별" 선택에 2개 이상을 요구하므로,
- * 하나만 고른 경우에는 "하루"로 보낸다.
+ * 날짜 선택 방식에 맞는 후보 날짜 목록을 `yyyy-MM-dd` 문자열로 만든다. 서버는 "날짜별" 선택에 2개 이상을
+ * 요구하므로, 하나만 고른 경우에는 "하루"로 보낸다. 날짜가 부족하거나 기간이 너무 길면 null이다.
+ * 약속 생성과 약속 관리(후보 날짜 변경)가 함께 쓴다.
  */
-private fun AppointmentCreateDraft.candidateDates(): Pair<NewAppointmentDateType, List<AppointmentDate>>? =
-    when (scheduleType) {
+internal fun candidateDateRequest(
+    scheduleType: AppointmentScheduleType,
+    startDate: AppointmentDate?,
+    endDate: AppointmentDate?,
+    specificDates: List<AppointmentDate>
+): Pair<NewAppointmentDateType, List<String>>? {
+    val (type, dates) = when (scheduleType) {
         AppointmentScheduleType.SINGLE_DAY -> startDate?.let { NewAppointmentDateType.SINGLE to listOf(it) }
         AppointmentScheduleType.DATE_RANGE -> {
-            val start = startDate
-            val end = endDate
-            if (start == null || end == null) null
-            else expandRange(start, end)?.let { NewAppointmentDateType.RANGE to it }
+            if (startDate == null || endDate == null) null
+            else expandRange(startDate, endDate)?.let { NewAppointmentDateType.RANGE to it }
         }
         AppointmentScheduleType.SPECIFIC_DATES -> {
-            val dates = specificDates.distinct().sorted()
+            val distinct = specificDates.distinct().sorted()
             when {
-                dates.isEmpty() -> null
-                dates.size == 1 -> NewAppointmentDateType.SINGLE to dates
-                else -> NewAppointmentDateType.MULTIPLE to dates
+                distinct.isEmpty() -> null
+                distinct.size == 1 -> NewAppointmentDateType.SINGLE to distinct
+                else -> NewAppointmentDateType.MULTIPLE to distinct
             }
         }
-    }
+    } ?: return null
+    return type to dates.map { it.toRequestText() }
+}
 
 private fun expandRange(start: AppointmentDate, end: AppointmentDate): List<AppointmentDate>? {
     if (end <= start) return null
@@ -99,10 +105,18 @@ private fun AppointmentDate.nextDay(): AppointmentDate {
 private fun AppointmentDate.toRequestText(): String =
     String.format(Locale.US, "%04d-%02d-%02d", year, month, day)
 
-/** 직접 고른 날짜는 그날 23:59:59까지, 나머지는 지금부터 정해진 시간 뒤까지로 한다. 한국 시간 기준이다. */
-private fun AppointmentCreateDraft.responseDeadlineText(nowMillis: Long): String? {
+/**
+ * 직접 고른 날짜는 그날 23:59:59까지, 나머지는 지금부터 정해진 시간 뒤까지로 한다. 한국 시간 기준이다.
+ * 선택이 없거나 직접 선택한 날짜가 없으면 null이다.
+ */
+internal fun responseDeadlineRequest(
+    choice: AppointmentDeadlineChoice?,
+    customDeadline: AppointmentDate?,
+    nowMillis: Long
+): String? {
     val calendar = Calendar.getInstance(SEOUL).apply { timeInMillis = nowMillis }
-    when (deadlineChoice) {
+    when (choice) {
+        null -> return null
         AppointmentDeadlineChoice.ONE_DAY -> calendar.add(Calendar.HOUR_OF_DAY, 24)
         AppointmentDeadlineChoice.THREE_DAYS -> calendar.add(Calendar.DAY_OF_MONTH, 3)
         AppointmentDeadlineChoice.ONE_WEEK -> calendar.add(Calendar.DAY_OF_MONTH, 7)

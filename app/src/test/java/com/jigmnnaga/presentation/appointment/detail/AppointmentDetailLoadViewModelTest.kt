@@ -116,4 +116,18 @@ class AppointmentDetailLoadViewModelTest {
 
         assertEquals(AppointmentDetailLoadState.Loaded(detail()), vm.state.value)
     }
+
+    @Test
+    fun `약속 정보가 바뀌었다는 신호를 받으면 약속 상세를 다시 불러온다`() {
+        repo.results.add(AppointmentDetailResult.Success(detail("옛 이름")))
+        repo.results.add(AppointmentDetailResult.Success(detail("새 이름")))
+        val signal = kotlinx.coroutines.flow.MutableStateFlow(0)
+        val vm = AppointmentDetailLoadViewModel(7L, repo, signal)
+        assertEquals(AppointmentDetailLoadState.Loaded(detail("옛 이름")), vm.state.value)
+
+        signal.value = 1
+
+        assertEquals(listOf(7L, 7L), repo.requestedIds)
+        assertEquals(AppointmentDetailLoadState.Loaded(detail("새 이름")), vm.state.value)
+    }
 }
