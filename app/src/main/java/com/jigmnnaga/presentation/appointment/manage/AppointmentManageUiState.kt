@@ -12,7 +12,10 @@ enum class AppointmentManageStep {
     TITLE,
     SCHEDULE,
     LOCATIONS,
-    DEADLINE
+    DEADLINE,
+
+    /** 참여 멤버 목록과 내보내기. */
+    MEMBERS
 }
 
 /** 되돌릴 수 없어서 한 번 더 확인받는 작업. */
@@ -28,6 +31,13 @@ enum class AppointmentManageFinish {
 
 const val MAX_APPOINTMENT_TITLE_LENGTH = 30
 
+/** 멤버 관리 화면에 보이는 참여 멤버. */
+data class ManageMember(
+    val memberId: Long,
+    val nickname: String,
+    val isHost: Boolean
+)
+
 /**
  * 약속 관리 화면 상태.
  * 날짜·장소·기한 입력은 약속 생성 화면과 같은 [AppointmentCreateUiState]를 편집용으로 재사용한다.
@@ -41,16 +51,24 @@ data class AppointmentManageUiState(
     val saved: AppointmentCreateUiState,
     val form: AppointmentCreateUiState,
     val savedDeadline: String? = null,
+    val members: List<ManageMember> = emptyList(),
     val isCanceled: Boolean = false,
     val isWorking: Boolean = false,
     val confirm: AppointmentManageConfirm? = null,
+
+    /** 내보내기 확인 팝업에 보이는 멤버. 없으면 팝업을 띄우지 않는다. */
+    val kickTarget: ManageMember? = null,
+
+    /** 마지막으로 보낸 미응답자 알림 인원. 안내 문구에 쓴다. */
+    val lastReminderSentCount: Int? = null,
     val finished: AppointmentManageFinish? = null
 ) {
     /** 저장 버튼을 누를 수 있는지. 값이 바뀌지 않았거나 비어 있으면 false다. */
     fun canSave(): Boolean {
         if (isWorking || isCanceled) return false
         return when (step) {
-            AppointmentManageStep.MENU -> false
+            AppointmentManageStep.MENU,
+            AppointmentManageStep.MEMBERS -> false
             AppointmentManageStep.TITLE -> {
                 val title = form.appointmentName.trim()
                 title.isNotEmpty() &&

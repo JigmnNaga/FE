@@ -4,6 +4,8 @@ import com.jigmnnaga.domain.model.AppointmentAttendanceStatus
 import com.jigmnnaga.domain.model.AppointmentDateSelectionType
 import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentLocation as DetailLocation
+import com.jigmnnaga.domain.model.AppointmentMember
+import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.domain.model.AppointmentManageRejectReason
 import com.jigmnnaga.domain.model.AppointmentManageResult
 import com.jigmnnaga.domain.model.CandidateLocationChange
@@ -86,8 +88,13 @@ class AppointmentManageViewModelTest {
         override suspend fun kickParticipant(appointmentId: Long, targetMemberId: Long) =
             record("kick:$appointmentId:$targetMemberId")
 
-        override suspend fun sendReminders(appointmentId: Long): AppointmentManageResult<ReminderSendSummary> =
+        var reminderResult: AppointmentManageResult<ReminderSendSummary> =
             AppointmentManageResult.Success(ReminderSendSummary(0, emptyList()))
+
+        override suspend fun sendReminders(appointmentId: Long): AppointmentManageResult<ReminderSendSummary> {
+            calls += "reminders:$appointmentId"
+            return reminderResult
+        }
     }
 
     private class FakeSearch : PlaceSearchRepository {
@@ -166,7 +173,10 @@ class AppointmentManageViewModelTest {
         myTravelMode = null,
         joinedCount = 2,
         scheduleSubmittedCount = 0,
-        members = emptyList()
+        members = listOf(
+            AppointmentMember(1L, "방장", null, AppointmentMemberRole.HOST, true, AppointmentAttendanceStatus.ATTENDING, null),
+            AppointmentMember(2L, "민수", null, AppointmentMemberRole.MEMBER, false, AppointmentAttendanceStatus.PENDING, null)
+        )
     )
 
     private fun viewModel(canceled: Boolean = false) = AppointmentManageViewModel(
@@ -543,5 +553,154 @@ class AppointmentManageViewModelTest {
 
         assertTrue(vm.uiState.value.isCanceled)
         assertFalse(vm.uiState.value.canSave())
+    }
+
+    @Test
+    fun `멤버 관리에는 상세의 멤버가 방장 표시와 함께 담긴다`() {
+        val vm = viewModel()
+
+        assertEquals(
+            listOf(ManageMember(1L, "방장", true), ManageMember(2L, "민수", false)),
+            vm.uiState.value.members
+        )
+    }
+
+    @Test
+    fun `멤버를 내보내려면 확인한 뒤에만 서버에 보내고 목록에서 뺀다`() = runTest(dispatcher) {
+        val vm = viewModel()
+        vm.openStep(AppointmentManageStep.MEMBERS)
+
+        vm.requestKick(2L)
+        assertEquals(2L, vm.uiState.value.kickTarget?.memberId)
+        assertTrue(manage.calls.isEmpty())
+
+        vm.confirmKick()
+        runCurrent()
+
+        assertEquals(listOf("kick:7:2"), manage.calls)
+        assertNull(vm.uiState.value.kickTarget)
+        assertEquals(listOf(1L), vm.uiState.value.members.map { it.memberId })
+        assertEquals(AppointmentManageNotice.KICKED, vm.notice.value)
+        assertEquals(1, changedCount)
+    }
+
+    @Test
+    fun `내보내기 팝업을 닫으면 아무것도 보내지 않는다`() = runTest(dispatcher) {
+        val vm = viewModel()
+        vm.openStep(AppointmentManageStep.MEMBERS)
+        vm.requestKick(2L)
+
+        vm.dismissKick()
+        vm.confirmKick()
+        runCurrent()
+
+        assertNull(vm.uiState.value.kickTarget)
+        assertTrue(manage.calls.isEmpty())
+        assertEquals(2, vm.uiState.value.members.size)
+    }
+
+    @Test
+    fun `방장은 내보낼 수 없고 멤버 관리 화면이 아니면 요청도 무시한다`() {
+        val vm = viewModel()
+        vm.requestKick(2L)
+        assertNull(vm.uiState.value.kickTarget)
+
+        vm.openStep(AppointmentManageStep.MEMBERS)
+        vm.requestKick(1L)
+        assertNull(vm.uiState.value.kickTarget)
+    }
+
+    @Test
+    fun `취소된 약속에서는 멤버를 내보낼 수 없다`() {
+        val vm = viewModel(canceled = true)
+        vm.openStep(AppointmentManageStep.MEMBERS)
+
+        vm.requestKick(2L)
+
+        assertNull(vm.uiState.value.kickTarget)
+    }
+
+    @Test
+    fun `내보내기가 거절되면 목록을 그대로 두고 로그인 뒤 같은 멤버를 다시 내보낸다`() = runTest(dispatcher) {
+        manage.result = AppointmentManageResult.LoginRequired
+        val vm = viewModel()
+        vm.openStep(AppointmentManageStep.MEMBERS)
+        vm.requestKick(2L)
+        vm.confirmKick()
+        runCurrent()
+
+        assertEquals(AppointmentManageNotice.LOGIN_REQUIRED, vm.notice.value)
+        assertEquals(2, vm.uiState.value.members.size)
+
+        manage.result = AppointmentManageResult.Success(Unit)
+        vm.resumeAfterLogin()
+        runCurrent()
+
+        assertEquals(listOf("kick:7:2", "kick:7:2"), manage.calls)
+        assertEquals(listOf(1L), vm.uiState.value.members.map { it.memberId })
+    }
+
+    @Test
+    fun `내보내기에 실패하면 멤버를 유지하고 실패를 알린다`() = runTest(dispatcher) {
+        manage.result = AppointmentManageResult.Rejected(AppointmentManageRejectReason.INVALID_MEMBER)
+        val vm = viewModel()
+        vm.openStep(AppointmentManageStep.MEMBERS)
+        vm.requestKick(2L)
+        vm.confirmKick()
+        runCurrent()
+
+        assertEquals(2, vm.uiState.value.members.size)
+        assertEquals(0, changedCount)
+        assertFalse(vm.uiState.value.isWorking)
+    }
+
+    @Test
+    fun `미응답자 알림은 서버가 보낸 인원을 안내한다`() = runTest(dispatcher) {
+        manage.reminderResult = AppointmentManageResult.Success(ReminderSendSummary(3, emptyList()))
+        val vm = viewModel()
+
+        vm.sendReminders()
+        runCurrent()
+
+        assertEquals(listOf("reminders:7"), manage.calls)
+        assertEquals(AppointmentManageNotice.REMINDER_SENT, vm.notice.value)
+        assertEquals(3, vm.uiState.value.lastReminderSentCount)
+        assertFalse(vm.uiState.value.isWorking)
+    }
+
+    @Test
+    fun `보낼 미응답자가 없으면 없다고 안내한다`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        vm.sendReminders()
+        runCurrent()
+
+        assertEquals(AppointmentManageNotice.REMINDER_NONE, vm.notice.value)
+    }
+
+    @Test
+    fun `미응답자 알림이 로그인이 필요하면 로그인 뒤 다시 보낸다`() = runTest(dispatcher) {
+        manage.reminderResult = AppointmentManageResult.LoginRequired
+        val vm = viewModel()
+        vm.sendReminders()
+        runCurrent()
+        assertEquals(AppointmentManageNotice.LOGIN_REQUIRED, vm.notice.value)
+
+        manage.reminderResult = AppointmentManageResult.Success(ReminderSendSummary(1, emptyList()))
+        vm.resumeAfterLogin()
+        runCurrent()
+
+        assertEquals(listOf("reminders:7", "reminders:7"), manage.calls)
+        assertEquals(AppointmentManageNotice.REMINDER_SENT, vm.notice.value)
+    }
+
+    @Test
+    fun `취소된 약속에서는 미응답자 알림을 보내지 않는다`() = runTest(dispatcher) {
+        val vm = viewModel(canceled = true)
+
+        vm.sendReminders()
+        runCurrent()
+
+        assertTrue(manage.calls.isEmpty())
     }
 }

@@ -65,9 +65,17 @@ fun AppointmentManageRoute(
             AppointmentManageNotice.LOCATION_SEARCH_FAILED -> R.string.appointment_location_search_failed
             AppointmentManageNotice.SAVED -> R.string.appointment_manage_saved
             AppointmentManageNotice.CANCELED_DONE -> R.string.appointment_manage_canceled_done
+            AppointmentManageNotice.KICKED -> R.string.appointment_manage_kicked
+            AppointmentManageNotice.REMINDER_SENT -> R.string.appointment_manage_reminder_sent
+            AppointmentManageNotice.REMINDER_NONE -> R.string.appointment_manage_reminder_none
             AppointmentManageNotice.LOGIN_REQUIRED -> return@LaunchedEffect
         }
-        snackbarHostState.showSnackbar(context.getString(messageResource))
+        val message = if (current == AppointmentManageNotice.REMINDER_SENT) {
+            context.getString(messageResource, state.lastReminderSentCount ?: 0)
+        } else {
+            context.getString(messageResource)
+        }
+        snackbarHostState.showSnackbar(message)
         viewModel.clearNotice()
     }
 
@@ -80,7 +88,11 @@ fun AppointmentManageRoute(
             onSave = viewModel::save,
             onRequestConfirm = viewModel::requestConfirm,
             onDismissConfirm = viewModel::dismissConfirm,
-            onConfirm = viewModel::confirmAction
+            onConfirm = viewModel::confirmAction,
+            onSendReminders = viewModel::sendReminders,
+            onRequestKick = viewModel::requestKick,
+            onDismissKick = viewModel::dismissKick,
+            onConfirmKick = viewModel::confirmKick
         )
         SnackbarHost(
             hostState = snackbarHostState,

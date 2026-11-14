@@ -1,17 +1,21 @@
 package com.jigmnnaga.presentation.appointment.manage
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -56,12 +60,17 @@ fun AppointmentManageScreen(
     onRequestConfirm: (AppointmentManageConfirm) -> Unit,
     onDismissConfirm: () -> Unit,
     onConfirm: () -> Unit,
+    onSendReminders: () -> Unit,
+    onRequestKick: (Long) -> Unit,
+    onDismissKick: () -> Unit,
+    onConfirmKick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
     val headerTitle = when (state.step) {
         AppointmentManageStep.MENU -> stringResource(R.string.appointment_manage_title)
         AppointmentManageStep.TITLE -> stringResource(R.string.appointment_manage_title_edit)
+        AppointmentManageStep.MEMBERS -> stringResource(R.string.appointment_manage_members_title)
         else -> state.saved.appointmentName.ifBlank { stringResource(R.string.appointment_manage_title) }
     }
 
@@ -86,8 +95,11 @@ fun AppointmentManageScreen(
                 AppointmentManageStep.MENU -> ManageMenu(
                     state = state,
                     onOpenStep = onOpenStep,
-                    onRequestConfirm = onRequestConfirm
+                    onRequestConfirm = onRequestConfirm,
+                    onSendReminders = onSendReminders
                 )
+
+                AppointmentManageStep.MEMBERS -> MemberManager(state = state, onRequestKick = onRequestKick)
 
                 AppointmentManageStep.TITLE -> TitleEditor(form = state.form, onFormChange = onFormChange)
 
@@ -108,7 +120,7 @@ fun AppointmentManageScreen(
             }
         }
 
-        if (state.step != AppointmentManageStep.MENU) {
+        if (state.step != AppointmentManageStep.MENU && state.step != AppointmentManageStep.MEMBERS) {
             AppButton(
                 text = stringResource(R.string.appointment_manage_save),
                 variant = ButtonVariant.DEFAULT,
@@ -127,6 +139,27 @@ fun AppointmentManageScreen(
                     .testTag("appointment-manage-save")
             )
         }
+    }
+
+    state.kickTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = onDismissKick,
+            title = { Text(stringResource(R.string.appointment_manage_kick_dialog_title, target.nickname)) },
+            text = { Text(stringResource(R.string.appointment_manage_kick_dialog_message, target.nickname)) },
+            confirmButton = {
+                TextButton(onClick = onConfirmKick, modifier = Modifier.testTag("appointment-manage-kick-confirm")) {
+                    Text(
+                        stringResource(R.string.appointment_manage_members_kick),
+                        color = AppColors.Danger.Red600
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissKick) {
+                    Text(stringResource(R.string.appointment_manage_dialog_cancel))
+                }
+            }
+        )
     }
 
     state.confirm?.let { confirm ->
@@ -158,7 +191,8 @@ fun AppointmentManageScreen(
 private fun ManageMenu(
     state: AppointmentManageUiState,
     onOpenStep: (AppointmentManageStep) -> Unit,
-    onRequestConfirm: (AppointmentManageConfirm) -> Unit
+    onRequestConfirm: (AppointmentManageConfirm) -> Unit,
+    onSendReminders: () -> Unit
 ) {
     val undecided = stringResource(R.string.appointment_manage_undecided)
     val editable = !state.isCanceled && !state.isWorking
@@ -211,6 +245,25 @@ private fun ManageMenu(
         color = AppColors.Monotone.Gray600
     )
 
+    SectionTitle(stringResource(R.string.appointment_manage_section_members))
+    ManageCard {
+        ManageRow(
+            title = stringResource(R.string.appointment_manage_item_reminder),
+            subtitle = stringResource(R.string.appointment_manage_item_reminder_desc),
+            enabled = editable,
+            tag = "appointment-manage-reminder",
+            onClick = onSendReminders
+        )
+        HorizontalDivider(color = AppColors.Monotone.Gray100)
+        ManageRow(
+            title = stringResource(R.string.appointment_manage_item_members),
+            subtitle = stringResource(R.string.appointment_manage_item_members_desc),
+            enabled = !state.isWorking,
+            tag = "appointment-manage-members",
+            onClick = { onOpenStep(AppointmentManageStep.MEMBERS) }
+        )
+    }
+
     SectionTitle(stringResource(R.string.appointment_manage_section_cleanup))
     ManageCard {
         ManageRow(
@@ -256,6 +309,101 @@ private fun TitleEditor(form: AppointmentCreateUiState, onFormChange: (Appointme
         style = MaterialTheme.typography.labelSmall,
         color = AppColors.Monotone.Gray600
     )
+}
+
+@Composable
+private fun MemberManager(state: AppointmentManageUiState, onRequestKick: (Long) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing4)) {
+        Text(
+            text = stringResource(R.string.appointment_manage_members_title_label),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.Monotone.Gray600
+        )
+        Text(
+            text = state.saved.appointmentName,
+            style = MaterialTheme.typography.titleMedium,
+            color = AppColors.Monotone.SoftBlack
+        )
+    }
+    SectionTitle(stringResource(R.string.appointment_manage_members_count, state.members.size))
+    ManageCard {
+        state.members.forEachIndexed { index, member ->
+            if (index > 0) HorizontalDivider(color = AppColors.Monotone.Gray100)
+            MemberRow(
+                member = member,
+                canKick = !state.isCanceled && !state.isWorking,
+                onKick = { onRequestKick(member.memberId) }
+            )
+        }
+    }
+    Text(
+        text = stringResource(R.string.appointment_manage_members_note),
+        style = MaterialTheme.typography.labelSmall,
+        color = AppColors.Monotone.Gray600
+    )
+}
+
+@Composable
+private fun MemberRow(member: ManageMember, canKick: Boolean, onKick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .padding(horizontal = AppDimens.Spacing16, vertical = AppDimens.Spacing12)
+            .testTag("appointment-manage-member-${member.memberId}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
+    ) {
+        Surface(
+            modifier = Modifier.size(40.dp),
+            shape = CircleShape,
+            color = if (member.isHost) AppColors.MainGreen.Green900 else AppColors.MainGreen.Green700
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = member.nickname.take(1),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.Monotone.White
+                )
+            }
+        }
+        Text(
+            text = member.nickname,
+            modifier = Modifier.weight(1f, fill = false),
+            style = MaterialTheme.typography.titleSmall,
+            color = AppColors.Monotone.SoftBlack,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (member.isHost) {
+            Surface(shape = CircleShape, color = AppColors.MainGreen.Green200) {
+                Text(
+                    text = stringResource(R.string.appointment_manage_members_host_badge),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.MainGreen.Green900
+                )
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        if (!member.isHost) {
+            Surface(
+                onClick = onKick,
+                enabled = canKick,
+                modifier = Modifier.testTag("appointment-manage-kick-${member.memberId}"),
+                shape = RoundedCornerShape(8.dp),
+                color = AppColors.Monotone.White,
+                border = BorderStroke(1.dp, AppColors.Danger.Red200)
+            ) {
+                Text(
+                    text = stringResource(R.string.appointment_manage_members_kick),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (canKick) AppColors.Danger.Red600 else AppColors.Monotone.Gray500
+                )
+            }
+        }
+    }
 }
 
 @Composable

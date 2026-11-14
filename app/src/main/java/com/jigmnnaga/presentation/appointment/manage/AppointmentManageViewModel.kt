@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.appointment.manage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jigmnnaga.domain.model.AppointmentDetail
+import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.domain.model.AppointmentManageRejectReason
 import com.jigmnnaga.domain.model.AppointmentManageResult
 import com.jigmnnaga.domain.model.PlaceSearchResult
@@ -39,7 +40,12 @@ enum class AppointmentManageNotice {
     FAILED_RETRY,
     LOCATION_SEARCH_FAILED,
     SAVED,
-    CANCELED_DONE
+    CANCELED_DONE,
+    KICKED,
+
+    /** 미응답자에게 알림을 보냈다. 인원은 [AppointmentManageUiState.lastReminderSentCount]에 있다. */
+    REMINDER_SENT,
+    REMINDER_NONE
 }
 
 /**
@@ -67,6 +73,9 @@ class AppointmentManageViewModel(
                 saved = form,
                 form = form,
                 savedDeadline = detail.responseDeadline,
+                members = detail.members.map {
+                    ManageMember(it.memberId, it.nickname, it.role == AppointmentMemberRole.HOST)
+                },
                 isCanceled = detail.canceled
             )
         }
@@ -126,7 +135,7 @@ class AppointmentManageViewModel(
         if (!state.canSave()) return
         val form = state.form
         when (state.step) {
-            AppointmentManageStep.MENU -> Unit
+            AppointmentManageStep.MENU, AppointmentManageStep.MEMBERS -> Unit
             AppointmentManageStep.TITLE -> {
                 val title = form.appointmentName.trim()
                 execute(retry = ::save, call = { repository.updateTitle(appointmentId, title) }) {
@@ -199,6 +208,51 @@ class AppointmentManageViewModel(
         _uiState.value = _uiState.value.copy(confirm = null)
     }
 
+    /** 멤버 관리 화면에서 내보내기 버튼. 방장은 내보낼 수 없고, 바로 실행하지 않고 확인 팝업을 띄운다. */
+    fun requestKick(memberId: Long) {
+        val state = _uiState.value
+        if (state.isWorking || state.isCanceled || state.step != AppointmentManageStep.MEMBERS) return
+        val target = state.members.firstOrNull { it.memberId == memberId && !it.isHost } ?: return
+        _uiState.value = state.copy(kickTarget = target)
+    }
+
+    fun dismissKick() {
+        _uiState.value = _uiState.value.copy(kickTarget = null)
+    }
+
+    /** 내보내기 확인 팝업에서 내보내기를 눌렀을 때. 서버가 받아 준 뒤에 목록에서 뺀다. */
+    fun confirmKick() {
+        val state = _uiState.value
+        val target = state.kickTarget ?: return
+        if (state.isWorking) return
+        _uiState.value = state.copy(kickTarget = null)
+        launchCall(
+            retry = {
+                _uiState.value = _uiState.value.copy(kickTarget = target)
+                confirmKick()
+            },
+            call = { repository.kickParticipant(appointmentId, target.memberId) }
+        ) {
+            onChanged()
+            _notice.value = AppointmentManageNotice.KICKED
+            _uiState.value = _uiState.value.copy(
+                members = _uiState.value.members.filterNot { it.memberId == target.memberId },
+                isWorking = false
+            )
+        }
+    }
+
+    /** 미응답자 알림. 누구에게 몇 명 보냈는지는 서버가 정하고, 보낸 인원만 안내한다. */
+    fun sendReminders() {
+        val state = _uiState.value
+        if (state.isWorking || state.isCanceled || state.step != AppointmentManageStep.MENU) return
+        launchCall(retry = ::sendReminders, call = { repository.sendReminders(appointmentId) }) { summary ->
+            _notice.value = if (summary.sentCount > 0) AppointmentManageNotice.REMINDER_SENT
+            else AppointmentManageNotice.REMINDER_NONE
+            _uiState.value = _uiState.value.copy(isWorking = false, lastReminderSentCount = summary.sentCount)
+        }
+    }
+
     /** 확인 팝업에서 확인을 눌렀을 때. */
     fun confirmAction() {
         val state = _uiState.value
@@ -248,16 +302,23 @@ class AppointmentManageViewModel(
         )
     }
 
-    /** 서버 호출 하나를 실행하고 결과를 안내로 바꾼다. 성공하면 [onSuccess]가 상태를 정리한다. */
+    /** 값이 없는 서버 호출 하나를 실행한다. 성공하면 [onSuccess]가 지금 상태를 받아 정리한다. */
     private fun execute(
         retry: () -> Unit,
         call: suspend () -> AppointmentManageResult<Unit>,
         onSuccess: (AppointmentManageUiState) -> Unit
+    ) = launchCall(retry, call) { onSuccess(_uiState.value) }
+
+    /** 서버 호출 하나를 실행하고 결과를 안내로 바꾼다. 성공하면 [onSuccess]가 상태를 정리한다. */
+    private fun <T> launchCall(
+        retry: () -> Unit,
+        call: suspend () -> AppointmentManageResult<T>,
+        onSuccess: (T) -> Unit
     ) {
         _uiState.value = _uiState.value.copy(isWorking = true)
         viewModelScope.launch {
             when (val result = call()) {
-                is AppointmentManageResult.Success -> onSuccess(_uiState.value)
+                is AppointmentManageResult.Success -> onSuccess(result.value)
                 AppointmentManageResult.LoginRequired -> {
                     finishWorking()
                     loginResume = retry
@@ -339,6 +400,7 @@ class AppointmentManageViewModel(
 
     private fun AppointmentManageStep.toCreateStep() = when (this) {
         AppointmentManageStep.MENU,
+        AppointmentManageStep.MEMBERS,
         AppointmentManageStep.TITLE -> AppointmentCreateStep.APPOINTMENT_NAME
         AppointmentManageStep.SCHEDULE -> AppointmentCreateStep.SCHEDULE
         AppointmentManageStep.LOCATIONS -> AppointmentCreateStep.LOCATIONS
