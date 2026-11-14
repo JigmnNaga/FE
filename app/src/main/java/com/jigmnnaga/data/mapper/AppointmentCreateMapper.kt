@@ -18,7 +18,7 @@ fun NewAppointment.toDto(): AppointmentCreateRequestDto = AppointmentCreateReque
     previousMembers = previousMembers?.toDto()
 )
 
-private fun NewCandidateLocation.toDto() = CreateCandidateLocationDto(
+internal fun NewCandidateLocation.toDto() = CreateCandidateLocationDto(
     placeName = placeName,
     address = address,
     lineNames = lineNames,
