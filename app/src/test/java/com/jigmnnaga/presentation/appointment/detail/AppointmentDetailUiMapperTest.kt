@@ -149,6 +149,21 @@ class AppointmentDetailUiMapperTest {
     }
 
     @Test
+    fun `참여자 관리 화면에 약속 정보와 멤버와 내 알림 설정이 담긴다`() {
+        val state = detail(confirmed = true, myRole = AppointmentMemberRole.MEMBER)
+            .copy(myNotificationEnabled = true)
+            .toParticipantManagementUiState(labels)
+
+        assertEquals("중간고사 카공 모임", state.appointmentName)
+        assertEquals("확정", state.scheduleStatusLabel)
+        assertEquals("11월 20일 금요일 오후 3:00", state.dateSummary)
+        assertEquals("강남역 카공카페", state.placeSummary)
+        assertEquals(listOf("나", "태양", "하은"), state.members.map { it.name })
+        assertEquals(listOf("참석", "불참", "응답 전"), state.members.map { it.statusLabel })
+        assertTrue(state.isNotificationsEnabled)
+    }
+
+    @Test
     fun `확정 확인 화면에 확정 정보와 내 참석 응답이 담긴다`() {
         val state = detail(confirmed = true, myAttendance = AppointmentAttendanceStatus.ATTENDING)
             .toFinalConfirmationUiState(labels)

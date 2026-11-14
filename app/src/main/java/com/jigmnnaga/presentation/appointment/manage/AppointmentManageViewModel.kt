@@ -395,6 +395,8 @@ class AppointmentManageViewModel(
         AppointmentManageRejectReason.DATES_BEFORE_DEADLINE -> AppointmentManageNotice.DATES_BEFORE_DEADLINE
         AppointmentManageRejectReason.INVALID_LOCATIONS -> AppointmentManageNotice.INVALID_LOCATIONS
         AppointmentManageRejectReason.INVALID_MEMBER,
+        AppointmentManageRejectReason.NEW_HOST_REQUIRED,
+        AppointmentManageRejectReason.LAST_MEMBER_CANNOT_LEAVE,
         AppointmentManageRejectReason.INVALID_INPUT -> AppointmentManageNotice.INVALID_INPUT
     }
 

@@ -28,5 +28,12 @@ interface AppointmentManageRepository {
     suspend fun delete(appointmentId: Long): AppointmentManageResult<Unit>
     suspend fun delegateHost(appointmentId: Long, newHostMemberId: Long): AppointmentManageResult<Unit>
     suspend fun kickParticipant(appointmentId: Long, targetMemberId: Long): AppointmentManageResult<Unit>
+
+    /** 약속방을 나간다. 방장이 나갈 때는 [newHostMemberId]로 다음 방장을 넘겨야 한다. */
+    suspend fun leave(appointmentId: Long, newHostMemberId: Long? = null): AppointmentManageResult<Unit>
+
+    /** 이 약속방의 푸시 알림을 켜거나 끈다. 알림함에는 그대로 쌓인다. */
+    suspend fun updateNotificationSetting(appointmentId: Long, enabled: Boolean): AppointmentManageResult<Unit>
+
     suspend fun sendReminders(appointmentId: Long): AppointmentManageResult<ReminderSendSummary>
 }

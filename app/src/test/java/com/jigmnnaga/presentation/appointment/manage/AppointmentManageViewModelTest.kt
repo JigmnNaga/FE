@@ -88,6 +88,12 @@ class AppointmentManageViewModelTest {
         override suspend fun kickParticipant(appointmentId: Long, targetMemberId: Long) =
             record("kick:$appointmentId:$targetMemberId")
 
+        override suspend fun leave(appointmentId: Long, newHostMemberId: Long?) =
+            record("leave:$appointmentId:$newHostMemberId")
+
+        override suspend fun updateNotificationSetting(appointmentId: Long, enabled: Boolean) =
+            record("notification:$appointmentId:$enabled")
+
         var reminderResult: AppointmentManageResult<ReminderSendSummary> =
             AppointmentManageResult.Success(ReminderSendSummary(0, emptyList()))
 
