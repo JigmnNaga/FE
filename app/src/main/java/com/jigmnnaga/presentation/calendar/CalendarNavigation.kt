@@ -5,6 +5,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
+import com.jigmnnaga.presentation.notification.NotificationDestination
 
 /**
  * 캘린더 기능이 소유하는 네비게이션 그래프.
@@ -16,7 +17,7 @@ object CalendarNavigationGraph : AppNavigationGraph {
             CalendarRoute(
                 onAddClick = { navigator.navigate(AppointmentCreateDestination) },
                 onHomeClick = { navigator.navigateBack() },
-                onNotificationClick = { /* TODO: HOM-003 알림 화면 연결 */ },
+                onNotificationClick = { navigator.navigate(NotificationDestination) },
                 onProfileClick = { /* TODO: 마이페이지 화면 연결 */ }
             )
         }
