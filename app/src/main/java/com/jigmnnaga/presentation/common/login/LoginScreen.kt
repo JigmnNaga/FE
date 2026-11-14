@@ -23,7 +23,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -49,8 +55,18 @@ fun LoginScreen(
     onTermsClick: () -> Unit = {},
     onPrivacyClick: () -> Unit = {},
     isLoading: Boolean = false,
+    isSuccess: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    var showLoginActions by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(1_000)
+        showLoginActions = true
+    }
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) showLoginActions = false
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -80,80 +96,92 @@ fun LoginScreen(
             Spacer(Modifier.height(if (isSmallScreen) 84.dp else 114.dp))
         }
 
-        // 카카오 버튼 + 약관
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = AppDimens.Spacing20)
-                .padding(bottom = buttonBottomPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(50.dp)
-        ) {
-            Surface(
-                onClick = onKakaoLoginClick,
-                enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
-                color = KakaoYellow,
-                shadowElevation = 0.dp
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 17.dp)
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.kakaotalk),
-                        contentDescription = null,
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Spacer(Modifier.width(AppDimens.Spacing12))
-                    Text(
-                        text = "카카오로 시작하기",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        ),
-                        color = AppColors.Monotone.SoftBlack
-                    )
-                }
-            }
-
-            val termsText = buildAnnotatedString {
-                append("로그인 시 ")
-                pushStringAnnotation(tag = "TERMS", annotation = "terms")
-                withStyle(
-                    SpanStyle(
-                        color = AppColors.MainGreen.Green700,
-                        textDecoration = TextDecoration.Underline
-                    )
-                ) { append("이용약관") }
-                pop()
-                append("과 ")
-                pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
-                withStyle(
-                    SpanStyle(
-                        color = AppColors.MainGreen.Green700,
-                        textDecoration = TextDecoration.Underline
-                    )
-                ) { append("개인정보처리방침") }
-                pop()
-                append("에 동의합니다")
-            }
-            ClickableText(
-                text = termsText,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = AppColors.Monotone.Gray500
-                ),
-                onClick = { offset ->
-                    termsText.getStringAnnotations("TERMS", offset, offset)
-                        .firstOrNull()?.let { onTermsClick() }
-                    termsText.getStringAnnotations("PRIVACY", offset, offset)
-                        .firstOrNull()?.let { onPrivacyClick() }
-                }
+        if (isSuccess) {
+            Text(
+                text = "로그인이 성공적으로 완료되었습니다",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.MainGreen.Green700,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = buttonBottomPadding)
             )
+        } else if (showLoginActions) {
+            // 카카오 버튼 + 약관
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = AppDimens.Spacing20)
+                    .padding(bottom = buttonBottomPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(50.dp)
+            ) {
+                Surface(
+                    onClick = onKakaoLoginClick,
+                    enabled = !isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
+                    color = KakaoYellow,
+                    shadowElevation = 0.dp
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 17.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.kakaotalk),
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(Modifier.width(AppDimens.Spacing12))
+                        Text(
+                            text = "카카오로 시작하기",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 15.sp
+                            ),
+                            color = AppColors.Monotone.SoftBlack
+                        )
+                    }
+                }
+
+                val termsText = buildAnnotatedString {
+                    append("로그인 시 ")
+                    pushStringAnnotation(tag = "TERMS", annotation = "terms")
+                    withStyle(
+                        SpanStyle(
+                            color = AppColors.MainGreen.Green700,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) { append("이용약관") }
+                    pop()
+                    append("과 ")
+                    pushStringAnnotation(tag = "PRIVACY", annotation = "privacy")
+                    withStyle(
+                        SpanStyle(
+                            color = AppColors.MainGreen.Green700,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) { append("개인정보처리방침") }
+                    pop()
+                    append("에 동의합니다")
+                }
+                ClickableText(
+                    text = termsText,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        color = AppColors.Monotone.Gray500
+                    ),
+                    onClick = { offset ->
+                        termsText.getStringAnnotations("TERMS", offset, offset)
+                            .firstOrNull()?.let { onTermsClick() }
+                        termsText.getStringAnnotations("PRIVACY", offset, offset)
+                            .firstOrNull()?.let { onPrivacyClick() }
+                    }
+                )
+            }
         }
+
         if (isLoading) {
             Box(
                 modifier = Modifier
