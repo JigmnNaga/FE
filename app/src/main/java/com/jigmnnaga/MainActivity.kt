@@ -48,7 +48,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             JigmnnagaTheme {
                 AppNavHost(
-                    startDestination = LoginRoute,
+                    startDestination = SplashRoute,
                     navigatorEffects = { navigator ->
                         val inviteCode = pendingInviteCode
                         LaunchedEffect(inviteCode) {

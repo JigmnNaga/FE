@@ -14,3 +14,14 @@ data class LoginResponseDto(
     val refreshToken: String,
     val isNewMember: Boolean
 )
+
+@Serializable
+data class TokenReissueRequestDto(
+    val refreshToken: String
+)
+
+@Serializable
+data class TokenReissueResponseDto(
+    val accessToken: String,
+    val refreshToken: String
+)
