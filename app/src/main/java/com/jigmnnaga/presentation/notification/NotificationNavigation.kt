@@ -12,7 +12,7 @@ import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.di.NotificationEntryPoint
-import com.jigmnnaga.presentation.appointment.ParticipantAppointmentRoomDestination
+import com.jigmnnaga.presentation.appointment.AppointmentRoomDestination
 import com.jigmnnaga.presentation.common.login.LoginRoute
 import dagger.hilt.android.EntryPointAccessors
 import kotlinx.serialization.Serializable
@@ -31,9 +31,8 @@ object NotificationNavigationGraph : AppNavigationGraph {
             NotificationRoute(
                 viewModel = viewModel,
                 onBack = { navigator.navigateBack() },
-                // TODO: 내 역할(myRole)을 알 수 있게 되면 방장이면 방장 약속방으로 보낸다.
                 onOpenAppointment = { appointmentId ->
-                    navigator.navigate(ParticipantAppointmentRoomDestination(appointmentId))
+                    navigator.navigate(AppointmentRoomDestination(appointmentId))
                 },
                 onLoginRequired = { resumeAfterLogin ->
                     LoginReturnRegistry.request(resumeAfterLogin)

@@ -23,9 +23,11 @@ import com.jigmnnaga.di.AttendanceEntryPoint
 import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
+import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.domain.model.PreviousMembers
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
+import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLabels
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoader
 import com.jigmnnaga.presentation.appointment.detail.rememberAppointmentDetailLabels
 import com.jigmnnaga.presentation.appointment.detail.toExistingAddUiState
@@ -86,13 +88,12 @@ data class AppointmentCreateFromPreviousDestination(
 @Serializable
 data class AppointmentInviteDestination(val inviteCode: String)
 
-/** 방장 약속방(APT-004). 약속 ID를 인자로 받는다. */
+/**
+ * 약속방. 약속 ID를 인자로 받고, 내 역할에 따라 방장 약속방(APT-004)이나 참여자 약속방(APT-005)을 보여 준다.
+ * 약속방으로 들어가는 모든 경로는 이 목적지를 쓴다.
+ */
 @Serializable
-data class HostAppointmentRoomDestination(val appointmentId: Long)
-
-/** 참여자 약속방(APT-005). 약속 ID를 인자로 받는다. */
-@Serializable
-data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
+data class AppointmentRoomDestination(val appointmentId: Long)
 
 /** 참여자 약속방 관리 화면(APT-005-02·06). 약속 ID를 인자로 받는다. */
 @Serializable
@@ -149,16 +150,24 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     LoginReturnRegistry.request(resumeInviteAfterLogin)
                     navigator.navigate(LoginRoute)
                 },
-                // TODO: 약속방 화면이 등록되면 appointmentId 약속방으로 이동하도록 바꾼다.
-                onOpenChat = { navigator.navigateToHome() },
+                // 수락한 약속방으로 이동한다. 초대 화면은 백스택에서 빼서 뒤로 가도 다시 보이지 않게 한다.
+                onOpenChat = { appointmentId ->
+                    navigator.navigate(
+                        destination = AppointmentRoomDestination(appointmentId),
+                        options = AppNavigationOptions(
+                            popUpTo = AppointmentInviteDestination(inviteCode),
+                            inclusive = true
+                        )
+                    )
+                },
                 onReturnHome = { navigator.navigateToHome() }
             )
         }
 
         // 약속 상세 API(시트 41·44번) 조회로 약속 정보와 참여자를 채운다.
-        // TODO: 하나의 약속방 목적지로 합치고 내 역할(myRole)로 방장·참여자 화면을 정한다. 약속 관리 화면은 목적지가 등록될 때 연결한다.
-        builder.composable<HostAppointmentRoomDestination> { entry ->
-            val appointmentId = entry.toRoute<HostAppointmentRoomDestination>().appointmentId
+        // 내 역할(myRole)이 방장이면 방장 약속방을, 그 밖에는 참여자 약속방을 보여 준다.
+        builder.composable<AppointmentRoomDestination> { entry ->
+            val appointmentId = entry.toRoute<AppointmentRoomDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
             val labels = rememberAppointmentDetailLabels()
             AppointmentDetailLoader(
@@ -166,22 +175,11 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onBack = { navigator.navigateBack() },
                 onLoginRequired = { resume -> navigator.requestLogin(resume) }
             ) { detail ->
-                val viewModel: HostAppointmentRoomViewModel = viewModel(
-                    // 약속 관리에서 약속 정보를 바꿔 상세를 다시 불러오면 새 값으로 화면 상태를 다시 만든다.
-                    key = "host-room-$appointmentId-${detail.hashCode()}",
-                    factory = remember(detail) {
-                        viewModelFactory {
-                            initializer { HostAppointmentRoomViewModel(detail.toHostRoomUiState(labels)) }
-                        }
-                    }
-                )
-                HostAppointmentRoomRoute(
-                    viewModel = viewModel,
-                    onBackClick = { navigator.navigateBack() },
-                    onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
-                    onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
-                    onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) }
-                )
+                if (detail.opensHostRoom()) {
+                    HostRoomContent(navigator, appointmentId, detail, labels)
+                } else {
+                    ParticipantRoomContent(navigator, appointmentId, detail, labels)
+                }
             }
         }
 
@@ -272,37 +270,6 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     viewModel = viewModel,
                     onExit = { navigator.navigateBack() },
                     onLoginRequired = { resume -> navigator.requestLogin(resume) }
-                )
-            }
-        }
-
-        builder.composable<ParticipantAppointmentRoomDestination> { entry ->
-            val appointmentId = entry.toRoute<ParticipantAppointmentRoomDestination>().appointmentId
-            val loader = rememberAppointmentDetailLoader(appointmentId)
-            val labels = rememberAppointmentDetailLabels()
-            AppointmentDetailLoader(
-                viewModel = loader,
-                onBack = { navigator.navigateBack() },
-                onLoginRequired = { resume -> navigator.requestLogin(resume) }
-            ) { detail ->
-                val viewModel: ParticipantAppointmentRoomViewModel = viewModel(
-                    key = "participant-room-$appointmentId",
-                    factory = remember(detail) {
-                        viewModelFactory {
-                            initializer {
-                                ParticipantAppointmentRoomViewModel(detail.toParticipantRoomUiState(labels))
-                            }
-                        }
-                    }
-                )
-                ParticipantAppointmentRoomRoute(
-                    viewModel = viewModel,
-                    onBackClick = { navigator.navigateBack() },
-                    onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
-                    onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
-                    onManagementClick = {
-                        navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
-                    }
                 )
             }
         }
@@ -528,6 +495,60 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 inclusive = true,
                 launchSingleTop = true
             )
+        )
+    }
+
+    /** 방장 약속방(APT-004). 약속 관리에서 약속 정보를 바꿔 상세를 다시 불러오면 새 값으로 화면 상태를 다시 만든다. */
+    @Composable
+    private fun HostRoomContent(
+        navigator: AppNavigator,
+        appointmentId: Long,
+        detail: AppointmentDetail,
+        labels: AppointmentDetailLabels
+    ) {
+        val viewModel: HostAppointmentRoomViewModel = viewModel(
+            key = "host-room-$appointmentId-${detail.hashCode()}",
+            factory = remember(detail) {
+                viewModelFactory {
+                    initializer { HostAppointmentRoomViewModel(detail.toHostRoomUiState(labels)) }
+                }
+            }
+        )
+        HostAppointmentRoomRoute(
+            viewModel = viewModel,
+            onBackClick = { navigator.navigateBack() },
+            onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+            onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
+            onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) }
+        )
+    }
+
+    /** 참여자 약속방(APT-005). */
+    @Composable
+    private fun ParticipantRoomContent(
+        navigator: AppNavigator,
+        appointmentId: Long,
+        detail: AppointmentDetail,
+        labels: AppointmentDetailLabels
+    ) {
+        val viewModel: ParticipantAppointmentRoomViewModel = viewModel(
+            key = "participant-room-$appointmentId",
+            factory = remember(detail) {
+                viewModelFactory {
+                    initializer {
+                        ParticipantAppointmentRoomViewModel(detail.toParticipantRoomUiState(labels))
+                    }
+                }
+            }
+        )
+        ParticipantAppointmentRoomRoute(
+            viewModel = viewModel,
+            onBackClick = { navigator.navigateBack() },
+            onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+            onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
+            onManagementClick = {
+                navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
+            }
         )
     }
 

@@ -5,6 +5,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
+import com.jigmnnaga.presentation.appointment.toAppointmentRoomDestination
 import com.jigmnnaga.presentation.calendar.CalendarRoute
 import com.jigmnnaga.presentation.notification.NotificationDestination
 
@@ -22,7 +23,10 @@ object HomeNavigationGraph : AppNavigationGraph {
                 onScheduleClick = { navigator.navigateSingleTop(CalendarRoute) },
                 onNotificationClick = { navigator.navigate(NotificationDestination) },
                 onProfileClick = { /* TODO: 마이페이지 화면 연결 */ },
-                onAppointmentClick = { /* TODO: 약속 상세 화면 연결 */ },
+                // 홈 약속 목록이 목업인 동안은 숫자가 아닌 ID를 무시한다. 홈 API 연동 뒤에는 서버 약속 ID가 들어온다.
+                onAppointmentClick = { id ->
+                    id.toAppointmentRoomDestination()?.let { navigator.navigate(it) }
+                },
                 onInvitationClick = { /* TODO: 초대 목록 화면 연결 */ }
             )
         }
