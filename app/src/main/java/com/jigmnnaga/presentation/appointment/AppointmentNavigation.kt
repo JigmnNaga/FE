@@ -302,6 +302,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
         }
 
         // 약속 제목은 약속 상세 조회 값으로 채우고, 방장 여부는 내 역할(myRole)이 있으면 그 값을 쓴다.
+        // 후보 목록이 서버에서 오면 좌표(latitude·longitude)가 있는 후보가 지도에 마커로 표시된다.
         // TODO: 장소 검색·투표 API 연동 시 후보 목록과 선택 현황(progress)을 서버 값으로 채운다. 약속방에서 이 화면으로 가는 연결도 그때 붙인다.
         builder.composable<PlaceVoteDestination> { entry ->
             val destination = entry.toRoute<PlaceVoteDestination>()
@@ -336,7 +337,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                         submitLabel = submitLabel,
                                         showSearchInput = true,
                                         emptyMessage = emptyMessage,
-                                        showMapUnavailableNotice = true,
+                                        showMap = true,
                                         selectedSummaryTitle = ""
                                     )
                                 )
