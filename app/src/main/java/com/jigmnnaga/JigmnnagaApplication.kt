@@ -2,6 +2,7 @@ package com.jigmnnaga
 
 import android.app.Application
 import com.kakao.sdk.common.KakaoSdk
+import com.kakao.vectormap.KakaoMapSdk
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -12,6 +13,7 @@ class JigmnnagaApplication : Application() {
         val appKey = BuildConfig.KAKAO_NATIVE_APP_KEY
         if (appKey.isNotBlank()) {
             KakaoSdk.init(this, appKey)
+            KakaoMapSdk.init(this, appKey)
         }
     }
 }
