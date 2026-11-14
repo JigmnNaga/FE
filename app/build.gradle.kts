@@ -48,7 +48,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"http://43.200.183.75:8080/\""
+                "\"http://3.39.203.178:8080/\""
             )
         }
 
@@ -82,6 +82,12 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+        }
     }
 }
 

@@ -2,20 +2,24 @@ package com.jigmnnaga.presentation.common.login
 
 import android.app.Activity
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.jigmnnaga.domain.model.LoginResult
+import com.jigmnnaga.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * 로그인 화면의 상태를 관리합니다.
  *
  * 카카오 SDK 호출은 [KakaoLoginClient]에 위임하고,
+ * 백엔드 로그인 API 호출 및 JWT 저장은 [AuthRepository]에 위임합니다.
  * Activity는 호출 시점에 파라미터로 전달받아 저장하지 않습니다.
- *
- * @param kakaoLoginClient 테스트 시 목(Mock)으로 교체할 수 있습니다.
  */
 class LoginViewModel(
-    private val kakaoLoginClient: KakaoLoginClient = KakaoLoginClientImpl()
+    private val kakaoLoginClient: KakaoLoginClient,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
@@ -25,14 +29,27 @@ class LoginViewModel(
     fun login(activity: Activity) {
         if (_uiState.value is LoginUiState.Loading) return
         _uiState.value = LoginUiState.Loading
-        // Kakao SDK 콜백은 메인 스레드에서 전달됩니다.
+
         kakaoLoginClient.login(activity) { result ->
-            _uiState.value = when (result) {
-                KakaoLoginResult.Success -> LoginUiState.Success
-                KakaoLoginResult.Cancelled -> LoginUiState.Idle
-                KakaoLoginResult.SdkNotInitialized -> LoginUiState.Failure.SdkNotInitialized
-                is KakaoLoginResult.Failure -> LoginUiState.Failure.LoginError
+            when (result) {
+                is KakaoLoginResult.Success -> viewModelScope.launch {
+                    callBackendLogin(result.kakaoAccessToken)
+                }
+                KakaoLoginResult.Cancelled -> _uiState.value = LoginUiState.Idle
+                KakaoLoginResult.SdkNotInitialized -> _uiState.value = LoginUiState.Failure.SdkNotInitialized
+                is KakaoLoginResult.Failure -> _uiState.value = LoginUiState.Failure.KakaoAuthFailed
             }
+        }
+    }
+
+    private suspend fun callBackendLogin(kakaoAccessToken: String) {
+        _uiState.value = when (val result = authRepository.kakaoLogin(kakaoAccessToken)) {
+            is LoginResult.Success -> LoginUiState.Success
+            LoginResult.InvalidKakaoToken -> LoginUiState.Failure.InvalidKakaoToken
+            LoginResult.WithdrawnMember -> LoginUiState.Failure.WithdrawnMember
+            LoginResult.KakaoAccountInfoMissing -> LoginUiState.Failure.KakaoAccountInfoMissing
+            is LoginResult.NetworkError -> LoginUiState.Failure.NetworkError(result.debugInfo)
+            is LoginResult.ServerError -> LoginUiState.Failure.ServerError(result.debugInfo)
         }
     }
 

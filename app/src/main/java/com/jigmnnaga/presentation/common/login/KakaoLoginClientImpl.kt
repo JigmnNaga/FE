@@ -43,7 +43,7 @@ class KakaoLoginClientImpl : KakaoLoginClient {
                 }
                 token != null -> {
                     android.util.Log.d("KakaoLogin", "카카오톡 로그인 성공 (토큰 앞 10자: ${token.accessToken.take(10)}...)")
-                    onResult(KakaoLoginResult.Success)
+                    onResult(KakaoLoginResult.Success(token.accessToken))
                 }
                 else -> onResult(KakaoLoginResult.Failure(Exception("카카오톡 로그인 응답 없음")))
             }
@@ -63,7 +63,7 @@ class KakaoLoginClientImpl : KakaoLoginClient {
                 }
                 token != null -> {
                     android.util.Log.d("KakaoLogin", "카카오계정 로그인 성공 (토큰 앞 10자: ${token.accessToken.take(10)}...)")
-                    onResult(KakaoLoginResult.Success)
+                    onResult(KakaoLoginResult.Success(token.accessToken))
                 }
                 else -> onResult(KakaoLoginResult.Failure(Exception("카카오계정 로그인 응답 없음")))
             }

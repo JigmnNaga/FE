@@ -15,8 +15,8 @@ interface KakaoLoginClient {
 
 /** [KakaoLoginClient.login] 호출 결과. */
 sealed interface KakaoLoginResult {
-    /** 로그인 성공 — 액세스 토큰 획득 완료. */
-    data object Success : KakaoLoginResult
+    /** 로그인 성공 — [kakaoAccessToken]은 백엔드 로그인 API 호출에 사용합니다. */
+    data class Success(val kakaoAccessToken: String) : KakaoLoginResult
 
     /** 사용자가 직접 로그인을 취소한 경우. */
     data object Cancelled : KakaoLoginResult
