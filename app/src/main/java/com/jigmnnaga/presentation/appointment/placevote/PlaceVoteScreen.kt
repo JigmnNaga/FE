@@ -27,6 +27,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,6 +52,10 @@ import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.component.AppButton
 import com.jigmnnaga.core.designsystem.component.BackHeader
 import com.jigmnnaga.core.designsystem.component.ButtonVariant
+import com.jigmnnaga.core.designsystem.component.map.AppMapMarker
+import com.jigmnnaga.core.designsystem.component.map.AppMapStatus
+import com.jigmnnaga.core.designsystem.component.map.AppMapView
+import com.jigmnnaga.core.designsystem.component.map.isMapSupported
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
@@ -64,7 +73,11 @@ data class PlaceCandidateUiModel(
     /** 서버 또는 상위 화면에서 전달된 집계 문구. 예: "3/3명". 집계가 있을 때만 전달합니다. */
     val voteLabel: String? = null,
     /** 모든 멤버가 투표했으면 true. 배지 배경이 달라집니다. */
-    val isVoteComplete: Boolean = false
+    val isVoteComplete: Boolean = false,
+    /** 지도 마커 위치(위도). 좌표를 모르는 후보는 null이며 지도에 표시하지 않습니다. */
+    val latitude: Double? = null,
+    /** 지도 마커 위치(경도). */
+    val longitude: Double? = null
 )
 
 data class PlaceVoteProgressMemberUiModel(
@@ -101,6 +114,8 @@ data class PlaceVoteUiState(
     val emptyMessage: String? = null,
     /** 해당 화면에 지도 영역이 정의되어 있지만 SDK가 연결되지 않은 경우에만 표시합니다. */
     val showMapUnavailableNotice: Boolean = false,
+    /** 후보 위치를 보여 주는 지도 영역을 표시합니다. 지도를 쓸 수 없으면 안내 문구로 대신합니다. */
+    val showMap: Boolean = false,
     val progress: PlaceVoteProgressUiState? = null,
     /** 저장 버튼 위 요약 카드 제목. 예: "선택된 장소 (2개)" */
     val selectedSummaryTitle: String? = null,
@@ -108,6 +123,19 @@ data class PlaceVoteUiState(
 )
 
 private val VoteCompleteBadgeColor = Color(0xFFE9EFE3)
+
+private val MapHeight = 180.dp
+
+/** 좌표가 있는 후보만 지도 마커로 바꿉니다. */
+internal fun List<PlaceCandidateUiModel>.toMapMarkers(): List<AppMapMarker> = mapNotNull { candidate ->
+    val latitude = candidate.latitude
+    val longitude = candidate.longitude
+    if (latitude != null && longitude != null) {
+        AppMapMarker(id = candidate.id, latitude = latitude, longitude = longitude)
+    } else {
+        null
+    }
+}
 
 /**
  * 장소 검색·선택 UI. 검색 결과와 선택 상태는 모두 호출 측에서 소유합니다.
@@ -169,7 +197,12 @@ fun PlaceVoteScreen(
                     modifier = Modifier.padding(top = AppDimens.Spacing12)
                 )
             }
-            if (state.showMapUnavailableNotice) {
+            if (state.showMap) {
+                PlaceVoteMap(
+                    markers = state.candidates.toMapMarkers(),
+                    modifier = Modifier.padding(top = AppDimens.Spacing12)
+                )
+            } else if (state.showMapUnavailableNotice) {
                 MapUnavailableNotice(modifier = Modifier.padding(top = AppDimens.Spacing12))
             }
             if (state.candidates.isEmpty() && state.emptyMessage != null) {
@@ -376,6 +409,35 @@ private fun PlaceSearchField(
                 }
             )
         }
+    }
+}
+
+/** 후보 위치 지도. 앱 키가 없거나 지도 인증에 실패하면 안내 문구로 바꿔 보여 줍니다. */
+@Composable
+private fun PlaceVoteMap(
+    markers: List<AppMapMarker>,
+    modifier: Modifier = Modifier
+) {
+    var mapFailed by remember { mutableStateOf(false) }
+    if (!isMapSupported() || mapFailed) {
+        MapUnavailableNotice(modifier = modifier)
+        return
+    }
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(MapHeight)
+            .clip(RoundedCornerShape(AppDimens.Spacing12))
+            .background(AppColors.Monotone.Gray100)
+            .testTag("place-vote-map")
+    ) {
+        AppMapView(
+            markers = markers,
+            modifier = Modifier.fillMaxSize(),
+            onStatusChange = { status ->
+                if (status == AppMapStatus.UNAVAILABLE) mapFailed = true
+            }
+        )
     }
 }
 
