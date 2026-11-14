@@ -20,7 +20,8 @@ import com.jigmnnaga.R
 
 /**
  * 기존 약속 추가 화면과 [ExistingAppointmentAddViewModel]을 연결한다.
- * 화면 이동은 호출하는 쪽이 넘기고, 서버·채팅 미연동 안내만 스낵바로 보여 준다.
+ * 화면 이동은 호출하는 쪽이 넘기고, 안내만 스낵바로 보여 준다.
+ * "약속 요청하기"로 고른 참여자는 [onRequestMembers]로 넘긴다.
  */
 @Composable
 fun ExistingAppointmentAddRoute(
@@ -29,10 +30,12 @@ fun ExistingAppointmentAddRoute(
     onCalendarClick: () -> Unit,
     onPlaceClick: () -> Unit,
     onMoreClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRequestMembers: (PreviousMembersRequest) -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
+    val requestedMembers by viewModel.requestedMembers.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -42,11 +45,20 @@ fun ExistingAppointmentAddRoute(
                 R.string.existing_add_request_api_unavailable
             ExistingAppointmentAddNotice.CHAT_NOT_CONNECTED ->
                 R.string.existing_add_chat_unavailable
+            ExistingAppointmentAddNotice.REQUEST_MEMBERS_INVALID ->
+                R.string.existing_add_request_members_invalid
             null -> null
         }
         if (messageResource != null) {
             snackbarHostState.showSnackbar(context.getString(messageResource))
             viewModel.clearNotice()
+        }
+    }
+
+    LaunchedEffect(requestedMembers) {
+        requestedMembers?.let {
+            onRequestMembers(it)
+            viewModel.consumeRequestedMembers()
         }
     }
 
