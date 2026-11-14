@@ -1,17 +1,24 @@
 package com.jigmnnaga
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.composable
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.core.navigation.AppNavHost
 import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.core.navigation.LoginReturnRegistry
+import com.jigmnnaga.presentation.appointment.AppointmentInviteDestination
 import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
+import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteLinkParser
 import com.jigmnnaga.presentation.calendar.CalendarNavigationGraph
 import com.jigmnnaga.presentation.home.HomeNavigationGraph
 import com.jigmnnaga.presentation.home.HomeRoute
@@ -25,8 +32,12 @@ import com.jigmnnaga.presentation.common.splash.SplashScreen
 
 class MainActivity : ComponentActivity() {
 
+    /** 초대 링크로 앱이 열렸을 때 꺼낸 초대 코드. 화면 이동을 마치면 비운다. */
+    private var pendingInviteCode by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingInviteCode = extractInviteCode(intent)
         enableEdgeToEdge(
             navigationBarStyle = SystemBarStyle.light(
                 android.graphics.Color.TRANSPARENT,
@@ -37,7 +48,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             JigmnnagaTheme {
                 AppNavHost(
-                    startDestination = SplashRoute
+                    startDestination = SplashRoute,
+                    navigatorEffects = { navigator ->
+                        val inviteCode = pendingInviteCode
+                        LaunchedEffect(inviteCode) {
+                            if (inviteCode != null) {
+                                navigator.navigate(AppointmentInviteDestination(inviteCode))
+                                pendingInviteCode = null
+                            }
+                        }
+                    }
                 ) { navigator: AppNavigator ->
                     composable<SplashRoute> {
                         SplashScreen(
@@ -82,4 +102,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        extractInviteCode(intent)?.let { pendingInviteCode = it }
+    }
+
+    private fun extractInviteCode(intent: Intent?): String? =
+        intent?.data?.toString()?.let(AppointmentInviteLinkParser::extractInviteCode)
 }

@@ -30,10 +30,13 @@ import androidx.navigation.compose.rememberNavController
 fun AppNavHost(
     startDestination: Any,
     modifier: Modifier = Modifier,
+    navigatorEffects: @Composable (AppNavigator) -> Unit = {},
     destinations: NavGraphBuilder.(AppNavigator) -> Unit
 ) {
     val navController = rememberNavController()
     val navigator = remember(navController) { AppNavigator(navController) }
+    // 앱 밖에서 들어온 링크처럼 화면 밖의 이벤트로 이동해야 할 때 쓴다.
+    navigatorEffects(navigator)
 
     NavHost(
         navController = navController,
