@@ -17,6 +17,7 @@ import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
+import com.jigmnnaga.di.AttendanceEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
@@ -212,12 +213,12 @@ object AppointmentNavigationGraph : AppNavigationGraph {
         }
 
         // 확정된 날짜·시간·장소와 내 참석 응답을 약속 상세 조회 값으로 채운다.
-        // TODO: 참석 응답·확정 API(시트 56·59번) 연동 시 확인 버튼을 서버 전송으로 연결한다.
         // 약속방에서 이 화면으로 가는 연결은 약속방에 확정 확인 진입점이 정해질 때 함께 붙인다.
         builder.composable<AppointmentFinalConfirmationDestination> { entry ->
             val appointmentId = entry.toRoute<AppointmentFinalConfirmationDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
             val labels = rememberAppointmentDetailLabels()
+            val applicationContext = LocalContext.current.applicationContext
             AppointmentDetailLoader(
                 viewModel = loader,
                 onBack = { navigator.navigateBack() },
@@ -228,14 +229,23 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     factory = remember(detail) {
                         viewModelFactory {
                             initializer {
-                                AppointmentFinalConfirmationViewModel(detail.toFinalConfirmationUiState(labels))
+                                val entryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    AttendanceEntryPoint::class.java
+                                )
+                                AppointmentFinalConfirmationViewModel(
+                                    appointmentId = appointmentId,
+                                    initialState = detail.toFinalConfirmationUiState(labels),
+                                    attendanceRepository = entryPoint.attendanceRepository()
+                                )
                             }
                         }
                     }
                 )
                 AppointmentFinalConfirmationRoute(
                     viewModel = viewModel,
-                    onExit = { navigator.navigateBack() }
+                    onExit = { navigator.navigateBack() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }
