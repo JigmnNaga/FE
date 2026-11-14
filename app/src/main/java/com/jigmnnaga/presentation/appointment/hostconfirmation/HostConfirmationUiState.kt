@@ -28,6 +28,8 @@ data class HostConfirmationUiState(
     val dateTimeChoices: List<HostConfirmationChoice> = emptyList(),
     val placeChoices: List<HostConfirmationChoice> = emptyList(),
     val detailLocationChoices: List<HostConfirmationChoice> = emptyList(),
+    /** 세부 위치(상호명) 검색어. */
+    val detailSearchQuery: String = "",
     val canConfirm: Boolean = false,
     val isBusy: Boolean = false
 )
@@ -43,5 +45,6 @@ data class HostConfirmationActions(
     val onSelectDetailLocation: (String) -> Unit,
     val onChooseDetailLater: () -> Unit,
     val onConfirm: () -> Unit,
-    val onComplete: () -> Unit
+    val onComplete: () -> Unit,
+    val onDetailSearchQueryChange: (String) -> Unit = {}
 )

@@ -35,6 +35,7 @@ import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.appointment.placevote.PlaceSearchField
 
 /**
  * Standalone host confirmation UI. The parent owns navigation, confirmation policy,
@@ -260,6 +261,12 @@ private fun DetailLocationContent(state: HostConfirmationUiState, actions: HostC
         color = AppColors.Monotone.SoftBlack
     )
     Text(state.selectedPlace.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = AppColors.Monotone.Gray700)
+    PlaceSearchField(
+        value = state.detailSearchQuery,
+        hint = stringResource(R.string.host_confirmation_detail_search_hint),
+        onValueChange = actions.onDetailSearchQueryChange,
+        modifier = Modifier.fillMaxWidth()
+    )
     state.detailLocationChoices.forEach { choice ->
         Surface(
             modifier = Modifier

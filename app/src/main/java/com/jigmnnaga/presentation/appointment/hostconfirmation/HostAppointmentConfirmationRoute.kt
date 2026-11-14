@@ -20,12 +20,14 @@ import com.jigmnnaga.R
 
 /**
  * 방장 최종 확정 화면과 [HostConfirmationViewModel]을 연결한다.
- * 화면을 닫는 동작은 호출하는 쪽이 [onExit]으로 넘기고, 서버 미연동 안내만 스낵바로 보여 준다.
+ * 화면을 닫는 동작은 호출하는 쪽이 [onExit]으로, 로그인 이동은 [onLoginRequired]로 넘기고,
+ * 확정 실패 안내는 스낵바로 보여 준다.
  */
 @Composable
 fun HostAppointmentConfirmationRoute(
     viewModel: HostConfirmationViewModel,
     onExit: () -> Unit,
+    onLoginRequired: (resumeAfterLogin: () -> Unit) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -33,10 +35,24 @@ fun HostAppointmentConfirmationRoute(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadTimeCandidates()
+    }
+
     LaunchedEffect(notice) {
-        val messageResource = when (notice) {
+        val current = notice ?: return@LaunchedEffect
+        val messageResource = when (current) {
             HostConfirmationNotice.CONFIRM_API_NOT_CONNECTED -> R.string.host_confirmation_api_unavailable
-            null -> null
+            HostConfirmationNotice.LOGIN_REQUIRED -> {
+                viewModel.clearNotice()
+                onLoginRequired(viewModel::loadTimeCandidates)
+                null
+            }
+            HostConfirmationNotice.NOT_HOST -> R.string.host_confirmation_not_host
+            HostConfirmationNotice.APPOINTMENT_CANCELED -> R.string.host_confirmation_canceled
+            HostConfirmationNotice.INVALID_SELECTION -> R.string.host_confirmation_invalid_selection
+            HostConfirmationNotice.FAILURE_RETRYABLE -> R.string.host_confirmation_failure_retry
+            HostConfirmationNotice.FAILURE -> R.string.host_confirmation_failure
         }
         if (messageResource != null) {
             snackbarHostState.showSnackbar(context.getString(messageResource))
@@ -60,7 +76,8 @@ fun HostAppointmentConfirmationRoute(
             onSelectDetailLocation = viewModel::onSelectDetailLocation,
             onChooseDetailLater = viewModel::onChooseDetailLater,
             onConfirm = viewModel::onConfirm,
-            onComplete = onExit
+            onComplete = onExit,
+            onDetailSearchQueryChange = viewModel::onDetailSearchQueryChange
         )
     }
 

@@ -328,7 +328,7 @@ private fun PlaceVoteProgressCard(
 }
 
 @Composable
-private fun PlaceSearchField(
+internal fun PlaceSearchField(
     value: String,
     hint: String,
     onValueChange: (String) -> Unit,
