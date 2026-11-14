@@ -260,4 +260,9 @@
     <string name="calendar_empty_title">아직 일정이 없어요!</string>
     <string name="calendar_empty_subtitle">약속을 만들어보세요</string>
     <string name="calendar_this_month_section_title">이번 달 약속</string>
+
+    <!-- 약속방 (APT-004, APT-005) -->
+    <string name="appointment_room_default_title">약속방</string>
+    <string name="appointment_room_chat_unavailable">채팅 서버가 아직 연결되지 않아 메시지를 보내지 않았습니다. 입력한 내용은 그대로 남아 있습니다.</string>
+    <string name="appointment_room_departure_unavailable">출발 알림 서버가 아직 연결되지 않아 알림을 보내지 않았습니다.</string>
 </resources>
