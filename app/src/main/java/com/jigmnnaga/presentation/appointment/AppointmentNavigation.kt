@@ -18,6 +18,7 @@ import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
 import com.jigmnnaga.di.AttendanceEntryPoint
+import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
@@ -323,6 +324,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             )
             val submitLabel = stringResource(R.string.place_vote_submit)
             val emptyMessage = stringResource(R.string.place_vote_empty)
+            val applicationContext = LocalContext.current.applicationContext
             AppointmentDetailLoader(
                 viewModel = loader,
                 onBack = { navigator.navigateBack() },
@@ -334,8 +336,12 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     factory = remember(destination, detail) {
                         viewModelFactory {
                             initializer {
+                                val searchEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    PlaceSearchEntryPoint::class.java
+                                )
                                 PlaceVoteViewModel(
-                                    PlaceVoteUiState(
+                                    template = PlaceVoteUiState(
                                         role = if (isHost) PlaceVoteRole.HOST else PlaceVoteRole.PARTICIPANT,
                                         searchQuery = "",
                                         candidates = emptyList(),
@@ -347,7 +353,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                         showSearchInput = true,
                                         emptyMessage = emptyMessage,
                                         selectedSummaryTitle = ""
-                                    )
+                                    ),
+                                    searchRepository = searchEntryPoint.placeSearchRepository()
                                 )
                             }
                         }
@@ -355,7 +362,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 )
                 PlaceVoteRoute(
                     viewModel = viewModel,
-                    onBack = { navigator.navigateBack() }
+                    onBack = { navigator.navigateBack() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }
