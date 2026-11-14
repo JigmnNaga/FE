@@ -29,6 +29,10 @@ import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointment
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomViewModel
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentStatus
+import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRole
+import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRoute
+import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteUiState
+import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteViewModel
 import com.jigmnnaga.presentation.common.login.LoginRoute
 import com.jigmnnaga.presentation.common.splash.SplashRoute
 import com.jigmnnaga.presentation.home.HomeRoute
@@ -54,6 +58,10 @@ data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
 /** 방장 최종 확정 화면. 약속 ID를 인자로 받는다. */
 @Serializable
 data class HostAppointmentConfirmationDestination(val appointmentId: Long)
+
+/** 장소 검색·투표 화면. 약속 ID와 방장 여부를 인자로 받는다. */
+@Serializable
+data class PlaceVoteDestination(val appointmentId: Long, val isHost: Boolean = false)
 
 /** 약속 기능이 소유하는 이동 경로 그래프. 앱 호스트에는 이 객체만 등록한다. */
 object AppointmentNavigationGraph : AppNavigationGraph {
@@ -161,6 +169,49 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onCalendarClick = { /* TODO: 희망 날짜·시간 화면 등록 후 연결 */ },
                 onPlaceClick = { /* TODO: 장소 투표 화면 등록 후 연결 */ },
                 onManagementClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+            )
+        }
+
+        // TODO: 장소 검색·투표 API 연동 시 후보 목록과 선택 현황(progress)을 서버 값으로 채우고,
+        // 내 역할(myRole)이 내려오면 isHost 인자 대신 그 값을 쓴다. 약속방에서 이 화면으로 가는 연결도 그때 붙인다.
+        builder.composable<PlaceVoteDestination> { entry ->
+            val destination = entry.toRoute<PlaceVoteDestination>()
+            val title = stringResource(R.string.appointment_room_default_title)
+            val question = stringResource(R.string.place_vote_question)
+            val listLabel = stringResource(
+                R.string.place_vote_list_label,
+                PlaceVoteViewModel.DEFAULT_MAX_SELECTION
+            )
+            val submitLabel = stringResource(R.string.place_vote_submit)
+            val emptyMessage = stringResource(R.string.place_vote_empty)
+            val viewModel: PlaceVoteViewModel = viewModel(
+                key = "place-vote-${destination.appointmentId}",
+                factory = remember(destination) {
+                    viewModelFactory {
+                        initializer {
+                            PlaceVoteViewModel(
+                                PlaceVoteUiState(
+                                    role = if (destination.isHost) PlaceVoteRole.HOST else PlaceVoteRole.PARTICIPANT,
+                                    searchQuery = "",
+                                    candidates = emptyList(),
+                                    selectedCandidateIds = emptySet(),
+                                    title = title,
+                                    question = question,
+                                    listLabel = listLabel,
+                                    submitLabel = submitLabel,
+                                    showSearchInput = true,
+                                    emptyMessage = emptyMessage,
+                                    showMapUnavailableNotice = true,
+                                    selectedSummaryTitle = ""
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            PlaceVoteRoute(
+                viewModel = viewModel,
+                onBack = { navigator.navigateBack() }
             )
         }
     }
