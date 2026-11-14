@@ -3,11 +3,13 @@ package com.jigmnnaga.data.repository
 import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.AppointmentManageApi
 import com.jigmnnaga.data.remote.dto.ApiResponse
+import com.jigmnnaga.data.remote.dto.AppointmentLeaveRequestDto
 import com.jigmnnaga.data.remote.dto.AppointmentTitleUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CandidateDatesUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CandidateLocationsUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CreateCandidateLocationDto
 import com.jigmnnaga.data.remote.dto.HostDelegateRequestDto
+import com.jigmnnaga.data.remote.dto.NotificationSettingRequestDto
 import com.jigmnnaga.data.remote.dto.ReminderResultDto
 import com.jigmnnaga.data.remote.dto.ReminderSendResponseDto
 import com.jigmnnaga.data.remote.dto.ResponseDeadlineUpdateRequestDto
@@ -49,6 +51,8 @@ class AppointmentManageRepositoryImplTest {
         var lastDeadline: ResponseDeadlineUpdateRequestDto? = null
         var lastHost: HostDelegateRequestDto? = null
         var lastAction: String? = null
+        var lastLeave: AppointmentLeaveRequestDto? = null
+        var lastNotification: NotificationSettingRequestDto? = null
 
         private suspend fun record(action: String, auth: String?, id: Long): Response<Unit> {
             calls++; lastAction = action; lastAuthorization = auth; lastAppointmentId = id
@@ -113,6 +117,24 @@ class AppointmentManageRepositoryImplTest {
         ): Response<Unit> {
             lastTargetMemberId = targetMemberId
             return record("kick", authorization, appointmentId)
+        }
+
+        override suspend fun leave(
+            authorization: String?,
+            appointmentId: Long,
+            request: AppointmentLeaveRequestDto
+        ): Response<Unit> {
+            lastLeave = request
+            return record("leave", authorization, appointmentId)
+        }
+
+        override suspend fun updateNotificationSetting(
+            authorization: String?,
+            appointmentId: Long,
+            request: NotificationSettingRequestDto
+        ): Response<Unit> {
+            lastNotification = request
+            return record("notification", authorization, appointmentId)
         }
 
         override suspend fun sendReminders(
@@ -252,6 +274,46 @@ class AppointmentManageRepositoryImplTest {
                 )
             ),
             result
+        )
+    }
+
+    @Test
+    fun `참여자가 나갈 때는 새 방장 없이, 방장은 새 방장과 함께 보낸다`() = runTest {
+        val api = FakeApi()
+
+        assertEquals(success, repo(api).leave(7L))
+        assertEquals("leave", api.lastAction)
+        assertEquals(AppointmentLeaveRequestDto(null), api.lastLeave)
+
+        assertEquals(success, repo(api).leave(7L, newHostMemberId = 3L))
+        assertEquals(AppointmentLeaveRequestDto(3L), api.lastLeave)
+        assertEquals("Bearer token", api.lastAuthorization)
+    }
+
+    @Test
+    fun `알림 설정은 켜짐 여부를 보낸다`() = runTest {
+        val api = FakeApi()
+
+        assertEquals(success, repo(api).updateNotificationSetting(7L, false))
+
+        assertEquals("notification", api.lastAction)
+        assertEquals(NotificationSettingRequestDto(false), api.lastNotification)
+    }
+
+    @Test
+    fun `나가기 거절 코드는 이유별로 나눈다`() = runTest {
+        val api = FakeApi().apply {
+            unitResponse = { errorBody(400, """{"code":"NEW_HOST_REQUIRED","message":"새 방장"}""") }
+        }
+        assertEquals(
+            AppointmentManageResult.Rejected(AppointmentManageRejectReason.NEW_HOST_REQUIRED),
+            repo(api).leave(7L)
+        )
+
+        api.unitResponse = { errorBody(400, """{"code":"LAST_MEMBER_CANNOT_LEAVE","message":"혼자"}""") }
+        assertEquals(
+            AppointmentManageResult.Rejected(AppointmentManageRejectReason.LAST_MEMBER_CANNOT_LEAVE),
+            repo(api).leave(7L)
         )
     }
 

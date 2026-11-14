@@ -1,10 +1,12 @@
 package com.jigmnnaga.data.remote.api
 
 import com.jigmnnaga.data.remote.dto.ApiResponse
+import com.jigmnnaga.data.remote.dto.AppointmentLeaveRequestDto
 import com.jigmnnaga.data.remote.dto.AppointmentTitleUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CandidateDatesUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CandidateLocationsUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.HostDelegateRequestDto
+import com.jigmnnaga.data.remote.dto.NotificationSettingRequestDto
 import com.jigmnnaga.data.remote.dto.ReminderSendResponseDto
 import com.jigmnnaga.data.remote.dto.ResponseDeadlineUpdateRequestDto
 import retrofit2.Response
@@ -70,6 +72,20 @@ interface AppointmentManageApi {
         @Header("Authorization") authorization: String?,
         @Path("appointmentId") appointmentId: Long,
         @Path("targetMemberId") targetMemberId: Long
+    ): Response<Unit>
+
+    @POST("api/v1/appointments/{appointmentId}/leave")
+    suspend fun leave(
+        @Header("Authorization") authorization: String?,
+        @Path("appointmentId") appointmentId: Long,
+        @Body request: AppointmentLeaveRequestDto
+    ): Response<Unit>
+
+    @PATCH("api/v1/appointments/{appointmentId}/notification-setting")
+    suspend fun updateNotificationSetting(
+        @Header("Authorization") authorization: String?,
+        @Path("appointmentId") appointmentId: Long,
+        @Body request: NotificationSettingRequestDto
     ): Response<Unit>
 
     @POST("api/v1/appointments/{appointmentId}/reminders")

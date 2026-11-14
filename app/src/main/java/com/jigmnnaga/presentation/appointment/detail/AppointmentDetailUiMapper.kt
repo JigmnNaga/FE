@@ -11,6 +11,7 @@ import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentAtten
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationUiState
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.host.HostRoomParticipantUiState
+import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentManagementUiState
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentStatus
 import com.jigmnnaga.presentation.appointment.participant.ParticipantRoomMemberUiState
@@ -151,6 +152,16 @@ internal fun AppointmentDetail.toParticipantRoomUiState(labels: AppointmentDetai
                 isCurrentUser = isCurrentUser(it)
             )
         }
+    )
+
+internal fun AppointmentDetail.toParticipantManagementUiState(labels: AppointmentDetailLabels) =
+    ParticipantAppointmentManagementUiState(
+        appointmentName = title,
+        scheduleStatusLabel = scheduleStatusLabel(labels),
+        dateSummary = dateSummary(),
+        placeSummary = placeSummary(),
+        members = toParticipantRoomUiState(labels).members,
+        isNotificationsEnabled = myNotificationEnabled
     )
 
 internal fun AppointmentDetail.toFinalConfirmationUiState(labels: AppointmentDetailLabels) =

@@ -5,9 +5,11 @@ import com.jigmnnaga.data.mapper.toDomain
 import com.jigmnnaga.data.mapper.toDto
 import com.jigmnnaga.data.remote.api.AppointmentManageApi
 import com.jigmnnaga.data.remote.dto.ApiErrorBody
+import com.jigmnnaga.data.remote.dto.AppointmentLeaveRequestDto
 import com.jigmnnaga.data.remote.dto.AppointmentTitleUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.CandidateDatesUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.HostDelegateRequestDto
+import com.jigmnnaga.data.remote.dto.NotificationSettingRequestDto
 import com.jigmnnaga.data.remote.dto.ResponseDeadlineUpdateRequestDto
 import com.jigmnnaga.domain.model.AppointmentManageRejectReason
 import com.jigmnnaga.domain.model.AppointmentManageResult
@@ -79,6 +81,18 @@ class AppointmentManageRepositoryImpl @Inject constructor(
         onSuccess = { AppointmentManageResult.Success(Unit) }
     )
 
+    override suspend fun leave(appointmentId: Long, newHostMemberId: Long?) = request(
+        call = { auth -> api.leave(auth, appointmentId, AppointmentLeaveRequestDto(newHostMemberId)) },
+        onSuccess = { AppointmentManageResult.Success(Unit) }
+    )
+
+    override suspend fun updateNotificationSetting(appointmentId: Long, enabled: Boolean) = request(
+        call = { auth ->
+            api.updateNotificationSetting(auth, appointmentId, NotificationSettingRequestDto(enabled))
+        },
+        onSuccess = { AppointmentManageResult.Success(Unit) }
+    )
+
     override suspend fun sendReminders(appointmentId: Long): AppointmentManageResult<ReminderSendSummary> = request(
         call = { auth -> api.sendReminders(auth, appointmentId) },
         onSuccess = { response ->
@@ -137,6 +151,10 @@ internal fun mapAppointmentManageError(httpStatus: Int, errorCode: String?): App
         AppointmentManageResult.Rejected(AppointmentManageRejectReason.INVALID_LOCATIONS)
     errorCode == "MEMBER_NOT_FOUND" ->
         AppointmentManageResult.Rejected(AppointmentManageRejectReason.INVALID_MEMBER)
+    errorCode == "NEW_HOST_REQUIRED" ->
+        AppointmentManageResult.Rejected(AppointmentManageRejectReason.NEW_HOST_REQUIRED)
+    errorCode == "LAST_MEMBER_CANNOT_LEAVE" ->
+        AppointmentManageResult.Rejected(AppointmentManageRejectReason.LAST_MEMBER_CANNOT_LEAVE)
     errorCode == "INVALID_INPUT_VALUE" || httpStatus == 400 ->
         AppointmentManageResult.Rejected(AppointmentManageRejectReason.INVALID_INPUT)
     httpStatus == 401 -> AppointmentManageResult.LoginRequired

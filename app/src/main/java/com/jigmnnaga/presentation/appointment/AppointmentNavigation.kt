@@ -32,6 +32,7 @@ import com.jigmnnaga.presentation.appointment.detail.toExistingAddUiState
 import com.jigmnnaga.presentation.appointment.detail.toFinalConfirmationUiState
 import com.jigmnnaga.presentation.appointment.detail.toHostRoomUiState
 import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
+import com.jigmnnaga.presentation.appointment.detail.toParticipantManagementUiState
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateViewModel
@@ -48,6 +49,8 @@ import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteRoute
 import com.jigmnnaga.presentation.appointment.manage.AppointmentManageRoute
 import com.jigmnnaga.presentation.appointment.manage.AppointmentManageViewModel
 import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteViewModel
+import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentManagementRoute
+import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentManagementViewModel
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomRoute
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomViewModel
 import com.jigmnnaga.presentation.appointment.schedule.AppointmentCalendarMonth
@@ -90,6 +93,10 @@ data class HostAppointmentRoomDestination(val appointmentId: Long)
 /** 참여자 약속방(APT-005). 약속 ID를 인자로 받는다. */
 @Serializable
 data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
+
+/** 참여자 약속방 관리 화면(APT-005-02·06). 약속 ID를 인자로 받는다. */
+@Serializable
+data class ParticipantAppointmentManagementDestination(val appointmentId: Long)
 
 /** 방장 최종 확정 화면. 약속 ID를 인자로 받는다. */
 @Serializable
@@ -293,7 +300,49 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     onBackClick = { navigator.navigateBack() },
                     onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
                     onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
-                    onManagementClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+                    onManagementClick = {
+                        navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
+                    }
+                )
+            }
+        }
+
+        // 참여자가 약속 정보를 보고 약속방 알림을 켜고 끄거나 약속방을 나간다.
+        // 나가면 돌아갈 약속방이 없으므로 홈으로 보낸다. 약속 정보는 방장만 바꿀 수 있어 읽기만 한다.
+        builder.composable<ParticipantAppointmentManagementDestination> { entry ->
+            val appointmentId = entry.toRoute<ParticipantAppointmentManagementDestination>().appointmentId
+            val loader = rememberAppointmentDetailLoader(appointmentId, followChanges = false)
+            val labels = rememberAppointmentDetailLabels()
+            val applicationContext = LocalContext.current.applicationContext
+            AppointmentDetailLoader(
+                viewModel = loader,
+                onBack = { navigator.navigateBack() },
+                onLoginRequired = { resume -> navigator.requestLogin(resume) }
+            ) { detail ->
+                val viewModel: ParticipantAppointmentManagementViewModel = viewModel(
+                    key = "participant-management-$appointmentId",
+                    factory = remember(detail) {
+                        viewModelFactory {
+                            initializer {
+                                val entryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    AppointmentManageEntryPoint::class.java
+                                )
+                                ParticipantAppointmentManagementViewModel(
+                                    appointmentId = appointmentId,
+                                    initialState = detail.toParticipantManagementUiState(labels),
+                                    repository = entryPoint.appointmentManageRepository()
+                                )
+                            }
+                        }
+                    }
+                )
+                ParticipantAppointmentManagementRoute(
+                    viewModel = viewModel,
+                    onBackClick = { navigator.navigateBack() },
+                    onEditAvailabilityClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+                    onLeft = { navigator.navigateToHome() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }

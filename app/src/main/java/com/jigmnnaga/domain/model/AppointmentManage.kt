@@ -36,6 +36,12 @@ enum class AppointmentManageRejectReason {
 
     /** 존재하지 않는 회원일 때. */
     INVALID_MEMBER,
+
+    /** 방장이 새 방장을 정하지 않고 나가려 할 때. */
+    NEW_HOST_REQUIRED,
+
+    /** 혼자 남은 약속방은 나갈 수 없다. 약속방 삭제를 써야 한다. */
+    LAST_MEMBER_CANNOT_LEAVE,
     INVALID_INPUT
 }
 

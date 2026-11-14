@@ -151,6 +151,14 @@
     <string name="participant_room_notifications_description">약속 관련 알림을 받습니다.</string>
     <string name="participant_room_leave">약속방 나가기</string>
     <string name="participant_room_leave_description">이 약속방에서 나갑니다.</string>
+    <string name="participant_management_leave_dialog_title">약속방을 나갈까요?</string>
+    <string name="participant_management_leave_dialog_message">나가면 내 날짜·시간 선택과 참석 응답이 삭제돼요. 응답 기한 안에는 초대 링크로 다시 참여할 수 있어요.</string>
+    <string name="participant_management_leave_confirm">나가기</string>
+    <string name="participant_management_not_participant">이 약속방의 참여자가 아니에요.</string>
+    <string name="participant_management_host_must_delegate">방장은 다음 방장을 정해야 나갈 수 있어요.</string>
+    <string name="participant_management_last_member">혼자 남은 약속방은 나갈 수 없어요. 약속방 삭제를 이용해 주세요.</string>
+    <string name="participant_management_failed">요청하지 못했어요.</string>
+    <string name="participant_management_failed_retry">네트워크 상태를 확인하고 다시 시도해 주세요.</string>
     <string name="participant_room_tab_chat">채팅</string>
     <string name="participant_room_tab_map_status">지도·현황</string>
     <string name="participant_room_summary_title">약속 요약</string>
