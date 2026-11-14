@@ -25,6 +25,7 @@ import com.jigmnnaga.R
 fun PlaceVoteRoute(
     viewModel: PlaceVoteViewModel,
     onBack: () -> Unit,
+    onLoginRequired: (resumeAfterLogin: () -> Unit) -> Unit = {},
     modifier: Modifier = Modifier,
     maxSelection: Int = PlaceVoteViewModel.DEFAULT_MAX_SELECTION
 ) {
@@ -38,6 +39,13 @@ fun PlaceVoteRoute(
             PlaceVoteNotice.SUBMIT_API_NOT_CONNECTED -> context.getString(R.string.place_vote_api_unavailable)
             PlaceVoteNotice.MAX_SELECTION_REACHED ->
                 context.getString(R.string.place_vote_max_selection, maxSelection)
+            PlaceVoteNotice.SEARCH_LOGIN_REQUIRED -> {
+                viewModel.clearNotice()
+                onLoginRequired(viewModel::retrySearch)
+                null
+            }
+            PlaceVoteNotice.SEARCH_FAILED_RETRYABLE -> context.getString(R.string.place_vote_search_failed_retry)
+            PlaceVoteNotice.SEARCH_FAILED -> context.getString(R.string.place_vote_search_failed)
             null -> null
         }
         if (message != null) {
