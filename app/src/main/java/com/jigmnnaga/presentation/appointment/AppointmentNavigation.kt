@@ -16,6 +16,7 @@ import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
+import com.jigmnnaga.di.AppointmentCreateEntryPoint
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
 import com.jigmnnaga.di.AttendanceEntryPoint
 import com.jigmnnaga.di.ConfirmationEntryPoint
@@ -31,6 +32,7 @@ import com.jigmnnaga.presentation.appointment.detail.toHostRoomUiState
 import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
+import com.jigmnnaga.presentation.appointment.create.AppointmentCreateViewModel
 import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddRoute
 import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddViewModel
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationRoute
@@ -98,7 +100,32 @@ data class ExistingAppointmentAddDestination(val appointmentId: Long)
 object AppointmentNavigationGraph : AppNavigationGraph {
     override fun register(builder: NavGraphBuilder, navigator: AppNavigator) {
         builder.composable<AppointmentCreateDestination> {
-            AppointmentCreateRoute(onExit = { navigator.navigateBack() })
+            val applicationContext = LocalContext.current.applicationContext
+            val viewModel: AppointmentCreateViewModel = viewModel(
+                factory = remember {
+                    viewModelFactory {
+                        initializer {
+                            val createEntryPoint = EntryPointAccessors.fromApplication(
+                                applicationContext,
+                                AppointmentCreateEntryPoint::class.java
+                            )
+                            val searchEntryPoint = EntryPointAccessors.fromApplication(
+                                applicationContext,
+                                PlaceSearchEntryPoint::class.java
+                            )
+                            AppointmentCreateViewModel(
+                                createRepository = createEntryPoint.appointmentCreateRepository(),
+                                placeSearchRepository = searchEntryPoint.placeSearchRepository()
+                            )
+                        }
+                    }
+                }
+            )
+            AppointmentCreateRoute(
+                onExit = { navigator.navigateBack() },
+                viewModel = viewModel,
+                onLoginRequired = { resume -> navigator.requestLogin(resume) }
+            )
         }
 
         builder.composable<AppointmentInviteDestination> { entry ->

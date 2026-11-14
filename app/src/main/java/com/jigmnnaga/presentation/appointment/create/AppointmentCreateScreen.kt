@@ -523,9 +523,13 @@ private fun AppointmentLocationsStep(
         )
     }
 
-    val candidates = remember(state.locationCandidates, state.locationQuery) {
-        state.locationCandidates.filter {
-            state.locationQuery.isBlank() || it.name.contains(state.locationQuery, ignoreCase = true)
+    val candidates = remember(state.locationCandidates, state.locationQuery, state.locationCandidatesFromServer) {
+        if (state.locationCandidatesFromServer) {
+            state.locationCandidates
+        } else {
+            state.locationCandidates.filter {
+                state.locationQuery.isBlank() || it.name.contains(state.locationQuery, ignoreCase = true)
+            }
         }
     }
     if (candidates.isEmpty()) {
