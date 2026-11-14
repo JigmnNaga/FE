@@ -92,8 +92,6 @@ class MainActivity : ComponentActivity() {
                                     navigator.navigateBack()
                                     returnAfterLogin()
                                 } else {
-                                    // TODO: 백엔드 로그인 API 연동 완료 후 서버 JWT 저장 로직 추가 필요.
-                                    // 현재는 #25 홈 화면 UI 테스트를 위한 임시 Navigation 연결입니다.
                                     navigator.navigate(
                                         destination = HomeRoute,
                                         options = AppNavigationOptions(
