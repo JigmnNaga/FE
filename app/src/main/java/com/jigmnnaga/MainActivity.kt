@@ -10,6 +10,7 @@ import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.core.navigation.AppNavHost
 import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
+import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.presentation.appointment.AppointmentNavigationGraph
 import com.jigmnnaga.presentation.calendar.CalendarNavigationGraph
 import com.jigmnnaga.presentation.home.HomeNavigationGraph
@@ -46,16 +47,23 @@ class MainActivity : ComponentActivity() {
                     composable<LoginRoute> {
                         LoginRoute(
                             onLoginSuccess = {
-                                // TODO: 백엔드 로그인 API 연동 완료 후 서버 JWT 저장 로직 추가 필요.
-                                // 현재는 #25 홈 화면 UI 테스트를 위한 임시 Navigation 연결입니다.
-                                navigator.navigate(
-                                    destination = HomeRoute,
-                                    options = AppNavigationOptions(
-                                        popUpTo = SplashRoute,
-                                        inclusive = true,
-                                        launchSingleTop = true
+                                // 초대 화면처럼 로그인 후 돌아갈 곳이 있으면 그곳으로 복귀한다.
+                                val returnAfterLogin = LoginReturnRegistry.consume()
+                                if (returnAfterLogin != null) {
+                                    navigator.navigateBack()
+                                    returnAfterLogin()
+                                } else {
+                                    // TODO: 백엔드 로그인 API 연동 완료 후 서버 JWT 저장 로직 추가 필요.
+                                    // 현재는 #25 홈 화면 UI 테스트를 위한 임시 Navigation 연결입니다.
+                                    navigator.navigate(
+                                        destination = HomeRoute,
+                                        options = AppNavigationOptions(
+                                            popUpTo = SplashRoute,
+                                            inclusive = true,
+                                            launchSingleTop = true
+                                        )
                                     )
-                                )
+                                }
                             },
                             onTermsClick = { navigator.navigate(TermsOfServiceRoute) },
                             onPrivacyClick = { navigator.navigate(PrivacyPolicyRoute) }
