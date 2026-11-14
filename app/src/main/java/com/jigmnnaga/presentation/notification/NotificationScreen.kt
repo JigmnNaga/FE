@@ -18,12 +18,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +48,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jigmnnaga.R
+import com.jigmnnaga.core.designsystem.component.AppButton
 import com.jigmnnaga.core.designsystem.component.BackHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 
 /**
  * 알림 화면(HOM-003) 순수 UI. 상태와 이벤트는 파라미터로만 주고받는다.
@@ -57,7 +67,9 @@ fun NotificationScreen(
     onTabSelect: (NotificationTab) -> Unit,
     onInviteConfirmClick: (Long) -> Unit,
     onActivityClick: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLoadMore: () -> Unit = {},
+    onRetryClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -86,25 +98,58 @@ fun NotificationScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
         ) {
-            if (state.isCurrentTabEmpty) {
-                Text(
-                    text = stringResource(R.string.notification_screen_empty),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, lineHeight = 22.5.sp),
-                    color = AppColors.Monotone.Gray400,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .testTag("notification-empty")
-                )
-            } else {
-                when (state.selectedTab) {
+            when {
+                state.loadStatus == NotificationLoadStatus.LOADING && state.isCurrentTabEmpty -> {
+                    CircularProgressIndicator(
+                        color = AppColors.MainGreen.Green900,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .testTag("notification-loading")
+                    )
+                }
+                state.loadStatus == NotificationLoadStatus.ERROR && state.isCurrentTabEmpty -> {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = AppDimens.Spacing40)
+                            .testTag("notification-error"),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing16)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.notification_screen_error),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, lineHeight = 22.5.sp),
+                            color = AppColors.Monotone.Gray400,
+                            textAlign = TextAlign.Center
+                        )
+                        AppButton(
+                            text = stringResource(R.string.notification_screen_retry),
+                            onClick = onRetryClick,
+                            modifier = Modifier.testTag("notification-retry")
+                        )
+                    }
+                }
+                state.isCurrentTabEmpty -> {
+                    Text(
+                        text = stringResource(R.string.notification_screen_empty),
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp, lineHeight = 22.5.sp),
+                        color = AppColors.Monotone.Gray400,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .testTag("notification-empty")
+                    )
+                }
+                else -> when (state.selectedTab) {
                     NotificationTab.INVITE -> InviteList(
                         items = state.invites,
-                        onConfirmClick = onInviteConfirmClick
+                        onConfirmClick = onInviteConfirmClick,
+                        onLoadMore = onLoadMore
                     )
                     NotificationTab.ACTIVITY -> ActivityList(
                         items = state.activities,
-                        onClick = onActivityClick
+                        onClick = onActivityClick,
+                        onLoadMore = onLoadMore
                     )
                 }
             }
@@ -165,12 +210,32 @@ private fun NotificationTabItem(
     }
 }
 
+/** 마지막에서 세 번째 항목이 보이면 다음 페이지를 요청한다. */
+@Composable
+private fun LoadMoreEffect(listState: LazyListState, onLoadMore: () -> Unit) {
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            val info = listState.layoutInfo
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: -1
+            info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 3
+        }
+            .distinctUntilChanged()
+            .filter { it }
+            .collect { currentOnLoadMore() }
+    }
+}
+
 @Composable
 private fun InviteList(
     items: List<InviteNotificationItem>,
-    onConfirmClick: (Long) -> Unit
+    onConfirmClick: (Long) -> Unit,
+    onLoadMore: () -> Unit
 ) {
+    val listState = rememberLazyListState()
+    LoadMoreEffect(listState = listState, onLoadMore = onLoadMore)
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing8),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -217,14 +282,18 @@ private fun InviteNotificationCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = item.inviterName.firstCharacter(),
+                        text = item.inviterName.firstCharacter().ifEmpty { stringResource(R.string.notification_screen_invite_avatar_fallback) },
                         style = MaterialTheme.typography.titleSmall,
                         color = AppColors.MainGreen.Green200
                     )
                 }
                 Column {
                     Text(
-                        text = stringResource(R.string.notification_screen_invited_by, item.inviterName),
+                        text = if (item.inviterName.isBlank()) {
+                            stringResource(R.string.notification_screen_invited_fallback)
+                        } else {
+                            stringResource(R.string.notification_screen_invited_by, item.inviterName)
+                        },
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 12.sp,
@@ -294,9 +363,13 @@ private fun InviteNotificationCard(
 @Composable
 private fun ActivityList(
     items: List<ActivityNotificationItem>,
-    onClick: (Long) -> Unit
+    onClick: (Long) -> Unit,
+    onLoadMore: () -> Unit
 ) {
+    val listState = rememberLazyListState()
+    LoadMoreEffect(listState = listState, onLoadMore = onLoadMore)
     LazyColumn(
+        state = listState,
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing8),
         verticalArrangement = Arrangement.spacedBy(4.dp)
