@@ -20,6 +20,9 @@ import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomRoute
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomUiState
 import com.jigmnnaga.presentation.appointment.host.HostAppointmentRoomViewModel
+import com.jigmnnaga.presentation.appointment.hostconfirmation.HostAppointmentConfirmationRoute
+import com.jigmnnaga.presentation.appointment.hostconfirmation.HostConfirmationUiState
+import com.jigmnnaga.presentation.appointment.hostconfirmation.HostConfirmationViewModel
 import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteRoute
 import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteViewModel
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomRoute
@@ -47,6 +50,10 @@ data class HostAppointmentRoomDestination(val appointmentId: Long)
 /** 참여자 약속방(APT-005). 약속 ID를 인자로 받는다. */
 @Serializable
 data class ParticipantAppointmentRoomDestination(val appointmentId: Long)
+
+/** 방장 최종 확정 화면. 약속 ID를 인자로 받는다. */
+@Serializable
+data class HostAppointmentConfirmationDestination(val appointmentId: Long)
 
 /** 약속 기능이 소유하는 이동 경로 그래프. 앱 호스트에는 이 객체만 등록한다. */
 object AppointmentNavigationGraph : AppNavigationGraph {
@@ -99,6 +106,33 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onCalendarClick = { /* TODO: 희망 날짜·시간 화면 등록 후 연결 */ },
                 onPlaceClick = { /* TODO: 장소 투표 화면 등록 후 연결 */ },
                 onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+            )
+        }
+
+        // TODO: 약속 상세·투표 결과 API 연동 시 실제 약속 정보와 후보 목록, 내 역할(myRole)을 넘긴다.
+        // 약속방에서 이 화면으로 가는 연결은 방장 약속방의 확정 진입점이 정해질 때 함께 붙인다.
+        builder.composable<HostAppointmentConfirmationDestination> { entry ->
+            val appointmentId = entry.toRoute<HostAppointmentConfirmationDestination>().appointmentId
+            val title = stringResource(R.string.appointment_room_default_title)
+            val viewModel: HostConfirmationViewModel = viewModel(
+                key = "host-confirmation-$appointmentId",
+                factory = remember(appointmentId) {
+                    viewModelFactory {
+                        initializer {
+                            HostConfirmationViewModel(
+                                HostConfirmationUiState(
+                                    appointmentTitle = title,
+                                    selectedDateTime = null,
+                                    selectedPlace = null
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            HostAppointmentConfirmationRoute(
+                viewModel = viewModel,
+                onExit = { navigator.navigateBack() }
             )
         }
 
