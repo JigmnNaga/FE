@@ -20,7 +20,8 @@ data class InviteNotificationItem(
     val inviterName: String,
     val metaLabel: String,
     val appointmentTitle: String,
-    val status: InviteNotificationStatus
+    val status: InviteNotificationStatus,
+    val appointmentId: Long? = null
 )
 
 /**
@@ -33,8 +34,12 @@ data class ActivityNotificationItem(
     val id: Long,
     val type: ActivityNotificationType,
     val message: String,
-    val subtitle: String
+    val subtitle: String,
+    val appointmentId: Long? = null
 )
+
+/** 알림 목록을 서버에서 가져오는 상태. */
+enum class NotificationLoadStatus { LOADING, LOADED, ERROR }
 
 /**
  * 알림 화면 UI 상태. 서버 연동 전에는 목록이 비어 있고, 연동 후 ViewModel이 채운다.
@@ -42,7 +47,10 @@ data class ActivityNotificationItem(
 data class NotificationUiState(
     val selectedTab: NotificationTab = NotificationTab.INVITE,
     val invites: List<InviteNotificationItem> = emptyList(),
-    val activities: List<ActivityNotificationItem> = emptyList()
+    val activities: List<ActivityNotificationItem> = emptyList(),
+    val loadStatus: NotificationLoadStatus = NotificationLoadStatus.LOADED,
+    val hasNext: Boolean = false,
+    val isLoadingMore: Boolean = false
 ) {
     /** 지금 선택된 탭에 보여 줄 알림이 없으면 true. */
     val isCurrentTabEmpty: Boolean
