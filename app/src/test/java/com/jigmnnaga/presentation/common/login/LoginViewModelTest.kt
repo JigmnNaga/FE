@@ -34,6 +34,7 @@ class LoginViewModelTest {
         var nextResult: LoginResult = LoginResult.Success(isNewMember = false)
 
         override suspend fun kakaoLogin(kakaoAccessToken: String): LoginResult = nextResult
+        override suspend fun reissueTokens() = com.jigmnnaga.domain.model.ReissueResult.Success
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
