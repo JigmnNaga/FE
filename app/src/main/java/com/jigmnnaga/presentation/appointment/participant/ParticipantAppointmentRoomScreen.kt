@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -34,6 +35,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +47,8 @@ import com.jigmnnaga.core.designsystem.component.BackHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.chat.ChatListEffects
+import com.jigmnnaga.presentation.chat.ChatMessageUiState
 
 /**
  * Participant room presentation only. The caller owns state, navigation, system insets and service actions.
@@ -63,7 +67,9 @@ fun ParticipantAppointmentRoomScreen(
     onSendMessage: () -> Unit,
     onDepartureClick: () -> Unit,
     modifier: Modifier = Modifier,
-    mapContent: (@Composable (Modifier) -> Unit)? = null
+    mapContent: (@Composable (Modifier) -> Unit)? = null,
+    canLoadMoreMessages: Boolean = false,
+    onLoadMoreMessages: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -85,7 +91,7 @@ fun ParticipantAppointmentRoomScreen(
 
         when (state.selectedTab) {
             ParticipantAppointmentRoomTab.CHAT -> {
-                ParticipantChatList(state, Modifier.weight(1f))
+                ParticipantChatList(state, canLoadMoreMessages, onLoadMoreMessages, Modifier.weight(1f))
                 ChatInputBar(
                     value = state.draftMessage,
                     onValueChange = onMessageChange,
@@ -331,13 +337,40 @@ private fun InfoLine(label: String, value: String) {
 }
 
 @Composable
-private fun ParticipantChatList(state: ParticipantAppointmentRoomUiState, modifier: Modifier = Modifier) {
+private fun ParticipantChatList(
+    state: ParticipantAppointmentRoomUiState,
+    canLoadMore: Boolean,
+    onLoadMore: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val listState = rememberLazyListState()
+    ChatListEffects(
+        listState = listState,
+        messages = state.messages.map { ChatMessageUiState(id = it.id, body = it.body, isMine = it.isMine) },
+        hasMore = canLoadMore,
+        onLoadMore = onLoadMore
+    )
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxWidth().padding(horizontal = AppDimens.Spacing20),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = AppDimens.Spacing16),
         verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
     ) {
         items(state.messages, key = { it.id }) { message ->
+            if (message.isSystem) {
+                Text(
+                    text = message.body,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(CircleShape)
+                        .background(AppColors.Monotone.Gray100)
+                        .padding(horizontal = AppDimens.Spacing12, vertical = AppDimens.Spacing8),
+                    color = AppColors.Monotone.Gray600,
+                    style = MaterialTheme.typography.labelSmall,
+                    textAlign = TextAlign.Center
+                )
+                return@items
+            }
             Column(horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start) {
                 message.senderName?.takeIf(String::isNotBlank)?.let {
                     Text(it, style = MaterialTheme.typography.labelSmall, color = AppColors.Monotone.Gray500)
@@ -351,6 +384,14 @@ private fun ParticipantChatList(state: ParticipantAppointmentRoomUiState, modifi
                         modifier = Modifier.width(280.dp).padding(horizontal = AppDimens.Spacing12, vertical = AppDimens.Spacing8),
                         color = if (message.isMine) AppColors.Monotone.White else AppColors.Monotone.SoftBlack,
                         style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                if (message.unreadCount > 0) {
+                    Text(
+                        text = message.unreadCount.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.MainGreen.Green700,
+                        modifier = Modifier.testTag("chat-unread-${message.id}")
                     )
                 }
                 message.timeLabel?.let {

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -41,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,8 @@ import com.jigmnnaga.core.designsystem.component.MeetingHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.chat.ChatListEffects
+import com.jigmnnaga.presentation.chat.ChatMessageUiState
 
 /**
  * Host-room UI only. Data and navigation actions are owned by the caller; no API, map SDK,
@@ -67,7 +71,9 @@ fun HostAppointmentRoomScreen(
     onMessageChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
-    mapContent: (@Composable (Modifier) -> Unit)? = null
+    mapContent: (@Composable (Modifier) -> Unit)? = null,
+    canLoadMoreMessages: Boolean = false,
+    onLoadMoreMessages: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -99,6 +105,8 @@ fun HostAppointmentRoomScreen(
             HostAppointmentRoomTab.CHAT -> {
                 HostChatContent(
                     state = state,
+                    canLoadMore = canLoadMoreMessages,
+                    onLoadMore = onLoadMoreMessages,
                     modifier = Modifier.weight(1f)
                 )
                 ChatInputBar(
@@ -321,9 +329,20 @@ private fun SummaryDetailRow(icon: Int, label: String, value: String) {
 @Composable
 private fun HostChatContent(
     state: HostAppointmentRoomUiState,
+    canLoadMore: Boolean,
+    onLoadMore: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+    ChatListEffects(
+        listState = listState,
+        messages = state.messages.map { ChatMessageUiState(id = it.id, body = it.body, isMine = it.isMine) },
+        hasMore = canLoadMore,
+        onLoadMore = onLoadMore,
+        leadingItemCount = if (state.systemNotice != null) 1 else 0
+    )
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxWidth()
             .testTag("host-room-chat-list"),
@@ -357,6 +376,20 @@ private fun HostChatContent(
 
 @Composable
 private fun ChatMessageBubble(message: HostRoomMessageUiState) {
+    if (message.isSystem) {
+        Text(
+            text = message.body,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(CircleShape)
+                .background(AppColors.Monotone.Gray100)
+                .padding(horizontal = AppDimens.Spacing12, vertical = AppDimens.Spacing8),
+            color = AppColors.Monotone.Gray600,
+            style = MaterialTheme.typography.labelSmall,
+            textAlign = TextAlign.Center
+        )
+        return
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (message.isMine) Alignment.End else Alignment.Start
@@ -379,6 +412,16 @@ private fun ChatMessageBubble(message: HostRoomMessageUiState) {
             color = if (message.isMine) AppColors.MainGreen.Green200 else AppColors.Monotone.SoftBlack,
             style = MaterialTheme.typography.bodyMedium
         )
+        if (message.unreadCount > 0) {
+            Text(
+                text = message.unreadCount.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.MainGreen.Green700,
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.Spacing8)
+                    .testTag("chat-unread-${message.id}")
+            )
+        }
         message.timeLabel?.let { time ->
             Text(
                 text = time,
