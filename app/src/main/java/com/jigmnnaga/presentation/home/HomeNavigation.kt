@@ -6,6 +6,7 @@ import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
 import com.jigmnnaga.presentation.calendar.CalendarRoute
+import com.jigmnnaga.presentation.notification.NotificationDestination
 
 /**
  * 홈 기능이 소유하는 네비게이션 그래프.
@@ -19,7 +20,7 @@ object HomeNavigationGraph : AppNavigationGraph {
             HomeRoute(
                 onAddClick = { navigator.navigate(AppointmentCreateDestination) },
                 onScheduleClick = { navigator.navigateSingleTop(CalendarRoute) },
-                onNotificationClick = { /* TODO: HOM-003 알림 화면 연결 */ },
+                onNotificationClick = { navigator.navigate(NotificationDestination) },
                 onProfileClick = { /* TODO: 마이페이지 화면 연결 */ },
                 onAppointmentClick = { /* TODO: 약속 상세 화면 연결 */ },
                 onInvitationClick = { /* TODO: 초대 목록 화면 연결 */ }
