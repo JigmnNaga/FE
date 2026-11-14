@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentDetailResult
 import com.jigmnnaga.domain.repository.AppointmentDetailRepository
+import com.jigmnnaga.presentation.appointment.AppointmentRefreshSignal
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +27,8 @@ sealed interface AppointmentDetailLoadState {
  */
 class AppointmentDetailLoadViewModel(
     private val appointmentId: Long,
-    private val repository: AppointmentDetailRepository
+    private val repository: AppointmentDetailRepository,
+    private val refreshSignal: StateFlow<Int> = AppointmentRefreshSignal.version
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<AppointmentDetailLoadState>(AppointmentDetailLoadState.Loading)
@@ -36,6 +38,16 @@ class AppointmentDetailLoadViewModel(
 
     init {
         load()
+        // 약속 관리 화면에서 약속 정보를 바꾸면 이 화면의 약속 상세도 다시 불러온다.
+        var seenVersion = refreshSignal.value
+        viewModelScope.launch {
+            refreshSignal.collect { version ->
+                if (version != seenVersion) {
+                    seenVersion = version
+                    load()
+                }
+            }
+        }
     }
 
     /** 처음 불러올 때와 "다시 시도", 로그인 뒤 다시 불러올 때 쓴다. 진행 중인 요청이 있으면 취소하고 새로 시작한다. */

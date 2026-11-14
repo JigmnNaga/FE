@@ -334,7 +334,7 @@ private fun AppointmentNameStep(
 }
 
 @Composable
-private fun AppointmentScheduleStep(
+internal fun AppointmentScheduleStep(
     state: AppointmentCreateUiState,
     onStateChange: (AppointmentCreateUiState) -> Unit
 ) {
@@ -493,7 +493,7 @@ private fun SelectedDateSummary(state: AppointmentCreateUiState) {
 }
 
 @Composable
-private fun AppointmentLocationsStep(
+internal fun AppointmentLocationsStep(
     state: AppointmentCreateUiState,
     onStateChange: (AppointmentCreateUiState) -> Unit
 ) {
@@ -639,6 +639,15 @@ private fun AppointmentDeadlineStep(
     onStateChange: (AppointmentCreateUiState) -> Unit
 ) {
     AppointmentSummaryCard(state)
+    AppointmentDeadlineChoices(state = state, onStateChange = onStateChange)
+}
+
+/** 응답 기한 선택지와 직접 선택 달력. 약속 생성과 약속 관리 화면이 함께 쓴다. */
+@Composable
+internal fun AppointmentDeadlineChoices(
+    state: AppointmentCreateUiState,
+    onStateChange: (AppointmentCreateUiState) -> Unit
+) {
     Text(
         text = stringResource(R.string.appointment_deadline_question),
         style = MaterialTheme.typography.titleSmall,
@@ -905,7 +914,7 @@ private fun SummaryLine(iconResource: Int, label: String, value: String) {
 }
 
 @Composable
-private fun AppointmentTextField(
+internal fun AppointmentTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,

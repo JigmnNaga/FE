@@ -251,22 +251,6 @@ class AppointmentCreateViewModel(
         )
     }
 
-    /** 위치가 없는 장소는 서버가 받지 않으므로 후보로 보여 주지 않는다. */
-    private fun SearchedPlace.toLocation(): AppointmentLocation? {
-        val lat = latitude ?: return null
-        val lng = longitude ?: return null
-        val address = roadAddress ?: jibunAddress
-        return AppointmentLocation(
-            name = name,
-            address = listOfNotNull(lineNames?.takeIf { it.isNotBlank() }, address?.takeIf { it.isNotBlank() })
-                .joinToString(" · "),
-            lineNames = lineNames,
-            roadAddress = address,
-            latitude = lat,
-            longitude = lng
-        )
-    }
-
     private fun AppointmentCreateRejectReason.toNotice() = when (this) {
         AppointmentCreateRejectReason.INVALID_DATES -> AppointmentCreateNotice.INVALID_DATES
         AppointmentCreateRejectReason.INVALID_DEADLINE -> AppointmentCreateNotice.INVALID_DEADLINE
@@ -314,4 +298,20 @@ class AppointmentCreateViewModel(
     private companion object {
         const val DEFAULT_SEARCH_DEBOUNCE_MILLIS = 300L
     }
+}
+
+/** 위치가 없는 장소는 서버가 받지 않으므로 후보로 보여 주지 않는다. 약속 생성과 약속 관리가 함께 쓴다. */
+internal fun SearchedPlace.toLocation(): AppointmentLocation? {
+    val lat = latitude ?: return null
+    val lng = longitude ?: return null
+    val address = roadAddress ?: jibunAddress
+    return AppointmentLocation(
+        name = name,
+        address = listOfNotNull(lineNames?.takeIf { it.isNotBlank() }, address?.takeIf { it.isNotBlank() })
+            .joinToString(" · "),
+        lineNames = lineNames,
+        roadAddress = address,
+        latitude = lat,
+        longitude = lng
+    )
 }

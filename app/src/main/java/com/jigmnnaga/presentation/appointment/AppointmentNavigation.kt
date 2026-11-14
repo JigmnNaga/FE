@@ -18,6 +18,7 @@ import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.AppointmentCreateEntryPoint
 import com.jigmnnaga.di.AppointmentDetailEntryPoint
+import com.jigmnnaga.di.AppointmentManageEntryPoint
 import com.jigmnnaga.di.AttendanceEntryPoint
 import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
@@ -44,6 +45,8 @@ import com.jigmnnaga.presentation.appointment.hostconfirmation.HostAppointmentCo
 import com.jigmnnaga.presentation.appointment.hostconfirmation.HostConfirmationUiState
 import com.jigmnnaga.presentation.appointment.hostconfirmation.HostConfirmationViewModel
 import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteRoute
+import com.jigmnnaga.presentation.appointment.manage.AppointmentManageRoute
+import com.jigmnnaga.presentation.appointment.manage.AppointmentManageViewModel
 import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteViewModel
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomRoute
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomViewModel
@@ -58,6 +61,7 @@ import com.jigmnnaga.presentation.common.login.LoginRoute
 import com.jigmnnaga.presentation.common.splash.SplashRoute
 import com.jigmnnaga.presentation.home.HomeRoute
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
 import java.util.Calendar
 
@@ -107,6 +111,10 @@ data class PlaceVoteDestination(val appointmentId: Long, val isHost: Boolean = f
 @Serializable
 data class ExistingAppointmentAddDestination(val appointmentId: Long)
 
+/** 방장 약속방 관리 화면(APT-006). 약속 ID를 인자로 받는다. */
+@Serializable
+data class AppointmentManageDestination(val appointmentId: Long)
+
 /** 약속 기능이 소유하는 이동 경로 그래프. 앱 호스트에는 이 객체만 등록한다. */
 object AppointmentNavigationGraph : AppNavigationGraph {
     override fun register(builder: NavGraphBuilder, navigator: AppNavigator) {
@@ -152,7 +160,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onLoginRequired = { resume -> navigator.requestLogin(resume) }
             ) { detail ->
                 val viewModel: HostAppointmentRoomViewModel = viewModel(
-                    key = "host-room-$appointmentId",
+                    // 약속 관리에서 약속 정보를 바꿔 상세를 다시 불러오면 새 값으로 화면 상태를 다시 만든다.
+                    key = "host-room-$appointmentId-${detail.hashCode()}",
                     factory = remember(detail) {
                         viewModelFactory {
                             initializer { HostAppointmentRoomViewModel(detail.toHostRoomUiState(labels)) }
@@ -164,7 +173,50 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     onBackClick = { navigator.navigateBack() },
                     onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
                     onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
-                    onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+                    onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) }
+                )
+            }
+        }
+
+        // 방장이 약속 이름·날짜·장소·응답 기한을 바꾸고 약속을 취소·삭제한다.
+        // 열려 있는 약속방이 바뀐 값을 다시 불러오도록, 이 화면의 약속 상세는 변경 신호를 따라가지 않는다.
+        // TODO: 참여 멤버 관리(내보내기·방장 위임·미응답자 알림)는 멤버 관리 화면 이슈에서 이 화면에 붙인다.
+        builder.composable<AppointmentManageDestination> { entry ->
+            val appointmentId = entry.toRoute<AppointmentManageDestination>().appointmentId
+            val loader = rememberAppointmentDetailLoader(appointmentId, followChanges = false)
+            val applicationContext = LocalContext.current.applicationContext
+            AppointmentDetailLoader(
+                viewModel = loader,
+                onBack = { navigator.navigateBack() },
+                onLoginRequired = { resume -> navigator.requestLogin(resume) }
+            ) { detail ->
+                val viewModel: AppointmentManageViewModel = viewModel(
+                    key = "appointment-manage-$appointmentId",
+                    factory = remember(detail) {
+                        viewModelFactory {
+                            initializer {
+                                val manageEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    AppointmentManageEntryPoint::class.java
+                                )
+                                val searchEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    PlaceSearchEntryPoint::class.java
+                                )
+                                AppointmentManageViewModel(
+                                    detail = detail,
+                                    repository = manageEntryPoint.appointmentManageRepository(),
+                                    placeSearchRepository = searchEntryPoint.placeSearchRepository()
+                                )
+                            }
+                        }
+                    }
+                )
+                AppointmentManageRoute(
+                    viewModel = viewModel,
+                    onExit = { navigator.navigateBack() },
+                    onDeleted = { navigator.navigateToHome() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }
@@ -471,19 +523,31 @@ object AppointmentNavigationGraph : AppNavigationGraph {
     }
 }
 
+/**
+ * 약속 상세를 불러오는 ViewModel. [followChanges]가 true면 약속 관리 화면에서 약속 정보가 바뀔 때
+ * 상세를 다시 불러온다. 약속 관리 화면 자신은 false로 둬서 저장할 때마다 화면이 깜빡이지 않게 한다.
+ */
 @Composable
-private fun rememberAppointmentDetailLoader(appointmentId: Long): AppointmentDetailLoadViewModel {
+private fun rememberAppointmentDetailLoader(
+    appointmentId: Long,
+    followChanges: Boolean = true
+): AppointmentDetailLoadViewModel {
     val applicationContext = LocalContext.current.applicationContext
     return viewModel(
-        key = "appointment-detail-$appointmentId",
-        factory = remember(appointmentId) {
+        key = if (followChanges) "appointment-detail-$appointmentId" else "appointment-detail-fixed-$appointmentId",
+        factory = remember(appointmentId, followChanges) {
             viewModelFactory {
                 initializer {
                     val entryPoint = EntryPointAccessors.fromApplication(
                         applicationContext,
                         AppointmentDetailEntryPoint::class.java
                     )
-                    AppointmentDetailLoadViewModel(appointmentId, entryPoint.appointmentDetailRepository())
+                    val repository = entryPoint.appointmentDetailRepository()
+                    if (followChanges) {
+                        AppointmentDetailLoadViewModel(appointmentId, repository)
+                    } else {
+                        AppointmentDetailLoadViewModel(appointmentId, repository, MutableStateFlow(0))
+                    }
                 }
             }
         }

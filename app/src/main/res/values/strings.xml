@@ -331,4 +331,44 @@
     <string name="appointment_member_reschedule_requested">재조율 요청</string>
     <string name="appointment_room_subtitle">%1$d명 · 약속방</string>
     <string name="appointment_member_count">%1$d명</string>
+
+    <!-- 약속 관리 화면 -->
+    <string name="appointment_manage_title">약속방 관리</string>
+    <string name="appointment_manage_section_info">약속 정보</string>
+    <string name="appointment_manage_section_cleanup">약속방 정리</string>
+    <string name="appointment_manage_item_title">약속 이름</string>
+    <string name="appointment_manage_item_dates">날짜·시간 변경</string>
+    <string name="appointment_manage_item_locations">장소 변경</string>
+    <string name="appointment_manage_item_deadline">참여 의사 결정 기간 변경</string>
+    <string name="appointment_manage_undecided">미정</string>
+    <string name="appointment_manage_date_single">%1$d월 %2$d일</string>
+    <string name="appointment_manage_date_range">%1$d월 %2$d일 ~ %3$d월 %4$d일</string>
+    <string name="appointment_manage_date_multiple">%1$d월 %2$d일 외 %3$d일</string>
+    <string name="appointment_manage_locations_more">%1$s 외 %2$d곳</string>
+    <string name="appointment_manage_deadline_value">%1$d월 %2$d일까지</string>
+    <string name="appointment_manage_info_note">약속 정보를 바꾸면 멤버에게 알림이 전송돼요.</string>
+    <string name="appointment_manage_canceled_banner">취소된 약속이에요. 정보를 바꿀 수 없어요.</string>
+    <string name="appointment_manage_cancel">약속 취소</string>
+    <string name="appointment_manage_cancel_desc">모든 멤버에게 취소를 알려요.</string>
+    <string name="appointment_manage_delete">약속방 삭제</string>
+    <string name="appointment_manage_delete_desc">삭제 후에는 복구할 수 없어요.</string>
+    <string name="appointment_manage_title_edit">약속 이름 변경</string>
+    <string name="appointment_manage_title_count">%1$d/%2$d</string>
+    <string name="appointment_manage_save">변경사항 저장</string>
+    <string name="appointment_manage_cancel_dialog_title">약속을 취소할까요?</string>
+    <string name="appointment_manage_cancel_dialog_message">모든 멤버에게 취소 알림이 가요.</string>
+    <string name="appointment_manage_delete_dialog_title">약속방을 삭제할까요?</string>
+    <string name="appointment_manage_delete_dialog_message">삭제하면 복구할 수 없어요.</string>
+    <string name="appointment_manage_dialog_dismiss">닫기</string>
+    <string name="appointment_manage_saved">변경했어요.</string>
+    <string name="appointment_manage_canceled_done">약속을 취소했어요.</string>
+    <string name="appointment_manage_not_host">방장만 약속을 관리할 수 있어요.</string>
+    <string name="appointment_manage_already_canceled">이미 취소된 약속이에요.</string>
+    <string name="appointment_manage_invalid_dates">선택한 날짜로 바꿀 수 없어요. 지난 날짜가 있는지 확인해 주세요.</string>
+    <string name="appointment_manage_invalid_deadline">응답 기한은 지금 이후이면서 첫 후보 날짜 이전이어야 해요.</string>
+    <string name="appointment_manage_dates_before_deadline">후보 날짜가 응답 기한보다 빨라요. 응답 기한을 먼저 바꿔 주세요.</string>
+    <string name="appointment_manage_invalid_locations">후보 장소를 확인해 주세요. 위치 정보가 없는 장소는 고를 수 없어요.</string>
+    <string name="appointment_manage_invalid_input">입력한 내용을 다시 확인해 주세요.</string>
+    <string name="appointment_manage_failed">변경하지 못했어요. 입력한 내용은 그대로 남아 있어요.</string>
+    <string name="appointment_manage_failed_retry">네트워크나 서버 문제로 변경하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 </resources>
