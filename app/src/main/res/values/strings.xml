@@ -207,6 +207,13 @@
 <string name="place_vote_map_unavailable">지도는 연결 후 표시됩니다</string>
 <string name="place_vote_count">투표 %1$d</string>
 <string name="place_vote_remove_candidate">삭제</string>
+<string name="place_vote_api_unavailable">아직 서버와 연결되지 않았어요. 선택한 장소는 화면에 그대로 남아 있어요</string>
+<string name="place_vote_max_selection">장소는 최대 %1$d개까지 고를 수 있어요</string>
+<string name="place_vote_selected_summary">선택된 장소 (%1$d개)</string>
+<string name="place_vote_empty">검색 결과가 없어요</string>
+<string name="place_vote_question">어디서 만날까요?</string>
+<string name="place_vote_list_label">위치 선택·최대 %1$d개</string>
+<string name="place_vote_submit">저장</string>
 
 <string name="host_confirmation_header">약속 확정</string>
 <string name="host_confirmation_review_title">최종 약속을 확인해 주세요</string>
