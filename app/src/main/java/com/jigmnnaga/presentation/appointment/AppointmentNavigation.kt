@@ -23,6 +23,7 @@ import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentMemberRole
+import com.jigmnnaga.domain.model.PreviousMembers
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoader
 import com.jigmnnaga.presentation.appointment.detail.rememberAppointmentDetailLabels
@@ -64,6 +65,16 @@ import java.util.Calendar
 @Serializable
 data object AppointmentCreateDestination
 
+/**
+ * 기존 약속의 참여자를 이전 약속 멤버로 담아 약속을 만드는 화면(APT-001).
+ * [memberIds]는 쉼표로 이은 멤버 ID다. (예: `"2,3"`)
+ */
+@Serializable
+data class AppointmentCreateFromPreviousDestination(
+    val previousAppointmentId: Long,
+    val memberIds: String
+)
+
 /** 초대 수락 화면(APT-002). 초대 링크의 코드를 인자로 받는다. */
 @Serializable
 data class AppointmentInviteDestination(val inviteCode: String)
@@ -100,32 +111,12 @@ data class ExistingAppointmentAddDestination(val appointmentId: Long)
 object AppointmentNavigationGraph : AppNavigationGraph {
     override fun register(builder: NavGraphBuilder, navigator: AppNavigator) {
         builder.composable<AppointmentCreateDestination> {
-            val applicationContext = LocalContext.current.applicationContext
-            val viewModel: AppointmentCreateViewModel = viewModel(
-                factory = remember {
-                    viewModelFactory {
-                        initializer {
-                            val createEntryPoint = EntryPointAccessors.fromApplication(
-                                applicationContext,
-                                AppointmentCreateEntryPoint::class.java
-                            )
-                            val searchEntryPoint = EntryPointAccessors.fromApplication(
-                                applicationContext,
-                                PlaceSearchEntryPoint::class.java
-                            )
-                            AppointmentCreateViewModel(
-                                createRepository = createEntryPoint.appointmentCreateRepository(),
-                                placeSearchRepository = searchEntryPoint.placeSearchRepository()
-                            )
-                        }
-                    }
-                }
-            )
-            AppointmentCreateRoute(
-                onExit = { navigator.navigateBack() },
-                viewModel = viewModel,
-                onLoginRequired = { resume -> navigator.requestLogin(resume) }
-            )
+            AppointmentCreateContent(navigator = navigator, previousMembers = null)
+        }
+
+        builder.composable<AppointmentCreateFromPreviousDestination> { entry ->
+            val destination = entry.toRoute<AppointmentCreateFromPreviousDestination>()
+            AppointmentCreateContent(navigator = navigator, previousMembers = destination.toPreviousMembers())
         }
 
         builder.composable<AppointmentInviteDestination> { entry ->
@@ -294,7 +285,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
         }
 
         // 약속 제목, 예정 시간·장소, 멤버 목록을 약속 상세 조회 값으로 채운다.
-        // TODO: 약속 요청 API 연동 시 요청 전송을 연결한다. 약속방에서 이 화면으로 가는 연결은 약속방에 진입점이 정해질 때 붙인다.
+        // "약속 요청하기"는 고른 참여자를 이전 약속 멤버로 담아 약속 생성 화면으로 이동한다.
+        // TODO: 약속방에서 이 화면으로 가는 연결은 약속방에 진입점이 정해질 때 붙인다.
         builder.composable<ExistingAppointmentAddDestination> { entry ->
             val appointmentId = entry.toRoute<ExistingAppointmentAddDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
@@ -308,7 +300,9 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     key = "existing-add-$appointmentId",
                     factory = remember(detail) {
                         viewModelFactory {
-                            initializer { ExistingAppointmentAddViewModel(detail.toExistingAddUiState(labels)) }
+                            initializer {
+                                ExistingAppointmentAddViewModel(detail.toExistingAddUiState(labels), appointmentId)
+                            }
                         }
                     }
                 )
@@ -317,7 +311,15 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     onExit = { navigator.navigateBack() },
                     onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
                     onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
-                    onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
+                    onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ },
+                    onRequestMembers = { request ->
+                        navigator.navigate(
+                            AppointmentCreateFromPreviousDestination(
+                                previousAppointmentId = request.previousAppointmentId,
+                                memberIds = request.memberIds.toMemberIdsArgument()
+                            )
+                        )
+                    }
                 )
             }
         }
@@ -425,6 +427,39 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 inclusive = true,
                 launchSingleTop = true
             )
+        )
+    }
+
+    /** 약속 생성 화면. [previousMembers]가 있으면 약속을 만들 때 이전 약속 멤버로 함께 보낸다. */
+    @Composable
+    private fun AppointmentCreateContent(navigator: AppNavigator, previousMembers: PreviousMembers?) {
+        val applicationContext = LocalContext.current.applicationContext
+        val viewModel: AppointmentCreateViewModel = viewModel(
+            key = previousMembers?.let { "create-from-${it.appointmentId}-${it.memberIds}" },
+            factory = remember(previousMembers) {
+                viewModelFactory {
+                    initializer {
+                        val createEntryPoint = EntryPointAccessors.fromApplication(
+                            applicationContext,
+                            AppointmentCreateEntryPoint::class.java
+                        )
+                        val searchEntryPoint = EntryPointAccessors.fromApplication(
+                            applicationContext,
+                            PlaceSearchEntryPoint::class.java
+                        )
+                        AppointmentCreateViewModel(
+                            createRepository = createEntryPoint.appointmentCreateRepository(),
+                            placeSearchRepository = searchEntryPoint.placeSearchRepository(),
+                            previousMembers = previousMembers
+                        )
+                    }
+                }
+            }
+        )
+        AppointmentCreateRoute(
+            onExit = { navigator.navigateBack() },
+            viewModel = viewModel,
+            onLoginRequired = { resume -> navigator.requestLogin(resume) }
         )
     }
 

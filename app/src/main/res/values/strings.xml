@@ -272,6 +272,7 @@
 <string name="existing_add_map_area">지도 영역</string>
 <string name="existing_add_request_api_unavailable">아직 서버와 연결되지 않았어요. 고른 멤버는 화면에 그대로 남아 있어요</string>
 <string name="existing_add_chat_unavailable">채팅은 아직 준비 중이에요</string>
+<string name="existing_add_request_members_invalid">고른 멤버를 확인할 수 없어요. 다시 골라 주세요</string>
 <string name="existing_add_placeholder">-</string>
 
     <!-- 홈 화면 (HOM-001) -->
