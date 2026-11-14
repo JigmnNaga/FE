@@ -370,5 +370,22 @@
     <string name="appointment_manage_invalid_locations">후보 장소를 확인해 주세요. 위치 정보가 없는 장소는 고를 수 없어요.</string>
     <string name="appointment_manage_invalid_input">입력한 내용을 다시 확인해 주세요.</string>
     <string name="appointment_manage_failed">변경하지 못했어요. 입력한 내용은 그대로 남아 있어요.</string>
+    <string name="appointment_manage_section_members">참여 멤버</string>
+    <string name="appointment_manage_item_reminder">미응답자 알림</string>
+    <string name="appointment_manage_item_reminder_desc">응답하지 않은 멤버에게 알림을 보내요.</string>
+    <string name="appointment_manage_item_members">멤버 관리</string>
+    <string name="appointment_manage_item_members_desc">참여 멤버 내보내기</string>
+    <string name="appointment_manage_members_title">멤버 관리</string>
+    <string name="appointment_manage_members_title_label">약속 이름</string>
+    <string name="appointment_manage_members_count">참여 멤버 %1$d명</string>
+    <string name="appointment_manage_members_host_badge">방장</string>
+    <string name="appointment_manage_members_kick">내보내기</string>
+    <string name="appointment_manage_members_note">방장만 참여 멤버를 관리할 수 있어요.</string>
+    <string name="appointment_manage_kick_dialog_title">%1$s님을 내보낼까요?</string>
+    <string name="appointment_manage_kick_dialog_message">내보내면 이 약속방에서 %1$s님의 참여가 종료돼요.</string>
+    <string name="appointment_manage_dialog_cancel">취소</string>
+    <string name="appointment_manage_kicked">멤버를 내보냈어요.</string>
+    <string name="appointment_manage_reminder_sent">미응답자 %1$d명에게 알림을 보냈어요.</string>
+    <string name="appointment_manage_reminder_none">알림을 보낼 미응답자가 없어요.</string>
     <string name="appointment_manage_failed_retry">네트워크나 서버 문제로 변경하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 </resources>
