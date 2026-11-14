@@ -239,6 +239,8 @@
 <string name="final_confirmation_attending">참석</string>
 <string name="final_confirmation_not_attending">불참</string>
 <string name="final_confirmation_confirm">확인할게요</string>
+<string name="final_confirmation_api_unavailable">아직 서버와 연결되지 않았어요. 선택한 참석 여부는 화면에 그대로 남아 있어요</string>
+<string name="final_confirmation_placeholder">-</string>
 
 <string name="existing_add_reschedule">다시 약속 잡기</string>
 <string name="existing_add_request">약속 요청하기</string>
