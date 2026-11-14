@@ -28,11 +28,23 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Jigmnnaga">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- 초대 링크(https://jigeumnaga.app/i/{code}) 진입. 도메인 확정 후 autoVerify와 호스트를 정한다. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="jigeumnaga.app"
+                    android:pathPrefix="/i/" />
             </intent-filter>
 
         </activity>
