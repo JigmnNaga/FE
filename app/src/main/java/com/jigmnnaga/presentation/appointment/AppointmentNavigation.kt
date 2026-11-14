@@ -17,6 +17,10 @@ import com.jigmnnaga.core.navigation.LoginReturnRegistry
 import com.jigmnnaga.R
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
+import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddPage
+import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddRoute
+import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddUiState
+import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddViewModel
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationRoute
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationUiState
 import com.jigmnnaga.presentation.appointment.finalconfirmation.AppointmentFinalConfirmationViewModel
@@ -77,6 +81,10 @@ data class AppointmentDateTimeDestination(val appointmentId: Long)
 /** 장소 검색·투표 화면. 약속 ID와 방장 여부를 인자로 받는다. */
 @Serializable
 data class PlaceVoteDestination(val appointmentId: Long, val isHost: Boolean = false)
+
+/** 기존 약속에서 다시 약속을 잡거나 참여자에게 요청하는 화면(APT-006). */
+@Serializable
+data class ExistingAppointmentAddDestination(val appointmentId: Long)
 
 /** 약속 기능이 소유하는 이동 경로 그래프. 앱 호스트에는 이 객체만 등록한다. */
 object AppointmentNavigationGraph : AppNavigationGraph {
@@ -213,6 +221,40 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             AppointmentFinalConfirmationRoute(
                 viewModel = viewModel,
                 onExit = { navigator.navigateBack() }
+            )
+        }
+
+        // TODO: 약속 상세·참여자 API 연동 시 약속 제목, 예정 시간·장소, 멤버 목록(members)을 서버 값으로 채우고,
+        // 약속 요청 API 연동 시 요청 전송을 연결한다. 약속방에서 이 화면으로 가는 연결은 약속방에 진입점이 정해질 때 붙인다.
+        builder.composable<ExistingAppointmentAddDestination> { entry ->
+            val appointmentId = entry.toRoute<ExistingAppointmentAddDestination>().appointmentId
+            val title = stringResource(R.string.appointment_room_default_title)
+            val placeholder = stringResource(R.string.existing_add_placeholder)
+            val viewModel: ExistingAppointmentAddViewModel = viewModel(
+                key = "existing-add-$appointmentId",
+                factory = remember(appointmentId) {
+                    viewModelFactory {
+                        initializer {
+                            ExistingAppointmentAddViewModel(
+                                ExistingAppointmentAddUiState(
+                                    page = ExistingAppointmentAddPage.RESCHEDULE,
+                                    appointmentTitle = title,
+                                    memberSummary = "",
+                                    scheduledTime = placeholder,
+                                    scheduledPlace = placeholder,
+                                    members = emptyList()
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            ExistingAppointmentAddRoute(
+                viewModel = viewModel,
+                onExit = { navigator.navigateBack() },
+                onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+                onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
+                onMoreClick = { /* TODO: 약속 관리 화면 등록 후 연결 */ }
             )
         }
 
