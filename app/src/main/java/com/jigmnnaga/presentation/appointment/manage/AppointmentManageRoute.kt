@@ -23,7 +23,7 @@ import com.jigmnnaga.R
  * 약속 관리 화면과 [AppointmentManageViewModel]을 연결한다.
  *
  * @param onExit 관리 목록에서 뒤로 갈 때 호출한다.
- * @param onDeleted 약속방을 삭제한 뒤 호출한다. 삭제된 약속방으로 돌아갈 수 없으므로 홈 등으로 보낸다.
+ * @param onDeleted 약속방을 삭제하거나 나간 뒤 호출한다. 돌아갈 수 없는 약속방이므로 홈 등으로 보낸다.
  * @param onLoginRequired 로그인이 필요할 때 호출한다. 로그인에 성공하면 실행할 일을 인자로 넘긴다.
  */
 @Composable
@@ -39,7 +39,10 @@ fun AppointmentManageRoute(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    BackHandler(enabled = state.step != AppointmentManageStep.MENU) { viewModel.back() }
+    // 나가기·삭제 완료 화면에서는 이미 나간 약속방으로 돌아가지 않고 홈으로 보낸다.
+    BackHandler(enabled = state.step != AppointmentManageStep.MENU || state.completion != null) {
+        if (state.completion != null) onDeleted() else viewModel.back()
+    }
 
     LaunchedEffect(state.finished) {
         if (state.finished == AppointmentManageFinish.DELETED) onDeleted()
@@ -66,6 +69,9 @@ fun AppointmentManageRoute(
             AppointmentManageNotice.SAVED -> R.string.appointment_manage_saved
             AppointmentManageNotice.CANCELED_DONE -> R.string.appointment_manage_canceled_done
             AppointmentManageNotice.KICKED -> R.string.appointment_manage_kicked
+            AppointmentManageNotice.LEAVE_NEW_HOST_REQUIRED -> R.string.appointment_leave_new_host_required
+            AppointmentManageNotice.LEAVE_INVALID_TARGET -> R.string.appointment_leave_invalid_target
+            AppointmentManageNotice.LEAVE_LAST_MEMBER -> R.string.appointment_leave_last_member
             AppointmentManageNotice.REMINDER_SENT -> R.string.appointment_manage_reminder_sent
             AppointmentManageNotice.REMINDER_NONE -> R.string.appointment_manage_reminder_none
             AppointmentManageNotice.LOGIN_REQUIRED -> return@LaunchedEffect
@@ -92,7 +98,12 @@ fun AppointmentManageRoute(
             onSendReminders = viewModel::sendReminders,
             onRequestKick = viewModel::requestKick,
             onDismissKick = viewModel::dismissKick,
-            onConfirmKick = viewModel::confirmKick
+            onConfirmKick = viewModel::confirmKick,
+            onSelectNewHost = viewModel::selectNewHost,
+            onRequestLeave = viewModel::requestLeave,
+            onDismissLeave = viewModel::dismissLeave,
+            onConfirmLeave = viewModel::confirmLeave,
+            onGoHome = onDeleted
         )
         SnackbarHost(
             hostState = snackbarHostState,
