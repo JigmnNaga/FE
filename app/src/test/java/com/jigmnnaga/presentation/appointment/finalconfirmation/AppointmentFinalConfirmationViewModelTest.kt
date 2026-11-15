@@ -58,8 +58,10 @@ class AppointmentFinalConfirmationViewModelTest {
         isSubmitting = isSubmitting
     )
 
-    private fun viewModel(initial: AppointmentFinalConfirmationUiState = state()) =
-        AppointmentFinalConfirmationViewModel(7L, initial, repository)
+    private fun viewModel(
+        initial: AppointmentFinalConfirmationUiState = state(),
+        onResponded: () -> Unit = {}
+    ) = AppointmentFinalConfirmationViewModel(7L, initial, repository, onResponded)
 
     @Test
     fun `참석 여부를 고르기 전에는 확인할 수 없다`() {
@@ -114,6 +116,23 @@ class AppointmentFinalConfirmationViewModelTest {
         assertEquals(listOf(7L to AttendanceAnswer.ATTENDING), repository.calls)
         assertEquals(AppointmentFinalConfirmationNotice.SUBMITTED, vm.notice.value)
         assertFalse(vm.uiState.value.isSubmitting)
+    }
+
+    @Test
+    fun `참석 응답이 저장되면 약속방이 다시 불러오도록 알린다`() {
+        var notified = 0
+        val vm = viewModel(state(choice = AppointmentAttendanceChoice.ATTENDING), onResponded = { notified++ })
+        vm.onConfirm()
+        assertEquals(1, notified)
+    }
+
+    @Test
+    fun `참석 응답이 저장되지 않으면 약속방에 알리지 않는다`() {
+        repository.result = AttendanceResult.Failure(retryable = true)
+        var notified = 0
+        val vm = viewModel(state(choice = AppointmentAttendanceChoice.ATTENDING), onResponded = { notified++ })
+        vm.onConfirm()
+        assertEquals(0, notified)
     }
 
     @Test

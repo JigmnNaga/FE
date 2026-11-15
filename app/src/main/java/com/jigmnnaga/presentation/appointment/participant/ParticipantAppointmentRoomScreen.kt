@@ -72,7 +72,8 @@ fun ParticipantAppointmentRoomScreen(
     mapContent: (@Composable (Modifier) -> Unit)? = null,
     routeContent: (@Composable (Modifier) -> Unit)? = null,
     canLoadMoreMessages: Boolean = false,
-    onLoadMoreMessages: () -> Unit = {}
+    onLoadMoreMessages: () -> Unit = {},
+    onConfirmationClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -92,7 +93,7 @@ fun ParticipantAppointmentRoomScreen(
 
         when (state.selectedTab) {
             ParticipantAppointmentRoomTab.CHAT -> {
-                ParticipantAppointmentSummary(state, onSummaryExpandedChange)
+                ParticipantAppointmentSummary(state, onSummaryExpandedChange, onConfirmationClick)
                 ParticipantChatList(state, canLoadMoreMessages, onLoadMoreMessages, Modifier.weight(1f))
                 ChatInputBar(
                     value = state.draftMessage,
@@ -239,7 +240,8 @@ private fun ParticipantRoomTabs(
 @Composable
 private fun ParticipantAppointmentSummary(
     state: ParticipantAppointmentRoomUiState,
-    onExpandedChange: (Boolean) -> Unit
+    onExpandedChange: (Boolean) -> Unit,
+    onConfirmationClick: () -> Unit
 ) {
     val summaryDescription = if (state.isSummaryExpanded) {
         "${stringResource(R.string.participant_room_summary_title)}, ${stringResource(R.string.participant_room_summary_collapse)}"
@@ -317,7 +319,17 @@ private fun ParticipantAppointmentSummary(
                         state.candidatePlaceSummary ?: empty
                     },
                     showUndecidedBadge = !dateConfirmed,
-                    showPlaceUndecidedBadge = !placeConfirmed
+                    showPlaceUndecidedBadge = !placeConfirmed,
+                    // 약속이 확정되면 이 영역을 눌러 참석 여부를 확인하는 화면으로 간다. 모양은 그대로다.
+                    modifier = if (confirmed) {
+                        val openConfirmationLabel = stringResource(R.string.participant_room_summary_open_confirmation)
+                        Modifier
+                            .clip(RoundedCornerShape(AppDimens.Spacing4))
+                            .clickable(onClickLabel = openConfirmationLabel, onClick = onConfirmationClick)
+                            .testTag("participant-room-summary-details")
+                    } else {
+                        Modifier
+                    }
                 )
             }
         }

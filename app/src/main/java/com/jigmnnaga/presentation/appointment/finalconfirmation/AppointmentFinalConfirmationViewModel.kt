@@ -6,6 +6,7 @@ import com.jigmnnaga.domain.model.AttendanceAnswer
 import com.jigmnnaga.domain.model.AttendanceRejectReason
 import com.jigmnnaga.domain.model.AttendanceResult
 import com.jigmnnaga.domain.repository.AttendanceRepository
+import com.jigmnnaga.presentation.appointment.AppointmentRefreshSignal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +36,9 @@ enum class AppointmentFinalConfirmationNotice {
 class AppointmentFinalConfirmationViewModel(
     private val appointmentId: Long,
     initialState: AppointmentFinalConfirmationUiState,
-    private val attendanceRepository: AttendanceRepository
+    private val attendanceRepository: AttendanceRepository,
+    /** 참석 응답이 저장되면 호출한다. 열려 있는 약속방이 약속 상세를 다시 불러오게 한다. */
+    private val onResponded: () -> Unit = AppointmentRefreshSignal::notifyChanged
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(initialState.withConfirmEligibility())
@@ -62,6 +65,7 @@ class AppointmentFinalConfirmationViewModel(
         _uiState.value = current.copy(isSubmitting = true).withConfirmEligibility()
         viewModelScope.launch {
             val result = attendanceRepository.respond(appointmentId, answer)
+            if (result is AttendanceResult.Success) onResponded()
             _uiState.value = _uiState.value.copy(isSubmitting = false).withConfirmEligibility()
             _notice.value = result.toNotice()
         }
