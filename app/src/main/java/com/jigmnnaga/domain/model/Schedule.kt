@@ -17,10 +17,15 @@ data class MySchedule(
     val preferredLocationId: Long?
 )
 
-/** 제출할 일정. 서버는 기존 선택을 전부 새 값으로 바꾸고, 희망 장소는 약속의 후보 장소 중 하나여야 한다. */
+/**
+ * 제출할 일정. 서버는 보낸 항목만 저장한다.
+ * - [availabilities]가 null이면 날짜·시간은 그대로 두고, 빈 목록이면 모두 지운다.
+ * - [preferredLocationId]가 null이면 희망 장소는 그대로 둔다. 값이 있으면 약속의 후보 장소 중 하나여야 한다.
+ * 두 값이 모두 null이면 서버가 거절한다.
+ */
 data class ScheduleSubmission(
-    val availabilities: List<ScheduleAvailability>,
-    val preferredLocationId: Long
+    val availabilities: List<ScheduleAvailability>? = null,
+    val preferredLocationId: Long? = null
 )
 
 data class MemberSchedule(
@@ -64,7 +69,10 @@ enum class ScheduleRejectReason {
     INVALID_DATE,
     DUPLICATE_DATE,
     INVALID_TIME,
-    INVALID_LOCATION
+    INVALID_LOCATION,
+
+    /** 날짜·시간과 희망 장소를 모두 보내지 않았다. */
+    EMPTY_UPDATE
 }
 
 /** 일정 API 호출 결과. */

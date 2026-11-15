@@ -12,6 +12,6 @@ interface ScheduleRepository {
     /** 참여자 전체의 일정 응답 현황과 장소별 선택 현황을 조회한다. */
     suspend fun getScheduleStatus(appointmentId: Long): ScheduleResult<ScheduleStatus>
 
-    /** 일정을 제출하거나 수정한다. 기존 선택은 전부 새 값으로 바뀐다. */
+    /** 일정을 제출하거나 수정한다. [submission]에 담은 항목만 바뀌고, 담지 않은 항목은 그대로 남는다. */
     suspend fun submitSchedule(appointmentId: Long, submission: ScheduleSubmission): ScheduleResult<Unit>
 }

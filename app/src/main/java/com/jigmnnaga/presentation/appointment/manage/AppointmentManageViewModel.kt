@@ -43,6 +43,15 @@ enum class AppointmentManageNotice {
     CANCELED_DONE,
     KICKED,
 
+    /** 다음 방장을 정해야 나갈 수 있다. */
+    LEAVE_NEW_HOST_REQUIRED,
+
+    /** 고른 멤버를 새 방장으로 지정할 수 없다. */
+    LEAVE_INVALID_TARGET,
+
+    /** 혼자 남은 약속방은 나갈 수 없다. */
+    LEAVE_LAST_MEMBER,
+
     /** 미응답자에게 알림을 보냈다. 인원은 [AppointmentManageUiState.lastReminderSentCount]에 있다. */
     REMINDER_SENT,
     REMINDER_NONE
@@ -96,7 +105,12 @@ class AppointmentManageViewModel(
         searchJob?.cancel()
         searchResults = emptyList()
         _notice.value = null
-        _uiState.value = state.copy(step = step, form = state.saved.copy(step = step.toCreateStep()))
+        _uiState.value = state.copy(
+            step = step,
+            form = state.saved.copy(step = step.toCreateStep()),
+            selectedNewHostId = null,
+            isLeaveDialogVisible = false
+        )
     }
 
     /**
@@ -105,11 +119,16 @@ class AppointmentManageViewModel(
      */
     fun back(): Boolean {
         val state = _uiState.value
-        if (state.step == AppointmentManageStep.MENU) return false
+        if (state.step == AppointmentManageStep.MENU || state.completion != null) return false
         if (state.isWorking) return true
         searchJob?.cancel()
         searchResults = emptyList()
-        _uiState.value = state.copy(step = AppointmentManageStep.MENU, form = state.saved)
+        _uiState.value = state.copy(
+            step = AppointmentManageStep.MENU,
+            form = state.saved,
+            selectedNewHostId = null,
+            isLeaveDialogVisible = false
+        )
         return true
     }
 
@@ -135,7 +154,7 @@ class AppointmentManageViewModel(
         if (!state.canSave()) return
         val form = state.form
         when (state.step) {
-            AppointmentManageStep.MENU, AppointmentManageStep.MEMBERS -> Unit
+            AppointmentManageStep.MENU, AppointmentManageStep.MEMBERS, AppointmentManageStep.LEAVE -> Unit
             AppointmentManageStep.TITLE -> {
                 val title = form.appointmentName.trim()
                 execute(retry = ::save, call = { repository.updateTitle(appointmentId, title) }) {
@@ -253,6 +272,63 @@ class AppointmentManageViewModel(
         }
     }
 
+    /** 나가기 화면에서 새 방장을 고른다. 방장 자신이나 멤버가 아닌 ID는 무시한다. */
+    fun selectNewHost(memberId: Long) {
+        val state = _uiState.value
+        if (state.step != AppointmentManageStep.LEAVE || state.isWorking || state.completion != null) return
+        if (state.leaveMode != AppointmentManageLeaveMode.DELEGATE) return
+        if (state.leaveCandidates.none { it.memberId == memberId }) return
+        _uiState.value = state.copy(selectedNewHostId = memberId)
+    }
+
+    /** 나가기(삭제) 버튼. 바로 실행하지 않고 확인 팝업을 띄운다. */
+    fun requestLeave() {
+        val state = _uiState.value
+        if (state.step != AppointmentManageStep.LEAVE || !state.canLeave()) return
+        _uiState.value = state.copy(isLeaveDialogVisible = true)
+    }
+
+    fun dismissLeave() {
+        _uiState.value = _uiState.value.copy(isLeaveDialogVisible = false)
+    }
+
+    /**
+     * 나가기 확인 팝업에서 확인을 눌렀을 때.
+     * 3명 이상·2명이면 새 방장을 넘기고 나가고, 혼자 남았으면 약속방을 삭제한다. 서버가 받아 준 뒤에 완료 화면으로 바꾼다.
+     */
+    fun confirmLeave() {
+        val state = _uiState.value
+        if (!state.isLeaveDialogVisible || state.isWorking || state.step != AppointmentManageStep.LEAVE) return
+        val mode = state.leaveMode
+        val newHost = state.newHost
+        if (mode != AppointmentManageLeaveMode.DELETE_ONLY && newHost == null) return
+        _uiState.value = state.copy(isLeaveDialogVisible = false)
+        launchCall(
+            retry = {
+                requestLeave()
+                confirmLeave()
+            },
+            call = {
+                if (mode == AppointmentManageLeaveMode.DELETE_ONLY) {
+                    repository.delete(appointmentId)
+                } else {
+                    repository.leave(appointmentId, newHost?.memberId)
+                }
+            },
+            rejectedNotice = { it.toLeaveNotice() }
+        ) {
+            onChanged()
+            _uiState.value = _uiState.value.copy(
+                isWorking = false,
+                completion = if (mode == AppointmentManageLeaveMode.DELETE_ONLY) {
+                    AppointmentManageCompletion.DELETED
+                } else {
+                    AppointmentManageCompletion.LEFT
+                }
+            )
+        }
+    }
+
     /** 확인 팝업에서 확인을 눌렀을 때. */
     fun confirmAction() {
         val state = _uiState.value
@@ -313,6 +389,7 @@ class AppointmentManageViewModel(
     private fun <T> launchCall(
         retry: () -> Unit,
         call: suspend () -> AppointmentManageResult<T>,
+        rejectedNotice: (AppointmentManageRejectReason) -> AppointmentManageNotice = { it.toNotice() },
         onSuccess: (T) -> Unit
     ) {
         _uiState.value = _uiState.value.copy(isWorking = true)
@@ -330,7 +407,7 @@ class AppointmentManageViewModel(
                 }
                 is AppointmentManageResult.Rejected -> {
                     finishWorking()
-                    _notice.value = result.reason.toNotice()
+                    _notice.value = rejectedNotice(result.reason)
                 }
                 is AppointmentManageResult.Failure -> {
                     finishWorking()
@@ -400,9 +477,18 @@ class AppointmentManageViewModel(
         AppointmentManageRejectReason.INVALID_INPUT -> AppointmentManageNotice.INVALID_INPUT
     }
 
+    /** 나가기 요청에서 거절 사유를 안내로 바꾼다. 나머지 사유는 다른 변경과 같다. */
+    private fun AppointmentManageRejectReason.toLeaveNotice() = when (this) {
+        AppointmentManageRejectReason.NEW_HOST_REQUIRED -> AppointmentManageNotice.LEAVE_NEW_HOST_REQUIRED
+        AppointmentManageRejectReason.INVALID_MEMBER -> AppointmentManageNotice.LEAVE_INVALID_TARGET
+        AppointmentManageRejectReason.LAST_MEMBER_CANNOT_LEAVE -> AppointmentManageNotice.LEAVE_LAST_MEMBER
+        else -> toNotice()
+    }
+
     private fun AppointmentManageStep.toCreateStep() = when (this) {
         AppointmentManageStep.MENU,
         AppointmentManageStep.MEMBERS,
+        AppointmentManageStep.LEAVE,
         AppointmentManageStep.TITLE -> AppointmentCreateStep.APPOINTMENT_NAME
         AppointmentManageStep.SCHEDULE -> AppointmentCreateStep.SCHEDULE
         AppointmentManageStep.LOCATIONS -> AppointmentCreateStep.LOCATIONS

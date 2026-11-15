@@ -90,6 +90,7 @@ internal fun mapScheduleError(httpStatus: Int, errorCode: String?): ScheduleResu
     errorCode == "DUPLICATE_AVAILABLE_DATE" -> ScheduleResult.Rejected(ScheduleRejectReason.DUPLICATE_DATE)
     errorCode == "INVALID_AVAILABLE_TIME" -> ScheduleResult.Rejected(ScheduleRejectReason.INVALID_TIME)
     errorCode == "INVALID_PREFERRED_LOCATION" -> ScheduleResult.Rejected(ScheduleRejectReason.INVALID_LOCATION)
+    errorCode == "EMPTY_SCHEDULE_UPDATE" -> ScheduleResult.Rejected(ScheduleRejectReason.EMPTY_UPDATE)
     httpStatus == 401 -> ScheduleResult.LoginRequired
     httpStatus == 403 || httpStatus == 404 -> ScheduleResult.NotParticipant
     httpStatus >= 500 -> ScheduleResult.Failure(retryable = true)

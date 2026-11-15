@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,9 +21,18 @@ fun AppointmentDateTimeRoute(
     viewModel: AppointmentDateTimeViewModel,
     onExit: () -> Unit,
     onGoToChat: () -> Unit,
+    onLoginRequired: (resumeAfterLogin: () -> Unit) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
+    val notice by viewModel.notice.collectAsState()
+
+    LaunchedEffect(notice) {
+        if (notice == AppointmentDateTimeNotice.LOGIN_REQUIRED) {
+            viewModel.clearNotice()
+            onLoginRequired(viewModel::resumeAfterLogin)
+        }
+    }
 
     Box(
         modifier = modifier

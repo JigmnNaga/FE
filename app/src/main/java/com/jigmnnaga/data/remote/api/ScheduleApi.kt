@@ -25,7 +25,7 @@ interface ScheduleApi {
         @Path("appointmentId") appointmentId: Long
     ): Response<ApiResponse<ScheduleStatusDto>>
 
-    /** 가능 날짜별 시간과 희망 장소를 제출한다. 기존 선택은 전부 교체된다. */
+    /** 가능 날짜별 시간과 희망 장소를 제출한다. 보낸 항목만 저장하고, 보내지 않은 항목은 그대로 둔다. */
     @PUT("api/v1/appointments/{appointmentId}/schedules/me")
     suspend fun submitSchedule(
         @Header("Authorization") authorization: String?,
