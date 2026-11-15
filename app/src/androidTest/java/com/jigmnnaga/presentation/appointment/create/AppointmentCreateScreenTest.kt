@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.appointment.create
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
@@ -113,8 +114,7 @@ class AppointmentCreateScreenTest {
         ).performClick()
         composeRule.onNodeWithTag("appointment-next").assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, nextCount) }
-        composeRule.onNodeWithTag("appointment-previous").performClick()
-        composeRule.runOnIdle { assertEquals(1, previousCount) }
+        composeRule.onNodeWithTag("appointment-previous").assertDoesNotExist()
     }
 
     @Test
@@ -215,12 +215,18 @@ class AppointmentCreateScreenTest {
     @Test
     fun customDeadlineSelectionEnablesCreation() {
         val displayedMonth = AppointmentDate.currentMonth()
+        val today = java.util.Calendar.getInstance()
+        val firstCandidate = (today.clone() as java.util.Calendar).apply { add(java.util.Calendar.DAY_OF_MONTH, 10) }
         val state = mutableStateOf(
             AppointmentCreateUiState(
                 step = AppointmentCreateStep.RESPONSE_DEADLINE,
                 appointmentName = "모임",
                 scheduleType = AppointmentScheduleType.SINGLE_DAY,
-                selectedStartDate = displayedMonth,
+                selectedStartDate = AppointmentDate(
+                    firstCandidate.get(java.util.Calendar.YEAR),
+                    firstCandidate.get(java.util.Calendar.MONTH) + 1,
+                    firstCandidate.get(java.util.Calendar.DAY_OF_MONTH)
+                ),
                 selectedLocations = listOf(AppointmentLocation("강남역", "주소")),
                 displayedMonth = displayedMonth
             )
@@ -242,8 +248,10 @@ class AppointmentCreateScreenTest {
         composeRule.onNodeWithTag("appointment-next").assertIsNotEnabled()
         composeRule.onNodeWithTag("appointment-deadline-custom_date").performClick()
         composeRule.onNodeWithTag(
-            "appointment-date-${displayedMonth.year}-${displayedMonth.month}-1"
+            "appointment-date-${today.get(java.util.Calendar.YEAR)}-" +
+                "${today.get(java.util.Calendar.MONTH) + 1}-${today.get(java.util.Calendar.DAY_OF_MONTH)}"
         ).performClick()
+        composeRule.onNodeWithTag("appointment-deadline-sheet-confirm").performClick()
         composeRule.onNodeWithTag("appointment-next").assertIsEnabled()
     }
 

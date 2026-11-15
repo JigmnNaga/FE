@@ -4,8 +4,12 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,15 +30,21 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -46,7 +56,10 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -82,6 +95,9 @@ fun AppointmentCreateScreen(
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+    val canGoPrevious = state.step != AppointmentCreateStep.APPOINTMENT_NAME &&
+        state.step != AppointmentCreateStep.INVITATION
+    BackHandler(enabled = canGoPrevious && !state.isCreating) { onPrevious() }
     val headerTitle = if (
         state.step == AppointmentCreateStep.LOCATIONS && state.appointmentName.isNotBlank()
     ) {
@@ -97,7 +113,7 @@ fun AppointmentCreateScreen(
             .safeDrawingPadding()
             .imePadding()
     ) {
-        BackHeader(title = headerTitle, onBackClick = onBack)
+        BackHeader(title = headerTitle, onBackClick = if (canGoPrevious) onPrevious else onBack)
 
         if (state.step != AppointmentCreateStep.INVITATION) {
             AppointmentStepProgress(step = state.step)
@@ -128,12 +144,14 @@ fun AppointmentCreateScreen(
 
                 AppointmentCreateStep.LOCATIONS -> AppointmentLocationsStep(
                     state = state,
-                    onStateChange = onStateChange
+                    onStateChange = onStateChange,
+                    showSelectedSummary = false
                 )
 
                 AppointmentCreateStep.RESPONSE_DEADLINE -> AppointmentDeadlineStep(
                     state = state,
-                    onStateChange = onStateChange
+                    onStateChange = onStateChange,
+                    onCreate = onCreate
                 )
 
                 AppointmentCreateStep.INVITATION -> AppointmentInvitationStep(
@@ -141,6 +159,15 @@ fun AppointmentCreateScreen(
                     onShare = onShare
                 )
             }
+        }
+
+        if (state.step == AppointmentCreateStep.LOCATIONS && state.selectedLocations.isNotEmpty()) {
+            SelectedLocationsCard(
+                locations = state.selectedLocations,
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.Spacing20)
+                    .padding(bottom = AppDimens.Spacing12)
+            )
         }
 
         if (state.step != AppointmentCreateStep.INVITATION) {
@@ -159,64 +186,62 @@ fun AppointmentCreateScreen(
                     onNext()
                 }
             }
-            if (state.step == AppointmentCreateStep.APPOINTMENT_NAME) {
-                AppButton(
-                    text = stringResource(R.string.appointment_next_button),
-                    variant = ButtonVariant.DEFAULT,
-                    enabled = ready && !state.isCreating,
-                    onClick = continueAction,
-                    modifier = Modifier.fillMaxWidth().then(footerPadding).testTag("appointment-next")
-                )
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth().then(footerPadding),
-                    horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        onClick = onPrevious,
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("appointment-previous"),
-                        shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
-                        color = AppColors.Monotone.White,
-                        border = BorderStroke(1.dp, AppColors.Monotone.Gray300)
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) {
-                            Text(
-                                text = stringResource(R.string.appointment_previous_button),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = AppColors.Monotone.SoftBlack
-                            )
-                        }
-                    }
-                    AppButton(
-                        text = stringResource(
-                            if (state.step == AppointmentCreateStep.RESPONSE_DEADLINE) {
-                                R.string.appointment_create_button
-                            } else {
-                                R.string.appointment_next_button
-                            }
-                        ),
-                        variant = ButtonVariant.DEFAULT,
-                        enabled = ready && !state.isCreating,
-                        onClick = continueAction,
-                        modifier = Modifier.weight(1f).testTag("appointment-next")
-                    )
-                }
-            }
+            AppButton(
+                text = stringResource(R.string.appointment_next_button),
+                variant = ButtonVariant.DEFAULT,
+                enabled = ready && !state.isCreating,
+                onClick = continueAction,
+                modifier = Modifier.fillMaxWidth().then(footerPadding).testTag("appointment-next")
+            )
         }
     }
 
     if (state.copyConfirmationVisible) {
-        AlertDialog(
-            onDismissRequest = onDismissCopyConfirmation,
-            title = { Text(stringResource(R.string.appointment_copy_confirmation_title)) },
-            text = { Text(stringResource(R.string.appointment_copy_confirmation_message)) },
-            confirmButton = {
-                TextButton(onClick = onDismissCopyConfirmation) {
-                    Text(stringResource(R.string.appointment_confirm))
-                }
+        LinkCopiedDialog(onDismiss = onDismissCopyConfirmation)
+    }
+}
+
+@Composable
+private fun LinkCopiedDialog(onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().testTag("appointment-copy-popup"),
+            shape = RoundedCornerShape(20.dp),
+            color = AppColors.Monotone.White
+        ) {
+            Column(
+                modifier = Modifier.padding(AppDimens.Spacing20),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                Spacer(Modifier.height(AppDimens.Spacing8))
+                SuccessMark(
+                    markSize = 48.dp,
+                    background = AppColors.MainGreen.Green200,
+                    checkColor = AppColors.MainGreen.Green900
+                )
+                Spacer(Modifier.height(AppDimens.Spacing4))
+                Text(
+                    text = stringResource(R.string.appointment_copy_confirmation_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.Monotone.SoftBlack,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.appointment_copy_confirmation_message),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.Monotone.SoftBlack,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(AppDimens.Spacing12))
+                AppButton(
+                    text = stringResource(R.string.appointment_confirm),
+                    variant = ButtonVariant.DEFAULT,
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().testTag("appointment-copy-popup-confirm")
+                )
             }
-        )
+        }
     }
 }
 
@@ -234,7 +259,7 @@ private fun AppointmentStepProgress(step: AppointmentCreateStep) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = AppDimens.Spacing20)
-            .padding(top = AppDimens.Spacing8),
+            .padding(top = AppDimens.Spacing16, bottom = AppDimens.Spacing8),
         horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
     ) {
         labels.forEachIndexed { index, label ->
@@ -242,19 +267,21 @@ private fun AppointmentStepProgress(step: AppointmentCreateStep) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(3.dp)
+                        .height(4.dp)
                         .clip(CircleShape)
                         .background(
                             if (index <= currentIndex) AppColors.MainGreen.Green900
                             else AppColors.Monotone.Gray300
                         )
                 )
-                Spacer(Modifier.height(AppDimens.Spacing4))
+                Spacer(Modifier.height(6.dp))
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (index == currentIndex) AppColors.Monotone.SoftBlack
-                    else AppColors.Monotone.Gray500,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = if (index == currentIndex) FontWeight.Bold else FontWeight.Normal
+                    ),
+                    color = if (index == currentIndex) AppColors.MainGreen.Green900
+                    else AppColors.Monotone.Gray400,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -263,69 +290,76 @@ private fun AppointmentStepProgress(step: AppointmentCreateStep) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AppointmentNameStep(
     state: AppointmentCreateUiState,
     onNameChange: (String) -> Unit,
     onQuickSelect: (String) -> Unit
 ) {
-    Text(
-        text = stringResource(R.string.appointment_create_name_question),
-        style = MaterialTheme.typography.titleSmall,
-        color = AppColors.Monotone.SoftBlack
-    )
+    Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+            Text(
+                text = stringResource(R.string.appointment_create_name_question),
+                style = MaterialTheme.typography.titleSmall,
+                color = AppColors.Monotone.SoftBlack
+            )
+            AppointmentTextField(
+                value = state.appointmentName,
+                onValueChange = onNameChange,
+                placeholder = stringResource(R.string.appointment_create_name_hint),
+                modifier = Modifier.testTag("appointment-name-field"),
+                outlined = true
+            )
+        }
 
-    AppointmentTextField(
-        value = state.appointmentName,
-        onValueChange = onNameChange,
-        placeholder = stringResource(R.string.appointment_create_name_hint),
-        modifier = Modifier.testTag("appointment-name-field")
-    )
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                text = stringResource(R.string.appointment_create_quick_select),
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                color = AppColors.Monotone.Gray500
+            )
 
-    Text(
-        text = stringResource(R.string.appointment_create_quick_select),
-        style = MaterialTheme.typography.labelSmall,
-        color = AppColors.Monotone.Gray600
-    )
+            val suggestions = listOf(
+                R.string.appointment_suggestion_lunch to "lunch",
+                R.string.appointment_suggestion_dinner to "dinner",
+                R.string.appointment_suggestion_study to "study",
+                R.string.appointment_suggestion_exercise to "exercise",
+                R.string.appointment_suggestion_cafe to "cafe",
+                R.string.appointment_suggestion_movie to "movie",
+                R.string.appointment_suggestion_drinks to "drinks",
+                R.string.appointment_suggestion_travel to "travel"
+            )
 
-    val suggestions = listOf(
-        R.string.appointment_suggestion_lunch to "lunch",
-        R.string.appointment_suggestion_dinner to "dinner",
-        R.string.appointment_suggestion_study to "study",
-        R.string.appointment_suggestion_exercise to "exercise",
-        R.string.appointment_suggestion_cafe to "cafe",
-        R.string.appointment_suggestion_movie to "movie",
-        R.string.appointment_suggestion_drinks to "drinks",
-        R.string.appointment_suggestion_travel to "travel"
-    )
-
-    suggestions.chunked(4).forEach { row ->
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
-        ) {
-            row.forEach { (labelResource, testTag) ->
-                val label = stringResource(labelResource)
-                val selected = state.appointmentName == label
-                Surface(
-                    onClick = { onQuickSelect(label) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .heightIn(min = 36.dp)
-                        .testTag("appointment-quick-choice-$testTag"),
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (selected) AppColors.MainGreen.Green900
-                    else AppColors.Monotone.Gray100,
-                    contentColor = if (selected) AppColors.MainGreen.Green200
-                    else AppColors.Monotone.SoftBlack
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(6.dp)) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                suggestions.forEach { (labelResource, testTag) ->
+                    val label = stringResource(labelResource)
+                    val selected = state.appointmentName == label
+                    Surface(
+                        onClick = { onQuickSelect(label) },
+                        modifier = Modifier
+                            .height(36.dp)
+                            .testTag("appointment-quick-choice-$testTag"),
+                        shape = CircleShape,
+                        color = if (selected) AppColors.MainGreen.Green600
+                        else AppColors.Monotone.Gray100,
+                        contentColor = if (selected) AppColors.MainGreen.Green200
+                        else AppColors.Monotone.Gray700
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.padding(horizontal = 14.dp)
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -390,9 +424,17 @@ internal fun AppointmentScheduleStep(
                 AppointmentScheduleType.DATE_RANGE -> R.string.appointment_schedule_range_hint
                 AppointmentScheduleType.SPECIFIC_DATES -> R.string.appointment_schedule_specific_hint
             }
+            val rangeStart = state.selectedStartDate
+            val rangeEnd = state.selectedEndDate
             Text(
-                text = stringResource(hintResource),
-                style = MaterialTheme.typography.labelSmall,
+                text = if (state.scheduleType == AppointmentScheduleType.DATE_RANGE &&
+                    rangeStart != null && rangeEnd != null
+                ) {
+                    "${rangeStart.dayLabel()} ~ ${rangeEnd.dayLabel()}"
+                } else {
+                    stringResource(hintResource)
+                },
+                style = MaterialTheme.typography.bodySmall,
                 color = AppColors.Monotone.Gray600
             )
             AppointmentCalendar(
@@ -450,7 +492,8 @@ private fun EmptyCalendarHint() {
         Text(
             text = stringResource(R.string.appointment_schedule_empty_hint),
             style = MaterialTheme.typography.labelSmall,
-            color = AppColors.Monotone.Gray500
+            color = AppColors.Monotone.Gray500,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -459,33 +502,56 @@ private fun EmptyCalendarHint() {
 private fun SelectedDateSummary(state: AppointmentCreateUiState) {
     val dates = when (state.scheduleType) {
         AppointmentScheduleType.SINGLE_DAY -> listOfNotNull(state.selectedStartDate)
-        AppointmentScheduleType.DATE_RANGE -> listOfNotNull(
-            state.selectedStartDate,
-            state.selectedEndDate
-        )
+        AppointmentScheduleType.DATE_RANGE -> {
+            val start = state.selectedStartDate
+            val end = state.selectedEndDate
+            if (start != null && end != null) datesBetween(start, end) else listOfNotNull(start)
+        }
         AppointmentScheduleType.SPECIFIC_DATES -> state.selectedDates
         null -> emptyList()
     }
     if (dates.isEmpty()) return
 
-    Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
-        Text(
-            text = stringResource(R.string.appointment_selected_dates, dates.size),
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.Monotone.Gray600
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+    SelectionChipCard(
+        title = stringResource(R.string.appointment_selected_dates, dates.size),
+        chips = dates.map { it.shortLabel() },
+        modifier = Modifier.testTag("appointment-selected-dates")
+    )
+}
+
+/** 선택된 날짜·장소를 흰 카드 안의 칩으로 보여 준다. 칩이 많으면 줄을 바꿔 카드가 아래로 길어진다. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SelectionChipCard(title: String, chips: List<String>, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = AppointmentCardShape,
+        color = AppColors.Monotone.White
+    ) {
+        Column(
+            modifier = Modifier.padding(AppDimens.Spacing16),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
         ) {
-            dates.forEach { date ->
-                Surface(shape = CircleShape, color = AppColors.Monotone.Gray100) {
-                    Text(
-                        text = date.shortLabel(),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.Monotone.SoftBlack
-                    )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                color = AppColors.Monotone.Gray600
+            )
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                chips.forEach { label ->
+                    Surface(shape = CircleShape, color = AppColors.Monotone.Gray100) {
+                        Text(
+                            text = label,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = AppColors.Monotone.SoftBlack,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -493,9 +559,19 @@ private fun SelectedDateSummary(state: AppointmentCreateUiState) {
 }
 
 @Composable
+private fun SelectedLocationsCard(locations: List<AppointmentLocation>, modifier: Modifier = Modifier) {
+    SelectionChipCard(
+        title = stringResource(R.string.appointment_selected_location_count, locations.size),
+        chips = locations.map { it.name },
+        modifier = modifier.testTag("appointment-selected-locations")
+    )
+}
+
+@Composable
 internal fun AppointmentLocationsStep(
     state: AppointmentCreateUiState,
-    onStateChange: (AppointmentCreateUiState) -> Unit
+    onStateChange: (AppointmentCreateUiState) -> Unit,
+    showSelectedSummary: Boolean = true
 ) {
     Text(
         text = stringResource(R.string.appointment_locations_question),
@@ -506,22 +582,15 @@ internal fun AppointmentLocationsStep(
         value = state.locationQuery,
         onValueChange = { onStateChange(state.copy(locationQuery = it)) },
         placeholder = stringResource(R.string.appointment_location_search_hint),
-        modifier = Modifier.testTag("appointment-location-search")
+        modifier = Modifier.testTag("appointment-location-search"),
+        showSearchIcon = true
     )
 
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = stringResource(R.string.appointment_location_limit),
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.Monotone.Gray600
-        )
-        Text(
-            text = stringResource(R.string.appointment_location_count, state.selectedLocations.size),
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.Monotone.Gray600
-        )
-    }
+    Text(
+        text = stringResource(R.string.appointment_location_limit),
+        style = MaterialTheme.typography.labelSmall,
+        color = AppColors.Monotone.Gray600
+    )
 
     val candidates = remember(state.locationCandidates, state.locationQuery, state.locationCandidatesFromServer) {
         if (state.locationCandidatesFromServer) {
@@ -561,30 +630,8 @@ internal fun AppointmentLocationsStep(
         }
     }
 
-    if (state.selectedLocations.isNotEmpty()) {
-        Text(
-            text = stringResource(
-                R.string.appointment_selected_location_count,
-                state.selectedLocations.size
-            ),
-            style = MaterialTheme.typography.labelSmall,
-            color = AppColors.Monotone.Gray600
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
-        ) {
-            state.selectedLocations.forEach { location ->
-                Surface(shape = CircleShape, color = AppColors.MainGreen.Green300) {
-                    Text(
-                        text = location.name,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.Monotone.SoftBlack
-                    )
-                }
-            }
-        }
+    if (showSelectedSummary && state.selectedLocations.isNotEmpty()) {
+        SelectedLocationsCard(locations = state.selectedLocations)
     }
 }
 
@@ -600,19 +647,29 @@ private fun LocationCandidateCard(
         enabled = enabled,
         modifier = Modifier.fillMaxWidth().heightIn(min = 58.dp),
         shape = AppointmentCardShape,
-        color = if (selected) AppColors.MainGreen.Green200 else AppColors.Monotone.White,
-        border = if (selected) BorderStroke(1.dp, AppColors.MainGreen.Green900) else null
+        color = AppColors.Monotone.White,
+        border = if (selected) BorderStroke(2.dp, AppColors.MainGreen.Green500)
+        else BorderStroke(1.dp, AppColors.Monotone.Gray100)
     ) {
         Row(
             modifier = Modifier.padding(AppDimens.Spacing12),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
         ) {
-            Image(
-                painter = painterResource(R.drawable.place),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(AppColors.Monotone.Gray100),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.place),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = AppColors.MainGreen.Green900
+                )
+            }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = location.name,
@@ -636,21 +693,34 @@ private fun LocationCandidateCard(
 @Composable
 private fun AppointmentDeadlineStep(
     state: AppointmentCreateUiState,
-    onStateChange: (AppointmentCreateUiState) -> Unit
+    onStateChange: (AppointmentCreateUiState) -> Unit,
+    onCreate: (AppointmentCreateDraft) -> Unit
 ) {
-    AppointmentSummaryCard(state)
-    AppointmentDeadlineChoices(state = state, onStateChange = onStateChange)
+    AppointmentSummaryCard(state, showDeadline = false)
+    AppointmentDeadlineChoices(
+        state = state,
+        onStateChange = onStateChange,
+        confirmLabelRes = R.string.appointment_create_button,
+        onCustomDeadlineConfirmed = { updated -> updated.toDraftOrNull()?.let(onCreate) }
+    )
 }
 
-/** 응답 기한 선택지와 직접 선택 달력. 약속 생성과 약속 관리 화면이 함께 쓴다. */
+/** 응답 기한 선택지. 직접 선택은 바텀시트의 달력으로 고른다. 약속 생성과 약속 관리 화면이 함께 쓴다. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun AppointmentDeadlineChoices(
     state: AppointmentCreateUiState,
-    onStateChange: (AppointmentCreateUiState) -> Unit
+    onStateChange: (AppointmentCreateUiState) -> Unit,
+    confirmLabelRes: Int = R.string.appointment_confirm,
+    onCustomDeadlineConfirmed: ((AppointmentCreateUiState) -> Unit)? = null
 ) {
+    val today = remember { todayDate() }
+    val firstDate = state.firstCandidateDate()
+    var sheetVisible by remember { mutableStateOf(false) }
+
     Text(
         text = stringResource(R.string.appointment_deadline_question),
-        style = MaterialTheme.typography.titleSmall,
+        style = MaterialTheme.typography.titleMedium,
         color = AppColors.Monotone.SoftBlack
     )
 
@@ -660,75 +730,287 @@ internal fun AppointmentDeadlineChoices(
         AppointmentDeadlineChoice.ONE_WEEK to R.string.appointment_deadline_one_week,
         AppointmentDeadlineChoice.CUSTOM_DATE to R.string.appointment_deadline_custom
     )
-    options.chunked(2).forEachIndexed { rowIndex, row ->
-        Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
-            row.forEachIndexed { columnIndex, (choice, labelResource) ->
-                DeadlineChoiceCard(
-                    title = stringResource(labelResource),
-                    selected = state.deadlineChoice == choice,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("appointment-deadline-${choice.name.lowercase()}"),
-                    onClick = {
-                        onStateChange(
-                            state.copy(
-                                deadlineChoice = choice,
-                                customDeadline = if (choice == AppointmentDeadlineChoice.CUSTOM_DATE) {
-                                    state.customDeadline
-                                } else {
-                                    null
-                                }
-                            )
+    Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+        options.forEach { (choice, labelResource) ->
+            val optionDate = if (choice == AppointmentDeadlineChoice.CUSTOM_DATE) {
+                state.customDeadline
+            } else {
+                deadlineDateFor(choice, today)
+            }
+            val enabled = choice == AppointmentDeadlineChoice.CUSTOM_DATE ||
+                firstDate == null || optionDate == null || optionDate <= firstDate
+            DeadlineChoiceCard(
+                title = stringResource(labelResource),
+                subtitle = optionDate?.dayLabel() ?: stringResource(R.string.appointment_deadline_custom_hint),
+                selected = state.deadlineChoice == choice,
+                enabled = enabled,
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("appointment-deadline-${choice.name.lowercase()}"),
+                onClick = {
+                    if (choice == AppointmentDeadlineChoice.CUSTOM_DATE) {
+                        sheetVisible = true
+                    } else {
+                        onStateChange(state.copy(deadlineChoice = choice, customDeadline = null))
+                    }
+                }
+            )
+        }
+    }
+    if (firstDate != null) {
+        Text(
+            text = stringResource(
+                R.string.appointment_deadline_helper,
+                firstDate.dayLabel(),
+                firstDate.plusDays(-1).dayLabel()
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.Monotone.Gray700
+        )
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = AppointmentCardShape,
+        color = AppColors.Monotone.Gray100
+    ) {
+        Row(
+            modifier = Modifier.padding(AppDimens.Spacing12),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(18.dp)
+                    .border(1.5.dp, AppColors.Monotone.Gray700, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "?",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.Monotone.Gray700
+                )
+            }
+            Text(
+                text = stringResource(R.string.appointment_deadline_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = AppColors.Monotone.Gray700
+            )
+        }
+    }
+
+    if (sheetVisible) {
+        // 응답 기한은 오늘부터 첫 후보일 전날까지만 고를 수 있다.
+        val lastSelectable = firstDate?.plusDays(-1)
+        var pending by remember { mutableStateOf(state.customDeadline) }
+        var month by remember { mutableStateOf((state.customDeadline ?: today).monthStart()) }
+        val isSelectable = { date: AppointmentDate ->
+            date >= today && (lastSelectable == null || date <= lastSelectable)
+        }
+        ModalBottomSheet(
+            onDismissRequest = { sheetVisible = false },
+            containerColor = AppColors.Monotone.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = AppDimens.Spacing20)
+                    .padding(bottom = AppDimens.Spacing16),
+                verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.appointment_deadline_sheet_title),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = AppColors.Monotone.SoftBlack
+                    )
+                    Text(
+                        text = stringResource(R.string.appointment_schedule_cancel),
+                        modifier = Modifier
+                            .clickable { sheetVisible = false }
+                            .padding(vertical = 4.dp, horizontal = 4.dp)
+                            .testTag("appointment-deadline-sheet-cancel"),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = AppColors.Monotone.Gray600
+                    )
+                }
+                AppointmentCalendar(
+                    displayedMonth = month,
+                    selection = CalendarSelection(
+                        type = null,
+                        startDate = pending,
+                        endDate = null,
+                        dates = emptyList()
+                    ),
+                    onMonthChange = { month = it },
+                    onDateClick = { pending = it },
+                    isDateEnabled = isSelectable,
+                    markedDate = firstDate
+                )
+                if (firstDate != null && lastSelectable != null) {
+                    if (lastSelectable >= today) {
+                        Text(
+                            text = stringResource(
+                                R.string.appointment_deadline_sheet_range,
+                                today.dayLabel(),
+                                lastSelectable.dayLabel()
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = AppColors.MainGreen.Green700
                         )
                     }
+                    Text(
+                        text = stringResource(
+                            R.string.appointment_deadline_sheet_first_date,
+                            firstDate.dayLabel()
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.Monotone.Gray600
+                    )
+                }
+                val chosen = pending
+                AppButton(
+                    text = stringResource(confirmLabelRes),
+                    variant = ButtonVariant.DEFAULT,
+                    enabled = chosen != null && isSelectable(chosen),
+                    onClick = {
+                        val updated = state.copy(
+                            deadlineChoice = AppointmentDeadlineChoice.CUSTOM_DATE,
+                            customDeadline = chosen
+                        )
+                        onStateChange(updated)
+                        sheetVisible = false
+                        onCustomDeadlineConfirmed?.invoke(updated)
+                    },
+                    modifier = Modifier.fillMaxWidth().testTag("appointment-deadline-sheet-confirm")
                 )
             }
         }
     }
-
-    if (state.deadlineChoice == AppointmentDeadlineChoice.CUSTOM_DATE) {
-        AppointmentCalendar(
-            displayedMonth = state.displayedMonth,
-            selection = CalendarSelection(
-                type = null,
-                startDate = state.customDeadline,
-                endDate = null,
-                dates = emptyList()
-            ),
-            onMonthChange = { onStateChange(state.copy(displayedMonth = it)) },
-            onDateClick = { onStateChange(state.copy(customDeadline = it)) }
-        )
-    }
-
-    Text(
-        text = stringResource(R.string.appointment_deadline_note),
-        style = MaterialTheme.typography.labelSmall,
-        color = AppColors.Monotone.Gray600
-    )
 }
 
 @Composable
 private fun DeadlineChoiceCard(
     title: String,
+    subtitle: String,
     selected: Boolean,
+    enabled: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val container = when {
+        !enabled -> AppColors.Monotone.Gray100
+        selected -> AppColors.MainGreen.Green500
+        else -> AppColors.Monotone.White
+    }
+    val titleColor = when {
+        !enabled -> AppColors.Monotone.Gray400
+        selected -> AppColors.Monotone.White
+        else -> AppColors.Monotone.SoftBlack
+    }
+    val subtitleColor = when {
+        !enabled -> AppColors.Monotone.Gray400
+        selected -> AppColors.Monotone.White
+        else -> AppColors.Monotone.Gray600
+    }
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 58.dp),
+        enabled = enabled,
+        modifier = modifier.heightIn(min = 64.dp),
         shape = AppointmentCardShape,
-        color = if (selected) AppColors.MainGreen.Green900 else AppColors.Monotone.White,
-        contentColor = if (selected) AppColors.MainGreen.Green200 else AppColors.Monotone.SoftBlack
+        color = container
     ) {
         Column(
-            modifier = Modifier.padding(AppDimens.Spacing12),
+            modifier = Modifier.fillMaxWidth().padding(vertical = AppDimens.Spacing12, horizontal = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = title, style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = titleColor,
+                maxLines = 1
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = subtitleColor,
+                maxLines = 1
+            )
         }
     }
+}
+
+private fun todayDate(): AppointmentDate {
+    val calendar = Calendar.getInstance()
+    return AppointmentDate(
+        year = calendar.get(Calendar.YEAR),
+        month = calendar.get(Calendar.MONTH) + 1,
+        day = calendar.get(Calendar.DAY_OF_MONTH)
+    )
+}
+
+/** 기한 선택지가 가리키는 날짜. 직접 선택은 사용자가 고른 날짜라 null이다. */
+private fun deadlineDateFor(choice: AppointmentDeadlineChoice, today: AppointmentDate): AppointmentDate? {
+    val days = when (choice) {
+        AppointmentDeadlineChoice.ONE_DAY -> 1
+        AppointmentDeadlineChoice.THREE_DAYS -> 3
+        AppointmentDeadlineChoice.ONE_WEEK -> 7
+        AppointmentDeadlineChoice.CUSTOM_DATE -> return null
+    }
+    val calendar = today.toCalendar().apply { add(Calendar.DAY_OF_MONTH, days) }
+    return AppointmentDate(
+        year = calendar.get(Calendar.YEAR),
+        month = calendar.get(Calendar.MONTH) + 1,
+        day = calendar.get(Calendar.DAY_OF_MONTH)
+    )
+}
+
+/** 후보 날짜 중 가장 이른 날. 응답 기한은 이 날을 넘길 수 없다. */
+private fun AppointmentCreateUiState.firstCandidateDate(): AppointmentDate? = when (scheduleType) {
+    AppointmentScheduleType.SINGLE_DAY,
+    AppointmentScheduleType.DATE_RANGE -> selectedStartDate
+    AppointmentScheduleType.SPECIFIC_DATES -> selectedDates.minOrNull()
+    null -> null
+}
+
+/** [start]부터 [end]까지 모든 날짜. 서버 한도(366일)를 넘는 기간은 그 안에서 자른다. */
+private fun datesBetween(start: AppointmentDate, end: AppointmentDate): List<AppointmentDate> {
+    if (end < start) return listOf(start)
+    val calendar = start.toCalendar()
+    val result = mutableListOf<AppointmentDate>()
+    while (result.size < 366) {
+        val date = AppointmentDate(
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH) + 1,
+            calendar.get(Calendar.DAY_OF_MONTH)
+        )
+        result += date
+        if (date >= end) break
+        calendar.add(Calendar.DAY_OF_MONTH, 1)
+    }
+    return result
+}
+
+private fun AppointmentDate.plusDays(days: Int): AppointmentDate {
+    val calendar = toCalendar().apply { add(Calendar.DAY_OF_MONTH, days) }
+    return AppointmentDate(
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH) + 1,
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+}
+
+private fun AppointmentDate.dayLabel(): String = "${month}월 ${day}일"
+
+private fun AppointmentCreateUiState.deadlineSummary(): String = when (deadlineChoice) {
+    null -> ""
+    AppointmentDeadlineChoice.CUSTOM_DATE -> customDeadline?.dayLabel().orEmpty()
+    else -> deadlineDateFor(deadlineChoice, todayDate())?.dayLabel().orEmpty()
 }
 
 @Composable
@@ -785,13 +1067,12 @@ private fun AppointmentInvitationStep(
                 )
             }
         }
-        if (state.inviteLink == null) {
-            Text(
-                text = stringResource(R.string.appointment_link_unavailable),
-                style = MaterialTheme.typography.labelSmall,
-                color = AppColors.Monotone.Gray500
-            )
-        }
+        Text(
+            text = if (state.inviteLink == null) stringResource(R.string.appointment_link_unavailable)
+            else stringResource(R.string.appointment_invite_link_helper),
+            style = MaterialTheme.typography.labelSmall,
+            color = AppColors.Monotone.Gray500
+        )
     }
 
     Surface(
@@ -823,12 +1104,16 @@ private fun AppointmentInvitationStep(
 }
 
 @Composable
-private fun SuccessMark() {
+private fun SuccessMark(
+    markSize: androidx.compose.ui.unit.Dp = 52.dp,
+    background: Color = AppColors.MainGreen.Green500,
+    checkColor: Color = AppColors.Monotone.White
+) {
     Box(
         modifier = Modifier
-            .size(52.dp)
+            .size(markSize)
             .clip(CircleShape)
-            .background(AppColors.MainGreen.Green700),
+            .background(background),
         contentAlignment = Alignment.Center
     ) {
         Canvas(Modifier.size(22.dp)) {
@@ -839,7 +1124,7 @@ private fun SuccessMark() {
             }
             drawPath(
                 path = path,
-                color = AppColors.Monotone.White,
+                color = checkColor,
                 style = Stroke(width = 2.dp.toPx())
             )
         }
@@ -847,7 +1132,7 @@ private fun SuccessMark() {
 }
 
 @Composable
-private fun AppointmentSummaryCard(state: AppointmentCreateUiState) {
+private fun AppointmentSummaryCard(state: AppointmentCreateUiState, showDeadline: Boolean = true) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppointmentCardShape,
@@ -859,7 +1144,7 @@ private fun AppointmentSummaryCard(state: AppointmentCreateUiState) {
         ) {
             Text(
                 text = state.appointmentName.ifBlank { stringResource(R.string.appointment_create_title) },
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = AppColors.Monotone.SoftBlack,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -874,11 +1159,13 @@ private fun AppointmentSummaryCard(state: AppointmentCreateUiState) {
                 label = stringResource(R.string.appointment_summary_locations),
                 value = state.selectedLocations.joinToString(", ") { it.name }
             )
-            state.customDeadline?.let { date ->
+            if (showDeadline) {
                 SummaryLine(
                     iconResource = R.drawable.departure_time,
-                    label = stringResource(R.string.appointment_step_deadline),
-                    value = date.fullLabel()
+                    label = stringResource(R.string.appointment_summary_deadline),
+                    value = state.deadlineSummary().let {
+                        if (it.isBlank()) it else stringResource(R.string.appointment_deadline_until, it)
+                    }
                 )
             }
         }
@@ -892,10 +1179,11 @@ private fun SummaryLine(iconResource: Int, label: String, value: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
     ) {
-        Image(
+        Icon(
             painter = painterResource(iconResource),
             contentDescription = null,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(16.dp),
+            tint = AppColors.MainGreen.Green900
         )
         Text(
             text = label,
@@ -918,22 +1206,37 @@ internal fun AppointmentTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showSearchIcon: Boolean = false,
+    outlined: Boolean = false
 ) {
     val focusManager = LocalFocusManager.current
     Surface(
-        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = AppColors.Monotone.White
+        modifier = modifier.fillMaxWidth().heightIn(min = if (outlined) 54.dp else 48.dp),
+        shape = RoundedCornerShape(if (outlined) 16.dp else 12.dp),
+        color = AppColors.Monotone.White,
+        border = if (outlined) BorderStroke(1.dp, AppColors.Monotone.Gray100) else null
     ) {
-        Box(
-            modifier = Modifier.padding(horizontal = AppDimens.Spacing12, vertical = AppDimens.Spacing12),
-            contentAlignment = Alignment.CenterStart
+        Row(
+            modifier = Modifier.padding(
+                horizontal = if (outlined) AppDimens.Spacing16 else AppDimens.Spacing12,
+                vertical = if (outlined) AppDimens.Spacing16 else AppDimens.Spacing12
+            ),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
         ) {
+            if (showSearchIcon) {
+                Icon(
+                    painter = painterResource(R.drawable.search),
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = AppColors.Monotone.Gray400
+                )
+            }
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.weight(1f),
                 textStyle = MaterialTheme.typography.bodyMedium.copy(color = AppColors.Monotone.SoftBlack),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = androidx.compose.ui.text.input.ImeAction.Done),
@@ -969,7 +1272,9 @@ private fun AppointmentCalendar(
     displayedMonth: AppointmentDate,
     selection: CalendarSelection,
     onMonthChange: (AppointmentDate) -> Unit,
-    onDateClick: (AppointmentDate) -> Unit
+    onDateClick: (AppointmentDate) -> Unit,
+    isDateEnabled: (AppointmentDate) -> Boolean = { true },
+    markedDate: AppointmentDate? = null
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1045,6 +1350,9 @@ private fun AppointmentCalendar(
                                 date = date,
                                 selected = selection.contains(date),
                                 inRange = selection.inRange(date),
+                                rangeMode = selection.type == AppointmentScheduleType.DATE_RANGE,
+                                enabled = isDateEnabled(date),
+                                marked = date == markedDate,
                                 weekday = weekday,
                                 onClick = { onDateClick(date) }
                             )
@@ -1074,22 +1382,32 @@ private fun RowScope.CalendarDateCell(
     date: AppointmentDate,
     selected: Boolean,
     inRange: Boolean,
+    rangeMode: Boolean,
+    enabled: Boolean,
+    marked: Boolean,
     weekday: Int,
     onClick: () -> Unit
 ) {
+    // 기간 선택은 시작일부터 종료일까지 같은 색으로 채운다.
     val background = when {
+        marked -> AppColors.Monotone.Gray100
+        rangeMode && (selected || inRange) -> AppColors.MainGreen.Green500
         selected -> AppColors.MainGreen.Green900
         inRange -> AppColors.MainGreen.Green300
         else -> Color.Transparent
     }
     val textColor = when {
-        selected -> AppColors.Monotone.White
+        marked -> AppColors.Monotone.Gray600
+        !enabled -> AppColors.Monotone.Gray300
+        selected || (rangeMode && inRange) -> AppColors.Monotone.White
         weekday == 0 -> AppColors.Danger.Red600
         weekday == 6 -> AppColors.MainGreen.Green700
         else -> AppColors.Monotone.SoftBlack
     }
     Surface(
         onClick = onClick,
+        enabled = enabled,
+        border = if (marked) BorderStroke(1.dp, AppColors.Monotone.Gray400) else null,
         modifier = Modifier
             .weight(1f)
             .height(36.dp)
@@ -1131,7 +1449,7 @@ private fun AppointmentCreateUiState.scheduleSummary(): String = when (scheduleT
     AppointmentScheduleType.DATE_RANGE -> {
         val start = selectedStartDate
         val end = selectedEndDate
-        if (start == null || end == null) "" else "${start.month}월 ${start.day}일–${end.month}월 ${end.day}일"
+        if (start == null || end == null) "" else "${start.month}월 ${start.day}일~${end.month}월 ${end.day}일"
     }
     AppointmentScheduleType.SPECIFIC_DATES -> selectedDates.joinToString(", ") { it.shortLabel() }
     null -> ""
@@ -1173,6 +1491,25 @@ private fun AppointmentNamePreview() = AppointmentCreatePreview(AppointmentCreat
 @Preview(showBackground = true, widthDp = 412, heightDp = 892, name = "APT-001-02 기간")
 @Composable
 private fun AppointmentSchedulePreview() = AppointmentCreatePreview(AppointmentCreateStep.SCHEDULE)
+
+@Preview(showBackground = true, widthDp = 412, heightDp = 892, name = "APT-001-02 초기화면")
+@Composable
+private fun AppointmentScheduleEmptyPreview() {
+    JigmnnagaTheme {
+        AppointmentCreateScreen(
+            state = AppointmentCreateUiState(
+                step = AppointmentCreateStep.SCHEDULE,
+                appointmentName = "저녁 식사 모임"
+            ),
+            onStateChange = {},
+            onBack = {},
+            onNext = {},
+            onCreate = {},
+            onShare = { _, _ -> },
+            onDismissCopyConfirmation = {}
+        )
+    }
+}
 
 @Preview(showBackground = true, widthDp = 412, heightDp = 892, name = "APT-001-03 장소")
 @Composable
