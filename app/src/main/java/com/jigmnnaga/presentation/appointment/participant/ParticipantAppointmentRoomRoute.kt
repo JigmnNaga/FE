@@ -34,6 +34,7 @@ fun ParticipantAppointmentRoomRoute(
     onPlaceClick: () -> Unit,
     onManagementClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onConfirmationClick: () -> Unit = {},
     chatViewModel: AppointmentChatViewModel? = null,
     routeContent: (@Composable (Modifier) -> Unit)? = null
 ) {
@@ -91,7 +92,8 @@ fun ParticipantAppointmentRoomRoute(
             onDepartureClick = viewModel::onDepartureClick,
             routeContent = routeContent,
             canLoadMoreMessages = chatViewModel != null && chatState.hasMore && !chatState.isLoadingMore,
-            onLoadMoreMessages = { chatViewModel?.loadMore() }
+            onLoadMoreMessages = { chatViewModel?.loadMore() },
+            onConfirmationClick = onConfirmationClick
         )
         SnackbarHost(
             hostState = snackbarHostState,

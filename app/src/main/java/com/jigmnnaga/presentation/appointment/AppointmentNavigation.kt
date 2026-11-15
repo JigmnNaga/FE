@@ -351,7 +351,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
         }
 
         // 확정된 날짜·시간·장소와 내 참석 응답을 약속 상세 조회 값으로 채운다.
-        // 약속방에서 이 화면으로 가는 연결은 약속방에 확정 확인 진입점이 정해질 때 함께 붙인다.
+        // 참여자 약속방은 확정된 뒤 "약속 정보" 영역을 누르면 이 화면으로 온다.
         builder.composable<AppointmentFinalConfirmationDestination> { entry ->
             val appointmentId = entry.toRoute<AppointmentFinalConfirmationDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
@@ -627,6 +627,9 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = false)) },
             onManagementClick = {
                 navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
+            },
+            onConfirmationClick = {
+                navigator.navigate(AppointmentFinalConfirmationDestination(appointmentId))
             },
             chatViewModel = rememberAppointmentChatViewModel(appointmentId),
             routeContent = { routeModifier -> RouteTabContent(appointmentId, detail, labels, routeModifier) }

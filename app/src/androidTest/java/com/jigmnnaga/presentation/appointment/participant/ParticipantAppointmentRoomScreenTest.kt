@@ -65,6 +65,43 @@ class ParticipantAppointmentRoomScreenTest {
     }
 
     @Test
+    fun confirmedRoomSummaryOpensAttendanceConfirmation() {
+        var clicks = 0
+        composeRule.setContent {
+            JigmnnagaTheme {
+                ParticipantAppointmentRoomScreen(
+                    state = roomState(
+                        appointmentStatus = ParticipantAppointmentStatus.CONFIRMED,
+                        isSummaryExpanded = true
+                    ),
+                    onBackClick = {}, onCalendarClick = {}, onPlaceClick = {}, onManagementClick = {},
+                    onTabSelected = {}, onSummaryExpandedChange = {}, onMessageChange = {},
+                    onSendMessage = {}, onDepartureClick = {}, onConfirmationClick = { clicks++ }
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("participant-room-summary-details").assertHasClickAction().performClick()
+        composeRule.runOnIdle { assertEquals(1, clicks) }
+    }
+
+    @Test
+    fun unconfirmedRoomSummaryDoesNotOpenAttendanceConfirmation() {
+        composeRule.setContent {
+            JigmnnagaTheme {
+                ParticipantAppointmentRoomScreen(
+                    state = roomState(isSummaryExpanded = true),
+                    onBackClick = {}, onCalendarClick = {}, onPlaceClick = {}, onManagementClick = {},
+                    onTabSelected = {}, onSummaryExpandedChange = {}, onMessageChange = {},
+                    onSendMessage = {}, onDepartureClick = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("participant-room-summary-details").assertDoesNotExist()
+    }
+
+    @Test
     fun confirmedRoomShowsParticipantDepartureActionOnlyWhenProvidedByState() {
         var departureClicks = 0
         composeRule.setContent {
@@ -192,6 +229,7 @@ class ParticipantAppointmentRoomScreenTest {
         subtitle: String = "3명 · 참여자 약속방",
         appointmentStatus: ParticipantAppointmentStatus = ParticipantAppointmentStatus.AWAITING_CONFIRMATION,
         canReportDeparture: Boolean = false,
+        isSummaryExpanded: Boolean = false,
         selectedTab: ParticipantAppointmentRoomTab = ParticipantAppointmentRoomTab.CHAT,
         messages: List<ParticipantRoomMessageUiState> = emptyList(),
         members: List<ParticipantRoomMemberUiState> = emptyList()
@@ -205,6 +243,7 @@ class ParticipantAppointmentRoomScreenTest {
         members = members,
         messages = messages,
         selectedTab = selectedTab,
-        canReportDeparture = canReportDeparture
+        canReportDeparture = canReportDeparture,
+        isSummaryExpanded = isSummaryExpanded
     )
 }

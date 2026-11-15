@@ -189,6 +189,7 @@
     <string name="participant_room_summary_title">약속 요약</string>
     <string name="participant_room_summary_expand">펼치기</string>
     <string name="participant_room_summary_collapse">접기</string>
+    <string name="participant_room_summary_open_confirmation">참석 여부 확인하기</string>
     <string name="participant_room_map_waiting">약속 장소와 시간이 확정되면 표시됩니다.</string>
     <string name="participant_room_map_not_connected">지도 정보는 화면 연결 후 표시됩니다.</string>
     <string name="participant_room_confirmed_place">확정된 약속</string>
