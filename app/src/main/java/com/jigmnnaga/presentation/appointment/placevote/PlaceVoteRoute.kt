@@ -73,20 +73,13 @@ fun PlaceVoteRoute(
         }
     }
 
-    val summaryTitle = if (viewModel.showsSelectedSummary && state.selectedPlaceNames.isNotEmpty()) {
-        context.getString(R.string.place_vote_selected_summary, state.selectedPlaceNames.size)
-    } else {
-        null
-    }
-
     Box(modifier = modifier.fillMaxSize()) {
         PlaceVoteScreen(
-            state = state.copy(selectedSummaryTitle = summaryTitle),
+            state = state,
             onBackClick = onBack,
             onSearchQueryChange = viewModel::onSearchQueryChange,
             onCandidateSelectionChange = viewModel::onSelectionChange,
-            onSubmitSelection = viewModel::onSubmit,
-            onRemoveCandidate = if (state.role == PlaceVoteRole.HOST) viewModel::onRemoveCandidate else null
+            onSubmitSelection = viewModel::onSubmit
         )
         SnackbarHost(
             hostState = snackbarHostState,

@@ -176,8 +176,7 @@ class PlaceVoteScreenTest {
     }
 
     @Test
-    fun voteBadgeProgressCardAndSelectedSummaryAreShownFromState() {
-        var progressClicks = 0
+    fun progressCardToggleIsShownAndVoteBadgeIsHidden() {
         composeRule.setContent {
             JigmnnagaTheme {
                 PlaceVoteScreen(
@@ -200,28 +199,28 @@ class PlaceVoteScreenTest {
                         submitLabel = "저장",
                         progress = PlaceVoteProgressUiState(
                             members = listOf(
-                                PlaceVoteProgressMemberUiModel("태"),
-                                PlaceVoteProgressMemberUiModel("나", isMe = true)
+                                PlaceVoteProgressMemberUiModel("태", name = "태희", placeName = "강남역"),
+                                PlaceVoteProgressMemberUiModel("나", isMe = true, name = "나")
                             ),
                             title = "1명 선택 완료",
                             subtitle = "2명 더 선택하면 돼요!",
                             statusLabel = "장소 선택중"
-                        ),
-                        selectedSummaryTitle = "선택된 장소 (1개)",
-                        selectedPlaceNames = listOf("강남역")
+                        )
                     ),
                     onBackClick = {},
                     onSearchQueryChange = {},
                     onCandidateSelectionChange = {},
-                    onSubmitSelection = {},
-                    onProgressClick = { progressClicks++ }
+                    onSubmitSelection = {}
                 )
             }
         }
-        composeRule.onNodeWithText("3/3명").assertExists()
-        composeRule.onNodeWithText("선택된 장소 (1개)").assertExists()
-        composeRule.onNodeWithText("1명 선택 완료").performClick()
-        composeRule.runOnIdle { assertEquals(1, progressClicks) }
+        composeRule.onNodeWithText("3/3명").assertDoesNotExist()
+        composeRule.onNodeWithTag("place-progress-members").assertDoesNotExist()
+        composeRule.onNodeWithTag("place-progress-toggle").performClick()
+        composeRule.onNodeWithTag("place-progress-members").assertExists()
+        composeRule.onNodeWithText("태희").assertExists()
+        composeRule.onNodeWithText("아직 선택 전이에요").assertExists()
+        composeRule.onNodeWithTag("place-selected-summary").assertDoesNotExist()
     }
 
     @Test
@@ -272,8 +271,7 @@ class PlaceVoteScreenTest {
     }
 
     @Test
-    fun hostCanRemoveCandidateAndMapIsClearlyUnconnected() {
-        var removedId: String? = null
+    fun hostHasNoRemoveButtonAndMapIsClearlyUnconnected() {
         composeRule.setContent {
             JigmnnagaTheme {
                 PlaceVoteScreen(
@@ -290,13 +288,11 @@ class PlaceVoteScreenTest {
                     onBackClick = {},
                     onSearchQueryChange = {},
                     onCandidateSelectionChange = {},
-                    onSubmitSelection = {},
-                    onRemoveCandidate = { removedId = it }
+                    onSubmitSelection = {}
                 )
             }
         }
         composeRule.onNodeWithText("지도는 연결 후 표시됩니다").assertExists()
-        composeRule.onNodeWithTag("remove-candidate-host-place").performClick()
-        composeRule.runOnIdle { assertEquals("host-place", removedId) }
+        composeRule.onNodeWithTag("remove-candidate-host-place").assertDoesNotExist()
     }
 }

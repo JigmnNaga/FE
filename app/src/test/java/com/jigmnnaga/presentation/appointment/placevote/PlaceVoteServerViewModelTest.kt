@@ -341,8 +341,10 @@ class PlaceVoteServerViewModelTest {
         assertEquals("2 선택", progress.title)
         assertEquals("1 남음", progress.subtitle)
         assertEquals("선택중", progress.statusLabel)
-        assertEquals(listOf("태", "나"), progress.members.map { it.initial })
-        assertEquals(listOf(false, true), progress.members.map { it.isMe })
+        assertEquals(listOf("태", "나", "하"), progress.members.map { it.initial })
+        assertEquals(listOf(false, true, false), progress.members.map { it.isMe })
+        assertEquals(listOf("태희", "나", "하늘"), progress.members.map { it.name })
+        assertNull(progress.members.last().placeName)
     }
 
     @Test

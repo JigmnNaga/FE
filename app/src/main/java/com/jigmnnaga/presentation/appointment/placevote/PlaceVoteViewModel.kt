@@ -144,9 +144,6 @@ class PlaceVoteViewModel(
     private val _notice = MutableStateFlow<PlaceVoteNotice?>(null)
     val notice: StateFlow<PlaceVoteNotice?> = _notice.asStateFlow()
 
-    /** 선택한 장소 요약 카드를 보여 줄 화면인지. */
-    val showsSelectedSummary: Boolean = template.selectedSummaryTitle != null
-
     init {
         if (singleSelect) loadVotes()
     }
@@ -215,14 +212,6 @@ class PlaceVoteViewModel(
             }
         }
         selectedIds = valid
-        publish()
-    }
-
-    /** 후보를 삭제하고, 선택돼 있었다면 선택에서도 뺀다. */
-    fun onRemoveCandidate(id: String) {
-        if (allCandidates.none { it.id == id }) return
-        allCandidates = allCandidates.filterNot { it.id == id }
-        selectedIds = selectedIds - id
         publish()
     }
 
@@ -406,7 +395,6 @@ class PlaceVoteViewModel(
             candidates = visible.map { it.withVotes() },
             selectedCandidateIds = selectedIds,
             submitEnabled = selectedIds.isNotEmpty() && !isSubmitting,
-            selectedPlaceNames = allCandidates.filter { it.id in selectedIds }.map { it.name },
             progress = progressState() ?: template.progress
         )
     }
@@ -429,8 +417,17 @@ class PlaceVoteViewModel(
         val chosen = current.members.filter { it.preferredLocationId != null }
         val remaining = (current.totalCount - chosen.size).coerceAtLeast(0)
         return PlaceVoteProgressUiState(
-            members = chosen.map {
-                PlaceVoteProgressMemberUiModel(initial = it.nickname.take(1), isMe = it.memberId == myMemberId)
+            members = current.members.map { member ->
+                val placeName = member.preferredLocationId?.let { locationId ->
+                    allCandidates.firstOrNull { it.id == "$PLACE_LOCATION_ID_PREFIX$locationId" }
+                        ?.name?.substringBefore(" · ")
+                }
+                PlaceVoteProgressMemberUiModel(
+                    initial = member.nickname.take(1),
+                    isMe = member.memberId == myMemberId,
+                    name = member.nickname,
+                    placeName = placeName
+                )
             },
             title = formatter.progressTitle(chosen.size),
             subtitle = if (remaining > 0) formatter.progressSubtitle(remaining) else null,
