@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -27,6 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -69,7 +71,11 @@ data class PlaceCandidateUiModel(
 
 data class PlaceVoteProgressMemberUiModel(
     val initial: String,
-    val isMe: Boolean = false
+    val isMe: Boolean = false,
+    /** 펼친 현황에 보여 줄 멤버 이름. */
+    val name: String = initial,
+    /** 이 멤버가 고른 장소 이름. 아직 고르지 않았으면 null. */
+    val placeName: String? = null
 )
 
 /** 참여자 화면 상단의 선택 현황 카드. 값은 모두 호출 측에서 계산해 전달합니다. */
@@ -101,13 +107,8 @@ data class PlaceVoteUiState(
     val emptyMessage: String? = null,
     /** 해당 화면에 지도 영역이 정의되어 있지만 SDK가 연결되지 않은 경우에만 표시합니다. */
     val showMapUnavailableNotice: Boolean = false,
-    val progress: PlaceVoteProgressUiState? = null,
-    /** 저장 버튼 위 요약 카드 제목. 예: "선택된 장소 (2개)" */
-    val selectedSummaryTitle: String? = null,
-    val selectedPlaceNames: List<String> = emptyList()
+    val progress: PlaceVoteProgressUiState? = null
 )
-
-private val VoteCompleteBadgeColor = Color(0xFFE9EFE3)
 
 /**
  * 장소 검색·선택 UI. 검색 결과와 선택 상태는 모두 호출 측에서 소유합니다.
@@ -120,8 +121,6 @@ fun PlaceVoteScreen(
     onSearchQueryChange: (String) -> Unit,
     onCandidateSelectionChange: (Set<String>) -> Unit,
     onSubmitSelection: () -> Unit,
-    onRemoveCandidate: ((String) -> Unit)? = null,
-    onProgressClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -139,7 +138,6 @@ fun PlaceVoteScreen(
             state.progress?.let { progress ->
                 PlaceVoteProgressCard(
                     progress = progress,
-                    onClick = onProgressClick,
                     modifier = Modifier.padding(top = AppDimens.Spacing8)
                 )
             }
@@ -201,28 +199,16 @@ fun PlaceVoteScreen(
                         PlaceCandidateCard(
                             candidate = candidate,
                             selected = selected,
-                            role = state.role,
                             onClick = {
                                 val updated = state.selectedCandidateIds.toMutableSet().apply {
                                     if (selected) remove(candidate.id) else add(candidate.id)
                                 }
                                 onCandidateSelectionChange(updated)
-                            },
-                            onRemove = onRemoveCandidate?.let { remove -> { remove(candidate.id) } }
+                            }
                         )
                     }
                 }
             }
-        }
-        if (state.selectedSummaryTitle != null && state.selectedPlaceNames.isNotEmpty()) {
-            SelectedPlacesSummary(
-                title = state.selectedSummaryTitle,
-                names = state.selectedPlaceNames,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = AppDimens.Spacing20)
-                    .padding(top = AppDimens.Spacing8)
-            )
         }
         Surface(color = AppColors.MainGreen.Green200, shadowElevation = 0.dp) {
             AppButton(
@@ -242,88 +228,125 @@ fun PlaceVoteScreen(
 @Composable
 private fun PlaceVoteProgressCard(
     progress: PlaceVoteProgressUiState,
-    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
         color = AppColors.Monotone.White,
         border = BorderStroke(0.6.dp, AppColors.Monotone.Gray100)
     ) {
-        Row(
-            modifier = Modifier
-                .then(
-                    if (onClick != null) {
-                        Modifier.clickable(role = Role.Button, onClick = onClick)
-                    } else {
-                        Modifier
-                    }
-                )
-                .padding(horizontal = AppDimens.Spacing16, vertical = AppDimens.Spacing12)
-                .semantics(mergeDescendants = true) {},
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
-                progress.members.forEach { member ->
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(
-                                if (member.isMe) AppColors.MainGreen.Green700 else AppColors.MainGreen.Green400,
-                                CircleShape
-                            )
-                            .border(1.7.dp, AppColors.Monotone.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button) { expanded = !expanded }
+                    .padding(horizontal = AppDimens.Spacing16, vertical = AppDimens.Spacing12)
+                    .semantics(mergeDescendants = true) {}
+                    .testTag("place-progress-toggle"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
+                    progress.members.forEach { member -> PlaceVoteMemberAvatar(member) }
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = progress.title,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = AppColors.Monotone.SoftBlack,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    progress.subtitle?.let { subtitle ->
                         Text(
-                            text = member.initial,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            color = if (member.isMe) AppColors.SubYellow.Yellow200 else AppColors.MainGreen.Green200,
-                            maxLines = 1
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
+                            color = AppColors.Monotone.Gray500,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = progress.title,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = AppColors.Monotone.SoftBlack,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                progress.subtitle?.let { subtitle ->
+                progress.statusLabel?.let { status ->
                     Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
-                        color = AppColors.Monotone.Gray500,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        text = status,
+                        modifier = Modifier
+                            .background(AppColors.SubYellow.Yellow600.copy(alpha = 0.18f), CircleShape)
+                            .padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.SubYellow.Yellow600,
+                        maxLines = 1
                     )
                 }
-            }
-            progress.statusLabel?.let { status ->
-                Text(
-                    text = status,
-                    modifier = Modifier
-                        .background(AppColors.SubYellow.Yellow600.copy(alpha = 0.18f), CircleShape)
-                        .padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.SubYellow.Yellow600,
-                    maxLines = 1
-                )
-            }
-            if (onClick != null) {
                 Icon(
-                    painter = painterResource(R.drawable.chevron_down),
+                    painter = painterResource(if (expanded) R.drawable.chevron_up else R.drawable.chevron_down),
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     tint = Color.Unspecified
                 )
             }
+            if (expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = AppDimens.Spacing16)
+                        .padding(bottom = AppDimens.Spacing12)
+                        .testTag("place-progress-members"),
+                    verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+                ) {
+                    progress.members.forEach { member ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+                        ) {
+                            PlaceVoteMemberAvatar(member)
+                            Text(
+                                text = member.name,
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                color = AppColors.Monotone.SoftBlack,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = member.placeName ?: stringResource(R.string.place_vote_member_pending),
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
+                                color = if (member.placeName != null) {
+                                    AppColors.Monotone.SoftBlack
+                                } else {
+                                    AppColors.Monotone.Gray500
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun PlaceVoteMemberAvatar(member: PlaceVoteProgressMemberUiModel) {
+    Box(
+        modifier = Modifier
+            .size(28.dp)
+            .background(
+                if (member.isMe) AppColors.MainGreen.Green700 else AppColors.MainGreen.Green400,
+                CircleShape
+            )
+            .border(1.7.dp, AppColors.Monotone.White, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = member.initial,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+            color = if (member.isMe) AppColors.SubYellow.Yellow200 else AppColors.MainGreen.Green200,
+            maxLines = 1
+        )
     }
 }
 
@@ -403,9 +426,7 @@ private fun MapUnavailableNotice(modifier: Modifier = Modifier) {
 private fun PlaceCandidateCard(
     candidate: PlaceCandidateUiModel,
     selected: Boolean,
-    role: PlaceVoteRole,
-    onClick: () -> Unit,
-    onRemove: (() -> Unit)?
+    onClick: () -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -415,7 +436,6 @@ private fun PlaceCandidateCard(
                 contentDescription = buildString {
                     append(candidate.name)
                     candidate.address?.let { append(", ").append(it) }
-                    candidate.voteLabel?.let { append(", ").append(it) }
                 }
             }
             .clickable(role = Role.Checkbox, onClick = onClick)
@@ -466,77 +486,6 @@ private fun PlaceCandidateCard(
                     )
                 }
             }
-            candidate.voteLabel?.let { label ->
-                Text(
-                    text = label,
-                    modifier = Modifier
-                        .background(
-                            if (candidate.isVoteComplete) {
-                                VoteCompleteBadgeColor
-                            } else {
-                                AppColors.MainGreen.Green700.copy(alpha = 0.12f)
-                            },
-                            CircleShape
-                        )
-                        .padding(horizontal = 10.dp, vertical = AppDimens.Spacing4),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = AppColors.MainGreen.Green700,
-                    maxLines = 1
-                )
-            }
-            if (role == PlaceVoteRole.HOST && onRemove != null) {
-                Text(
-                    text = stringResource(R.string.place_vote_remove_candidate),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = AppColors.Danger.Red600,
-                    modifier = Modifier
-                        .clickable(role = Role.Button, onClick = onRemove)
-                        .padding(AppDimens.Spacing8)
-                        .testTag("remove-candidate-${candidate.id}")
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SelectedPlacesSummary(
-    title: String,
-    names: List<String>,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier.testTag("place-selected-summary"),
-        shape = RoundedCornerShape(AppDimens.ButtonCornerRadius),
-        color = AppColors.Monotone.White,
-        border = BorderStroke(0.6.dp, AppColors.Monotone.Gray100)
-    ) {
-        Column(modifier = Modifier.padding(AppDimens.Spacing16)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = AppColors.Monotone.SoftBlack,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Row(
-                modifier = Modifier
-                    .padding(top = AppDimens.Spacing8)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                names.forEach { name ->
-                    Text(
-                        text = name,
-                        modifier = Modifier
-                            .background(AppColors.MainGreen.Green900.copy(alpha = 0.08f), CircleShape)
-                            .padding(horizontal = 10.dp, vertical = AppDimens.Spacing4),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.MainGreen.Green700,
-                        maxLines = 1
-                    )
-                }
-            }
         }
     }
 }
@@ -572,8 +521,7 @@ private fun PlaceVoteParticipantPreview() {
             onBackClick = {},
             onSearchQueryChange = {},
             onCandidateSelectionChange = {},
-            onSubmitSelection = {},
-            onProgressClick = {}
+            onSubmitSelection = {}
         )
     }
 }
@@ -625,9 +573,7 @@ private fun PlaceVoteSearchPreview() {
                 submitLabel = "변경사항 저장",
                 submitEnabled = true,
                 showSearchInput = true,
-                searchHint = "역 이름 검색...",
-                selectedSummaryTitle = "선택된 장소 (2개)",
-                selectedPlaceNames = listOf("강남역", "잠실역")
+                searchHint = "역 이름 검색..."
             ),
             onBackClick = {},
             onSearchQueryChange = {},

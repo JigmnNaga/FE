@@ -442,17 +442,13 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             }
         }
 
-        // 약속 제목과 후보 장소는 약속 상세 조회 값으로 채우고, 방장 여부는 내 역할(myRole)이 있으면 그 값을 쓴다.
-        // 방장은 후보 장소를 저장하고, 참여자는 장소 하나를 제출한다. 저장·제출 뒤에 약속방은 상세를 다시 불러온다.
+        // 약속 제목과 후보 장소는 약속 상세 조회 값으로 채운다.
+        // 방장도 참여자와 같은 화면에서 희망 장소 하나를 제출한다. 후보 장소 수정은 약속방 관리에서 한다. 제출 뒤에 약속방은 상세를 다시 불러온다.
         // 이 화면이 저장 도중에 다시 불러오지 않도록 약속 상세 변경은 따라가지 않는다.
         builder.composable<PlaceVoteDestination> { entry ->
             val destination = entry.toRoute<PlaceVoteDestination>()
             val loader = rememberAppointmentDetailLoader(destination.appointmentId, followChanges = false)
             val question = stringResource(R.string.place_vote_question)
-            val listLabel = stringResource(
-                R.string.place_vote_list_label,
-                PlaceVoteViewModel.DEFAULT_MAX_SELECTION
-            )
             val participantListLabel = stringResource(R.string.place_vote_participant_list_label)
             val submitLabel = stringResource(R.string.place_vote_submit)
             val emptyMessage = stringResource(R.string.place_vote_empty)
@@ -477,7 +473,6 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 onBack = { navigator.navigateBack() },
                 onLoginRequired = { resume -> navigator.requestLogin(resume) }
             ) { detail ->
-                val isHost = detail.myRole?.let { it == AppointmentMemberRole.HOST } ?: destination.isHost
                 val viewModel: PlaceVoteViewModel = viewModel(
                     key = "place-vote-${destination.appointmentId}",
                     factory = remember(destination, detail) {
@@ -502,21 +497,15 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                 val locationCandidates = detail.candidateLocations.mapNotNull { it.toPlaceCandidate() }
                                 PlaceVoteViewModel(
                                     template = PlaceVoteUiState(
-                                        role = if (isHost) PlaceVoteRole.HOST else PlaceVoteRole.PARTICIPANT,
+                                        role = PlaceVoteRole.PARTICIPANT,
                                         searchQuery = "",
                                         candidates = locationCandidates,
-                                        selectedCandidateIds = if (isHost) {
-                                            locationCandidates.map { it.id }.toSet()
-                                        } else {
-                                            emptySet()
-                                        },
+                                        selectedCandidateIds = emptySet(),
                                         title = detail.title,
                                         question = question,
-                                        listLabel = if (isHost) listLabel else participantListLabel,
+                                        listLabel = participantListLabel,
                                         submitLabel = submitLabel,
-                                        showSearchInput = true,
-                                        emptyMessage = emptyMessage,
-                                        selectedSummaryTitle = ""
+                                        emptyMessage = emptyMessage
                                     ),
                                     searchRepository = searchEntryPoint.placeSearchRepository(),
                                     appointmentId = destination.appointmentId,

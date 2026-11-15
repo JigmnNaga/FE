@@ -17,8 +17,7 @@ class PlaceVoteViewModelTest {
             candidate("jamsil", "잠실역", "서울특별시 송파구"),
             candidate("hongdae", "홍대입구역", "서울특별시 마포구")
         ),
-        selected: Set<String> = emptySet(),
-        withSummary: Boolean = false
+        selected: Set<String> = emptySet()
     ) = PlaceVoteUiState(
         role = PlaceVoteRole.HOST,
         searchQuery = "",
@@ -27,8 +26,7 @@ class PlaceVoteViewModelTest {
         title = "일정 조율",
         question = "어디서 만날까요?",
         submitLabel = "저장",
-        showSearchInput = true,
-        selectedSummaryTitle = if (withSummary) "" else null
+        showSearchInput = true
     )
 
     @Test
@@ -60,13 +58,6 @@ class PlaceVoteViewModelTest {
     }
 
     @Test
-    fun `복수 선택하면 선택한 장소 이름이 모인다`() {
-        val vm = PlaceVoteViewModel(template())
-        vm.onSelectionChange(setOf("gangnam", "jamsil"))
-        assertEquals(listOf("강남역", "잠실역"), vm.uiState.value.selectedPlaceNames)
-    }
-
-    @Test
     fun `최대 개수를 넘기면 선택을 바꾸지 않고 안내를 보낸다`() {
         val vm = PlaceVoteViewModel(template(), maxSelection = 2)
         vm.onSelectionChange(setOf("gangnam", "jamsil"))
@@ -75,15 +66,6 @@ class PlaceVoteViewModelTest {
 
         assertEquals(setOf("gangnam", "jamsil"), vm.uiState.value.selectedCandidateIds)
         assertEquals(PlaceVoteNotice.MAX_SELECTION_REACHED, vm.notice.value)
-    }
-
-    @Test
-    fun `후보를 삭제하면 선택에서도 빠진다`() {
-        val vm = PlaceVoteViewModel(template(selected = setOf("gangnam")))
-        vm.onRemoveCandidate("gangnam")
-        assertEquals(listOf("jamsil", "hongdae"), vm.uiState.value.candidates.map { it.id })
-        assertTrue(vm.uiState.value.selectedCandidateIds.isEmpty())
-        assertFalse(vm.uiState.value.submitEnabled)
     }
 
     @Test
@@ -110,11 +92,5 @@ class PlaceVoteViewModelTest {
         val vm = PlaceVoteViewModel(template())
         vm.onSubmit()
         assertNull(vm.notice.value)
-    }
-
-    @Test
-    fun `요약 카드 표시 여부는 처음 템플릿을 따른다`() {
-        assertTrue(PlaceVoteViewModel(template(withSummary = true)).showsSelectedSummary)
-        assertFalse(PlaceVoteViewModel(template()).showsSelectedSummary)
     }
 }
