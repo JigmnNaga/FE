@@ -2,6 +2,7 @@ package com.jigmnnaga.presentation.appointment.manage
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -194,26 +197,32 @@ fun AppointmentManageScreen(
     }
 
     state.confirm?.let { confirm ->
+        val soloRoom = state.members.size <= 1
         val (titleResource, messageResource) = when (confirm) {
             AppointmentManageConfirm.CANCEL_APPOINTMENT ->
                 R.string.appointment_manage_cancel_dialog_title to R.string.appointment_manage_cancel_dialog_message
             AppointmentManageConfirm.DELETE_APPOINTMENT ->
-                R.string.appointment_manage_delete_dialog_title to R.string.appointment_manage_delete_dialog_message
+                R.string.appointment_manage_delete_dialog_title to if (soloRoom) {
+                    R.string.appointment_leave_dialog_delete_message
+                } else {
+                    R.string.appointment_manage_delete_dialog_message
+                }
         }
-        AlertDialog(
-            onDismissRequest = onDismissConfirm,
-            title = { Text(stringResource(titleResource)) },
-            text = { Text(stringResource(messageResource)) },
-            confirmButton = {
-                TextButton(onClick = onConfirm, modifier = Modifier.testTag("appointment-manage-confirm")) {
-                    Text(stringResource(R.string.appointment_confirm), color = AppColors.Danger.Red600)
+        ManageConfirmDialog(
+            title = stringResource(titleResource),
+            message = stringResource(messageResource),
+            confirmText = stringResource(
+                if (confirm == AppointmentManageConfirm.DELETE_APPOINTMENT) {
+                    R.string.appointment_leave_dialog_confirm_delete
+                } else {
+                    R.string.appointment_confirm
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissConfirm) {
-                    Text(stringResource(R.string.appointment_manage_dialog_dismiss))
-                }
-            }
+            ),
+            onDismiss = onDismissConfirm,
+            onConfirm = onConfirm,
+            dialogTag = "appointment-manage-confirm-dialog",
+            cancelTag = "appointment-manage-confirm-cancel",
+            confirmTag = "appointment-manage-confirm"
         )
     }
 }
@@ -243,6 +252,7 @@ private fun ManageMenu(
             subtitle = state.saved.appointmentName.ifBlank { undecided },
             enabled = editable,
             tag = "appointment-manage-title",
+            icon = R.drawable.edit,
             onClick = { onOpenStep(AppointmentManageStep.TITLE) }
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -251,6 +261,8 @@ private fun ManageMenu(
             subtitle = state.saved.dateSummary(undecided),
             enabled = editable,
             tag = "appointment-manage-dates",
+            icon = R.drawable.calendar,
+            tintIcon = true,
             onClick = { onOpenStep(AppointmentManageStep.SCHEDULE) }
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -259,6 +271,8 @@ private fun ManageMenu(
             subtitle = state.saved.locationSummary(undecided),
             enabled = editable,
             tag = "appointment-manage-locations",
+            icon = R.drawable.place,
+            tintIcon = true,
             onClick = { onOpenStep(AppointmentManageStep.LOCATIONS) }
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -267,6 +281,7 @@ private fun ManageMenu(
             subtitle = deadlineSummary(state.savedDeadline, undecided),
             enabled = editable,
             tag = "appointment-manage-deadline",
+            icon = R.drawable.deadline,
             onClick = { onOpenStep(AppointmentManageStep.DEADLINE) }
         )
     }
@@ -283,6 +298,7 @@ private fun ManageMenu(
             subtitle = stringResource(R.string.appointment_manage_item_reminder_desc),
             enabled = editable,
             tag = "appointment-manage-reminder",
+            icon = R.drawable.deadline_notification,
             onClick = onSendReminders
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -291,6 +307,7 @@ private fun ManageMenu(
             subtitle = stringResource(R.string.appointment_manage_item_members_desc),
             enabled = !state.isWorking,
             tag = "appointment-manage-members",
+            icon = R.drawable.members,
             onClick = { onOpenStep(AppointmentManageStep.MEMBERS) }
         )
     }
@@ -303,6 +320,7 @@ private fun ManageMenu(
             enabled = editable,
             danger = true,
             tag = "appointment-manage-cancel",
+            icon = R.drawable.appointment_cancel,
             onClick = { onRequestConfirm(AppointmentManageConfirm.CANCEL_APPOINTMENT) }
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -312,6 +330,7 @@ private fun ManageMenu(
             enabled = !state.isWorking,
             danger = true,
             tag = "appointment-manage-delete",
+            icon = R.drawable.appointment_delete,
             onClick = { onRequestConfirm(AppointmentManageConfirm.DELETE_APPOINTMENT) }
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -321,6 +340,7 @@ private fun ManageMenu(
             enabled = !state.isWorking,
             danger = true,
             tag = "appointment-manage-leave",
+            icon = R.drawable.leave_meeting,
             onClick = { onOpenStep(AppointmentManageStep.LEAVE) }
         )
     }
@@ -473,7 +493,9 @@ private fun ManageRow(
     enabled: Boolean,
     tag: String,
     onClick: () -> Unit,
-    danger: Boolean = false
+    icon: Int,
+    danger: Boolean = false,
+    tintIcon: Boolean = false
 ) {
     val titleColor = when {
         !enabled -> AppColors.Monotone.Gray500
@@ -491,6 +513,12 @@ private fun ManageRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
         ) {
+            Image(
+                painter = painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                colorFilter = if (tintIcon) ColorFilter.tint(AppColors.MainGreen.Green700) else null
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, style = MaterialTheme.typography.titleSmall, color = titleColor)
                 Text(

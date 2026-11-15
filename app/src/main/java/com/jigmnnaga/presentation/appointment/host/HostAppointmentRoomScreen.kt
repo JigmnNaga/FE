@@ -1,6 +1,5 @@
 package com.jigmnnaga.presentation.appointment.host
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,14 +15,12 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,14 +29,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +39,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.appointment.RoomMemberStatusUi
+import com.jigmnnaga.presentation.appointment.RoomPendingMapStatus
+import com.jigmnnaga.presentation.appointment.RoomSummaryDetails
+import com.jigmnnaga.presentation.appointment.RoomTabRow
 import com.jigmnnaga.core.designsystem.component.ChatInputBar
 import com.jigmnnaga.core.designsystem.component.MeetingHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
@@ -95,14 +91,13 @@ fun HostAppointmentRoomScreen(
             selectedTab = state.selectedTab,
             onTabSelected = onTabSelected
         )
-        AppointmentSummaryCard(
-            state = state,
-            onExpandedChange = onSummaryExpandedChange
-        )
-        HorizontalDivider(color = AppColors.Monotone.Gray100)
 
         when (state.selectedTab) {
             HostAppointmentRoomTab.CHAT -> {
+                AppointmentSummaryCard(
+                    state = state,
+                    onExpandedChange = onSummaryExpandedChange
+                )
                 HostChatContent(
                     state = state,
                     canLoadMore = canLoadMoreMessages,
@@ -118,11 +113,20 @@ fun HostAppointmentRoomScreen(
             }
 
             HostAppointmentRoomTab.MAP_STATUS -> {
-                HostMapStatusContent(
-                    state = state,
-                    mapContent = mapContent,
-                    modifier = Modifier.weight(1f)
-                )
+                if (!state.isConfirmed) {
+                    RoomPendingMapStatus(
+                        members = state.participants.map {
+                            RoomMemberStatusUi(it.name, it.isHost, it.hasResponded)
+                        },
+                        modifier = Modifier.weight(1f).testTag("host-room-map-status")
+                    )
+                } else {
+                    HostMapStatusContent(
+                        state = state,
+                        mapContent = mapContent,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -133,91 +137,15 @@ private fun HostAppointmentRoomTabs(
     selectedTab: HostAppointmentRoomTab,
     onTabSelected: (HostAppointmentRoomTab) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(48.dp)
-            .padding(horizontal = AppDimens.Spacing20),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing24),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RoomTab(
-            label = stringResource(R.string.host_room_tab_chat),
-            selected = selectedTab == HostAppointmentRoomTab.CHAT,
-            onClick = { onTabSelected(HostAppointmentRoomTab.CHAT) },
-            icon = RoomTabIcon.Chat
-        )
-        RoomTab(
-            label = stringResource(R.string.host_room_tab_map_status),
-            selected = selectedTab == HostAppointmentRoomTab.MAP_STATUS,
-            onClick = { onTabSelected(HostAppointmentRoomTab.MAP_STATUS) },
-            icon = RoomTabIcon.MapStatus
-        )
-    }
-}
-
-private enum class RoomTabIcon { Chat, MapStatus }
-
-@Composable
-private fun RoomTab(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: RoomTabIcon
-) {
-    val contentColor = if (selected) AppColors.MainGreen.Green900 else AppColors.Monotone.Gray500
-    Row(
-        modifier = Modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(AppDimens.Spacing8))
-            .clickable(role = Role.Tab, onClick = onClick)
-            .semantics { this.selected = selected }
-            .testTag(if (icon == RoomTabIcon.Chat) "host-room-tab-chat" else "host-room-tab-map"),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing4),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RoomTabGlyph(icon = icon, color = contentColor)
-        Text(
-            text = label,
-            color = contentColor,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-private fun RoomTabGlyph(icon: RoomTabIcon, color: Color) {
-    Canvas(Modifier.size(18.dp)) {
-        val stroke = 1.5.dp.toPx()
-        if (icon == RoomTabIcon.Chat) {
-            drawRoundRect(
-                color = color,
-                topLeft = androidx.compose.ui.geometry.Offset(size.width * .13f, size.height * .14f),
-                size = androidx.compose.ui.geometry.Size(size.width * .74f, size.height * .58f),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * .1f),
-                style = Stroke(stroke)
-            )
-            val tail = Path().apply {
-                moveTo(size.width * .31f, size.height * .72f)
-                lineTo(size.width * .29f, size.height * .88f)
-                lineTo(size.width * .49f, size.height * .72f)
-            }
-            drawPath(tail, color, style = Stroke(stroke))
-        } else {
-            drawCircle(
-                color = color,
-                radius = size.minDimension * .35f,
-                center = androidx.compose.ui.geometry.Offset(size.width * .5f, size.height * .39f),
-                style = Stroke(stroke)
-            )
-            val pin = Path().apply {
-                moveTo(size.width * .22f, size.height * .44f)
-                quadraticTo(size.width * .5f, size.height * 1.02f, size.width * .78f, size.height * .44f)
-            }
-            drawPath(pin, color, style = Stroke(stroke))
-        }
-    }
+    RoomTabRow(
+        chatLabel = stringResource(R.string.host_room_tab_chat),
+        mapLabel = stringResource(R.string.host_room_tab_map_status),
+        isMapSelected = selectedTab == HostAppointmentRoomTab.MAP_STATUS,
+        onChatClick = { onTabSelected(HostAppointmentRoomTab.CHAT) },
+        onMapClick = { onTabSelected(HostAppointmentRoomTab.MAP_STATUS) },
+        chatTestTag = "host-room-tab-chat",
+        mapTestTag = "host-room-tab-map"
+    )
 }
 
 @Composable
@@ -267,61 +195,38 @@ private fun AppointmentSummaryCard(
                             .padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4)
                     )
                 }
-                Text(
-                    text = if (state.isSummaryExpanded) "⌃" else "⌄",
-                    color = AppColors.Monotone.Gray600,
-                    style = MaterialTheme.typography.titleSmall,
+                androidx.compose.foundation.Image(
+                    painter = painterResource(
+                        if (state.isSummaryExpanded) R.drawable.chevron_up else R.drawable.chevron_down
+                    ),
+                    contentDescription = toggleDescription,
                     modifier = Modifier
+                        .size(AppDimens.HeaderIconSize)
                         .testTag("host-room-summary-toggle")
-                        .semantics(mergeDescendants = true) {
-                            contentDescription = toggleDescription
-                        }
                 )
             }
 
             if (state.isSummaryExpanded) {
-                if (!state.dateSummary.isNullOrBlank()) {
-                    SummaryDetailRow(
-                        icon = R.drawable.calendar_gray,
-                        label = stringResource(R.string.host_room_date_label),
-                        value = state.dateSummary
+                Spacer(Modifier.height(AppDimens.Spacing12))
+                val empty = stringResource(R.string.room_summary_candidate_empty)
+                if (state.isConfirmed) {
+                    RoomSummaryDetails(
+                        dateLabel = stringResource(R.string.host_room_date_label),
+                        dateValue = state.dateSummary ?: empty,
+                        placeLabel = stringResource(R.string.host_room_place_label),
+                        placeValue = state.placeSummary ?: empty,
+                        showUndecidedBadge = false
                     )
-                }
-                if (!state.placeSummary.isNullOrBlank()) {
-                    SummaryDetailRow(
-                        icon = R.drawable.place,
-                        label = stringResource(R.string.host_room_place_label),
-                        value = state.placeSummary
+                } else {
+                    RoomSummaryDetails(
+                        dateLabel = stringResource(R.string.room_summary_candidate_date),
+                        dateValue = state.candidateDateSummary ?: empty,
+                        placeLabel = stringResource(R.string.room_summary_candidate_place),
+                        placeValue = state.candidatePlaceSummary ?: empty,
+                        showUndecidedBadge = true
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SummaryDetailRow(icon: Int, label: String, value: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = AppDimens.Spacing12),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        androidx.compose.foundation.Image(
-            painter = painterResource(icon),
-            contentDescription = null,
-            modifier = Modifier.size(AppDimens.HeaderIconSize)
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = AppColors.Monotone.Gray500)
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.Monotone.SoftBlack,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
         }
     }
 }

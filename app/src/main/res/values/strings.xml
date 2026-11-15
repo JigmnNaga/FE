@@ -137,6 +137,18 @@
 
     <string name="host_room_tab_chat">채팅</string>
     <string name="host_room_tab_map_status">지도 · 현황</string>
+    <string name="room_summary_candidate_date">날짜 후보</string>
+    <string name="room_summary_candidate_place">약속 장소 후보</string>
+    <string name="room_pending_map_notice">약속이 확정되면 지도가 활성화돼요</string>
+    <string name="room_pending_status_label">약속 준비 현황</string>
+    <string name="room_pending_status_title">약속이 아직 조율 중이에요</string>
+    <string name="room_pending_members_title">멤버 현황</string>
+    <string name="room_member_badge_pending">미응답</string>
+    <string name="room_member_badge_responded">응답 완료</string>
+    <string name="room_member_sub_pending">응답 전이에요</string>
+    <string name="room_member_sub_responded">일정을 냈어요</string>
+    <string name="room_summary_undecided">미정</string>
+    <string name="room_summary_candidate_empty">아직 없어요</string>
     <string name="host_room_summary_title">약속 정보</string>
     <string name="host_room_summary_expand">약속 정보 펼치기</string>
     <string name="host_room_summary_collapse">약속 정보 접기</string>
@@ -400,7 +412,6 @@
     <string name="appointment_manage_cancel_dialog_message">모든 멤버에게 취소 알림이 가요.</string>
     <string name="appointment_manage_delete_dialog_title">약속방을 삭제할까요?</string>
     <string name="appointment_manage_delete_dialog_message">삭제하면 복구할 수 없어요.</string>
-    <string name="appointment_manage_dialog_dismiss">닫기</string>
     <string name="appointment_manage_saved">변경했어요.</string>
     <string name="appointment_manage_canceled_done">약속을 취소했어요.</string>
     <string name="appointment_manage_not_host">방장만 약속을 관리할 수 있어요.</string>

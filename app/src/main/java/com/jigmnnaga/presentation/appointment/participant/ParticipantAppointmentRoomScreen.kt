@@ -31,15 +31,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.appointment.RoomMemberStatusUi
+import com.jigmnnaga.presentation.appointment.RoomPendingMapStatus
+import com.jigmnnaga.presentation.appointment.RoomSummaryDetails
+import com.jigmnnaga.presentation.appointment.RoomTabRow
 import com.jigmnnaga.core.designsystem.component.ChatInputBar
 import com.jigmnnaga.core.designsystem.component.CircleButton
 import com.jigmnnaga.core.designsystem.component.MeetingHeader
@@ -86,11 +88,10 @@ fun ParticipantAppointmentRoomScreen(
             subtitle = state.subtitle
         )
         ParticipantRoomTabs(state.selectedTab, onTabSelected)
-        ParticipantAppointmentSummary(state, onSummaryExpandedChange)
-        HorizontalDivider(color = AppColors.Monotone.Gray100)
 
         when (state.selectedTab) {
             ParticipantAppointmentRoomTab.CHAT -> {
+                ParticipantAppointmentSummary(state, onSummaryExpandedChange)
                 ParticipantChatList(state, canLoadMoreMessages, onLoadMoreMessages, Modifier.weight(1f))
                 ChatInputBar(
                     value = state.draftMessage,
@@ -217,49 +218,17 @@ private fun ParticipantRoomTabs(
     selectedTab: ParticipantAppointmentRoomTab,
     onTabSelected: (ParticipantAppointmentRoomTab) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().height(48.dp).padding(horizontal = AppDimens.Spacing20),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing24),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RoomTab(
-            label = stringResource(R.string.participant_room_tab_chat),
-            selected = selectedTab == ParticipantAppointmentRoomTab.CHAT,
-            onClick = { onTabSelected(ParticipantAppointmentRoomTab.CHAT) },
-            icon = null
-        )
-        RoomTab(
-            label = stringResource(R.string.participant_room_tab_map_status),
-            selected = selectedTab == ParticipantAppointmentRoomTab.MAP_STATUS,
-            onClick = { onTabSelected(ParticipantAppointmentRoomTab.MAP_STATUS) },
-            icon = R.drawable.place
-        )
-    }
-}
-
-@Composable
-private fun RoomTab(label: String, selected: Boolean, onClick: () -> Unit, icon: Int?) {
-    val tint = if (selected) AppColors.MainGreen.Green900 else AppColors.Monotone.Gray400
-    Row(
-        modifier = Modifier
-            .height(48.dp)
-            .clip(RoundedCornerShape(AppDimens.Spacing8))
-            .clickable(role = Role.Tab, onClick = onClick)
-            .semantics(mergeDescendants = true) { this.selected = selected }
-            .testTag("participant-tab-$label"),
-        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing4),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        icon?.let {
-            androidx.compose.foundation.Image(
-                painter = painterResource(it),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(tint)
-            )
-        }
-        Text(label, color = tint, style = MaterialTheme.typography.labelLarge, maxLines = 1)
-    }
+    val chat = stringResource(R.string.participant_room_tab_chat)
+    val map = stringResource(R.string.participant_room_tab_map_status)
+    RoomTabRow(
+        chatLabel = chat,
+        mapLabel = map,
+        isMapSelected = selectedTab == ParticipantAppointmentRoomTab.MAP_STATUS,
+        onChatClick = { onTabSelected(ParticipantAppointmentRoomTab.CHAT) },
+        onMapClick = { onTabSelected(ParticipantAppointmentRoomTab.MAP_STATUS) },
+        chatTestTag = "participant-tab-$chat",
+        mapTestTag = "participant-tab-$map"
+    )
 }
 
 @Composable
@@ -306,12 +275,36 @@ private fun ParticipantAppointmentSummary(
                         color = AppColors.Monotone.Gray600
                     )
                 }
+                androidx.compose.foundation.Image(
+                    painter = painterResource(
+                        if (state.isSummaryExpanded) R.drawable.chevron_up else R.drawable.chevron_down
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .padding(start = AppDimens.Spacing8)
+                        .size(AppDimens.HeaderIconSize)
+                )
             }
             if (state.isSummaryExpanded) {
                 Spacer(Modifier.height(AppDimens.Spacing12))
-                InfoLine(stringResource(R.string.participant_room_date_label), state.dateSummary ?: stringResource(R.string.participant_room_unavailable_value))
-                Spacer(Modifier.height(AppDimens.Spacing8))
-                InfoLine(stringResource(R.string.participant_room_place_label), state.placeSummary ?: stringResource(R.string.participant_room_unavailable_value))
+                val empty = stringResource(R.string.room_summary_candidate_empty)
+                if (state.appointmentStatus == ParticipantAppointmentStatus.CONFIRMED) {
+                    RoomSummaryDetails(
+                        dateLabel = stringResource(R.string.participant_room_date_label),
+                        dateValue = state.dateSummary ?: stringResource(R.string.participant_room_unavailable_value),
+                        placeLabel = stringResource(R.string.participant_room_place_label),
+                        placeValue = state.placeSummary ?: stringResource(R.string.participant_room_unavailable_value),
+                        showUndecidedBadge = false
+                    )
+                } else {
+                    RoomSummaryDetails(
+                        dateLabel = stringResource(R.string.room_summary_candidate_date),
+                        dateValue = state.candidateDateSummary ?: empty,
+                        placeLabel = stringResource(R.string.room_summary_candidate_place),
+                        placeValue = state.candidatePlaceSummary ?: empty,
+                        showUndecidedBadge = true
+                    )
+                }
             }
         }
     }
@@ -409,6 +402,13 @@ private fun ParticipantMapStatus(
     onDepartureClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (state.appointmentStatus == ParticipantAppointmentStatus.AWAITING_CONFIRMATION) {
+        RoomPendingMapStatus(
+            members = state.members.map { RoomMemberStatusUi(it.name, it.isCurrentUser, it.hasResponded) },
+            modifier = modifier
+        )
+        return
+    }
     Column(modifier.fillMaxWidth()) {
         if (mapContent != null && state.appointmentStatus == ParticipantAppointmentStatus.CONFIRMED) {
             mapContent(Modifier.fillMaxWidth().height(220.dp))

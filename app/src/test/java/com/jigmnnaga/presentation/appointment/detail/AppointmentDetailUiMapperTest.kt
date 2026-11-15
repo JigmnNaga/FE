@@ -107,6 +107,49 @@ class AppointmentDetailUiMapperTest {
     }
 
     @Test
+    fun `날짜 후보는 기간이면 처음과 끝을, 여러 날이면 나열해서 보여 준다`() {
+        val range = detail().copy(
+            dateSelectionType = AppointmentDateSelectionType.RANGE,
+            candidateDates = listOf("2026-09-11", "2026-09-04")
+        )
+        assertEquals("9월 4일~9월 11일", range.candidateDateSummary())
+
+        val few = detail().copy(candidateDates = listOf("2026-09-06", "2026-09-04"))
+        assertEquals("9월 4일, 9월 6일", few.candidateDateSummary())
+
+        val many = detail().copy(candidateDates = listOf("2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07"))
+        assertEquals("9월 4일, 9월 5일 외 2일", many.candidateDateSummary())
+
+        assertNull(detail().copy(candidateDates = emptyList()).candidateDateSummary())
+    }
+
+    @Test
+    fun `장소 후보는 이름을 쉼표로 잇고 없으면 null이다`() {
+        val withPlaces = detail().copy(
+            candidateLocations = listOf(
+                AppointmentLocation(1L, "강남역", null, null, null, null),
+                AppointmentLocation(2L, "잠실역", null, null, null, null)
+            )
+        )
+        assertEquals("강남역, 잠실역", withPlaces.candidatePlaceSummary())
+        assertNull(detail().candidatePlaceSummary())
+    }
+
+    @Test
+    fun `확정 전 약속방은 후보와 함께 펼친 상태로 시작한다`() {
+        val before = detail(confirmed = false).copy(candidateDates = listOf("2026-09-04"))
+        val host = before.toHostRoomUiState(labels)
+        assertTrue(host.isSummaryExpanded)
+        assertFalse(host.isConfirmed)
+        assertEquals("9월 4일", host.candidateDateSummary)
+        assertTrue(before.toParticipantRoomUiState(labels).isSummaryExpanded)
+
+        val confirmed = detail(confirmed = true).toHostRoomUiState(labels)
+        assertFalse(confirmed.isSummaryExpanded)
+        assertTrue(confirmed.isConfirmed)
+    }
+
+    @Test
     fun `방장 약속방 상태에 약속 정보와 참여자가 담긴다`() {
         val state = detail().toHostRoomUiState(labels)
 

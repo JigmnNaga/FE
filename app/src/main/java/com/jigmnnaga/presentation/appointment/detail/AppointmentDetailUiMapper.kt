@@ -1,6 +1,7 @@
 package com.jigmnnaga.presentation.appointment.detail
 
 import com.jigmnnaga.domain.model.AppointmentAttendanceStatus
+import com.jigmnnaga.domain.model.AppointmentDateSelectionType
 import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentMember
 import com.jigmnnaga.domain.model.AppointmentMemberRole
@@ -73,6 +74,28 @@ internal fun AppointmentDetail.dateSummary(): String? {
     return if (time != null) "$date $time" else date
 }
 
+/**
+ * 확정 전에 보여 줄 날짜 후보. 기간이면 "9월 4일~9월 11일", 그 밖에는 "9월 4일, 9월 6일 외 1일"처럼 만든다.
+ * 후보가 없으면 null.
+ */
+internal fun AppointmentDetail.candidateDateSummary(): String? {
+    val dates = candidateDates.filter { it.isNotBlank() }.sorted()
+    if (dates.isEmpty()) return null
+    fun short(iso: String): String = formatDateLabel(iso)?.substringBeforeLast(' ') ?: iso
+    return when {
+        dateSelectionType == AppointmentDateSelectionType.RANGE && dates.size >= 2 ->
+            "${short(dates.first())}~${short(dates.last())}"
+        dates.size <= 3 -> dates.joinToString(", ") { short(it) }
+        else -> dates.take(2).joinToString(", ") { short(it) } + " 외 ${dates.size - 2}일"
+    }
+}
+
+/** 확정 전에 보여 줄 장소 후보 이름들. 후보가 없으면 null. */
+internal fun AppointmentDetail.candidatePlaceSummary(): String? =
+    candidateLocations.mapNotNull { it.placeName.takeIf { name -> name.isNotBlank() } }
+        .joinToString(", ")
+        .takeIf { it.isNotEmpty() }
+
 /** 확정된 장소와 세부 장소를 "강남역 카공카페"처럼 합친다. 둘 다 없으면 null. */
 internal fun AppointmentDetail.placeSummary(): String? =
     listOfNotNull(
@@ -120,6 +143,10 @@ internal fun AppointmentDetail.toHostRoomUiState(labels: AppointmentDetailLabels
     scheduleStatusLabel = scheduleStatusLabel(labels),
     dateSummary = dateSummary(),
     placeSummary = placeSummary(),
+    isConfirmed = confirmed,
+    candidateDateSummary = candidateDateSummary(),
+    candidatePlaceSummary = candidatePlaceSummary(),
+    isSummaryExpanded = !confirmed,
     responseCount = scheduleSubmittedCount,
     participantCount = joinedCount,
     participants = members.map {
@@ -127,7 +154,8 @@ internal fun AppointmentDetail.toHostRoomUiState(labels: AppointmentDetailLabels
             id = it.memberId.toString(),
             name = it.nickname,
             statusLabel = memberStatusLabel(it, labels),
-            isHost = it.role == AppointmentMemberRole.HOST
+            isHost = it.role == AppointmentMemberRole.HOST,
+            hasResponded = it.scheduleSubmitted
         )
     }
 )
@@ -144,12 +172,16 @@ internal fun AppointmentDetail.toParticipantRoomUiState(labels: AppointmentDetai
         scheduleStatusLabel = scheduleStatusLabel(labels),
         dateSummary = dateSummary(),
         placeSummary = placeSummary(),
+        candidateDateSummary = candidateDateSummary(),
+        candidatePlaceSummary = candidatePlaceSummary(),
+        isSummaryExpanded = !confirmed,
         members = members.map {
             ParticipantRoomMemberUiState(
                 id = it.memberId.toString(),
                 name = it.nickname,
                 statusLabel = memberStatusLabel(it, labels),
-                isCurrentUser = isCurrentUser(it)
+                isCurrentUser = isCurrentUser(it),
+                hasResponded = it.scheduleSubmitted
             )
         }
     )
