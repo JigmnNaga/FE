@@ -248,6 +248,19 @@
 <string name="place_vote_question">어디서 만날까요?</string>
 <string name="place_vote_list_label">위치 선택·최대 %1$d개</string>
 <string name="place_vote_submit">저장</string>
+<string name="place_vote_participant_list_label">희망 위치 선택</string>
+<string name="place_vote_submitted">선택한 장소를 제출했어요</string>
+<string name="place_vote_action_closed">취소되었거나 응답 기한이 지난 약속이에요</string>
+<string name="place_vote_action_invalid_place">선택한 장소를 저장할 수 없어요. 다른 장소를 골라 주세요</string>
+<string name="place_vote_action_not_allowed">이 약속에서는 할 수 없는 동작이에요</string>
+<string name="place_vote_action_failed_retry">저장하지 못했어요. 잠시 후 다시 시도해 주세요</string>
+<string name="place_vote_action_failed">저장하지 못했어요</string>
+<string name="place_vote_votes_load_failed">투표 현황을 불러오지 못했어요</string>
+<string name="place_vote_vote_ratio">%1$d/%2$d명</string>
+<string name="place_vote_progress_title">%1$d명 선택 완료</string>
+<string name="place_vote_progress_subtitle">%1$d명 더 선택하면 돼요!</string>
+<string name="place_vote_progress_selecting">장소 선택중</string>
+<string name="place_vote_progress_done">선택 완료</string>
 
 <string name="host_confirmation_header">약속 확정</string>
 <string name="host_confirmation_review_title">최종 약속을 확인해 주세요</string>

@@ -64,6 +64,8 @@ import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeRoute
 import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeViewModel
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRole
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRoute
+import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteTexts
+import com.jigmnnaga.presentation.appointment.placevote.toPlaceCandidate
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteUiState
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteViewModel
 import com.jigmnnaga.presentation.common.login.LoginRoute
@@ -440,19 +442,36 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             }
         }
 
-        // 약속 제목은 약속 상세 조회 값으로 채우고, 방장 여부는 내 역할(myRole)이 있으면 그 값을 쓴다.
-        // TODO: 장소 검색·투표 API 연동 시 후보 목록과 선택 현황(progress)을 서버 값으로 채운다. 약속방에서 이 화면으로 가는 연결도 그때 붙인다.
+        // 약속 제목과 후보 장소는 약속 상세 조회 값으로 채우고, 방장 여부는 내 역할(myRole)이 있으면 그 값을 쓴다.
+        // 방장은 후보 장소를 저장하고, 참여자는 장소 하나를 제출한다. 저장·제출 뒤에 약속방은 상세를 다시 불러온다.
+        // 이 화면이 저장 도중에 다시 불러오지 않도록 약속 상세 변경은 따라가지 않는다.
         builder.composable<PlaceVoteDestination> { entry ->
             val destination = entry.toRoute<PlaceVoteDestination>()
-            val loader = rememberAppointmentDetailLoader(destination.appointmentId)
+            val loader = rememberAppointmentDetailLoader(destination.appointmentId, followChanges = false)
             val question = stringResource(R.string.place_vote_question)
             val listLabel = stringResource(
                 R.string.place_vote_list_label,
                 PlaceVoteViewModel.DEFAULT_MAX_SELECTION
             )
+            val participantListLabel = stringResource(R.string.place_vote_participant_list_label)
             val submitLabel = stringResource(R.string.place_vote_submit)
             val emptyMessage = stringResource(R.string.place_vote_empty)
             val applicationContext = LocalContext.current.applicationContext
+            val voteTexts = remember(applicationContext) {
+                PlaceVoteTexts(
+                    voteLabel = { count, total ->
+                        applicationContext.getString(R.string.place_vote_vote_ratio, count, total)
+                    },
+                    progressTitle = { selected ->
+                        applicationContext.getString(R.string.place_vote_progress_title, selected)
+                    },
+                    progressSubtitle = { remaining ->
+                        applicationContext.getString(R.string.place_vote_progress_subtitle, remaining)
+                    },
+                    progressSelecting = applicationContext.getString(R.string.place_vote_progress_selecting),
+                    progressDone = applicationContext.getString(R.string.place_vote_progress_done)
+                )
+            }
             AppointmentDetailLoader(
                 viewModel = loader,
                 onBack = { navigator.navigateBack() },
@@ -468,21 +487,43 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                     applicationContext,
                                     PlaceSearchEntryPoint::class.java
                                 )
+                                val manageEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    AppointmentManageEntryPoint::class.java
+                                )
+                                val scheduleEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    ScheduleEntryPoint::class.java
+                                )
+                                val chatEntryPoint = EntryPointAccessors.fromApplication(
+                                    applicationContext,
+                                    ChatEntryPoint::class.java
+                                )
+                                val locationCandidates = detail.candidateLocations.mapNotNull { it.toPlaceCandidate() }
                                 PlaceVoteViewModel(
                                     template = PlaceVoteUiState(
                                         role = if (isHost) PlaceVoteRole.HOST else PlaceVoteRole.PARTICIPANT,
                                         searchQuery = "",
-                                        candidates = emptyList(),
-                                        selectedCandidateIds = emptySet(),
+                                        candidates = locationCandidates,
+                                        selectedCandidateIds = if (isHost) {
+                                            locationCandidates.map { it.id }.toSet()
+                                        } else {
+                                            emptySet()
+                                        },
                                         title = detail.title,
                                         question = question,
-                                        listLabel = listLabel,
+                                        listLabel = if (isHost) listLabel else participantListLabel,
                                         submitLabel = submitLabel,
                                         showSearchInput = true,
                                         emptyMessage = emptyMessage,
                                         selectedSummaryTitle = ""
                                     ),
-                                    searchRepository = searchEntryPoint.placeSearchRepository()
+                                    searchRepository = searchEntryPoint.placeSearchRepository(),
+                                    appointmentId = destination.appointmentId,
+                                    manageRepository = manageEntryPoint.appointmentManageRepository(),
+                                    scheduleRepository = scheduleEntryPoint.scheduleRepository(),
+                                    myMemberIdProvider = chatEntryPoint.myMemberIdProvider(),
+                                    texts = voteTexts
                                 )
                             }
                         }
@@ -491,7 +532,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 PlaceVoteRoute(
                     viewModel = viewModel,
                     onBack = { navigator.navigateBack() },
-                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) },
+                    onSaved = { navigator.navigateBack() }
                 )
             }
         }

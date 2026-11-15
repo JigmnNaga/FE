@@ -19,13 +19,15 @@ import com.jigmnnaga.R
 
 /**
  * 장소 검색·투표 화면과 [PlaceVoteViewModel]을 연결한다.
- * 서버 미연동 안내와 최대 선택 안내를 스낵바로 보여 준다.
+ * 저장·제출 결과와 최대 선택 안내를 스낵바로 보여 준다.
+ * 방장이 후보 장소를 저장하면 [onSaved]를 불러 약속방으로 돌아간다.
  */
 @Composable
 fun PlaceVoteRoute(
     viewModel: PlaceVoteViewModel,
     onBack: () -> Unit,
     onLoginRequired: (resumeAfterLogin: () -> Unit) -> Unit = {},
+    onSaved: () -> Unit = {},
     modifier: Modifier = Modifier,
     maxSelection: Int = PlaceVoteViewModel.DEFAULT_MAX_SELECTION
 ) {
@@ -46,6 +48,23 @@ fun PlaceVoteRoute(
             }
             PlaceVoteNotice.SEARCH_FAILED_RETRYABLE -> context.getString(R.string.place_vote_search_failed_retry)
             PlaceVoteNotice.SEARCH_FAILED -> context.getString(R.string.place_vote_search_failed)
+            PlaceVoteNotice.SAVED -> {
+                viewModel.clearNotice()
+                onSaved()
+                null
+            }
+            PlaceVoteNotice.SUBMITTED -> context.getString(R.string.place_vote_submitted)
+            PlaceVoteNotice.ACTION_LOGIN_REQUIRED -> {
+                viewModel.clearNotice()
+                onLoginRequired(viewModel::retryAfterLogin)
+                null
+            }
+            PlaceVoteNotice.ACTION_CLOSED -> context.getString(R.string.place_vote_action_closed)
+            PlaceVoteNotice.ACTION_INVALID_PLACE -> context.getString(R.string.place_vote_action_invalid_place)
+            PlaceVoteNotice.ACTION_NOT_ALLOWED -> context.getString(R.string.place_vote_action_not_allowed)
+            PlaceVoteNotice.ACTION_FAILED_RETRYABLE -> context.getString(R.string.place_vote_action_failed_retry)
+            PlaceVoteNotice.ACTION_FAILED -> context.getString(R.string.place_vote_action_failed)
+            PlaceVoteNotice.VOTES_LOAD_FAILED -> context.getString(R.string.place_vote_votes_load_failed)
             null -> null
         }
         if (message != null) {
