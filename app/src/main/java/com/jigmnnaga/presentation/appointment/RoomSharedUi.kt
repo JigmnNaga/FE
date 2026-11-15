@@ -115,7 +115,8 @@ fun RoomSummaryDetails(
     placeLabel: String,
     placeValue: String,
     showUndecidedBadge: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showPlaceUndecidedBadge: Boolean = showUndecidedBadge
 ) {
     Column(modifier.fillMaxWidth()) {
         RoomSummaryDetailRow(R.drawable.calendar_gray, dateLabel, dateValue, showUndecidedBadge, tintIcon = false)
@@ -123,7 +124,7 @@ fun RoomSummaryDetails(
             color = AppColors.Monotone.Gray100,
             modifier = Modifier.padding(vertical = AppDimens.Spacing12)
         )
-        RoomSummaryDetailRow(R.drawable.place, placeLabel, placeValue, showUndecidedBadge, tintIcon = true)
+        RoomSummaryDetailRow(R.drawable.place, placeLabel, placeValue, showPlaceUndecidedBadge, tintIcon = true)
     }
 }
 

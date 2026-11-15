@@ -1,5 +1,9 @@
 package com.jigmnnaga.presentation.appointment.manage
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,11 +17,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.appointment.create.buildInviteShareIntent
+import kotlinx.coroutines.launch
 
 /**
  * 약속 관리 화면과 [AppointmentManageViewModel]을 연결한다.
@@ -32,12 +39,14 @@ fun AppointmentManageRoute(
     onExit: () -> Unit,
     onDeleted: () -> Unit,
     onLoginRequired: (resume: () -> Unit) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenConfirmation: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     // 나가기·삭제 완료 화면에서는 이미 나간 약속방으로 돌아가지 않고 홈으로 보낸다.
     BackHandler(enabled = state.step != AppointmentManageStep.MENU || state.completion != null) {
@@ -103,7 +112,41 @@ fun AppointmentManageRoute(
             onRequestLeave = viewModel::requestLeave,
             onDismissLeave = viewModel::dismissLeave,
             onConfirmLeave = viewModel::confirmLeave,
-            onGoHome = onDeleted
+            onGoHome = onDeleted,
+            onOpenConfirmation = onOpenConfirmation,
+            onCopyInviteLink = {
+                val link = state.inviteUrl
+                val copied = !link.isNullOrBlank() && runCatching {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(
+                        ClipData.newPlainText(context.getString(R.string.appointment_invite_link_label), link)
+                    )
+                }.isSuccess
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        context.getString(
+                            if (copied) R.string.appointment_copy_confirmation_title
+                            else R.string.appointment_share_unavailable
+                        )
+                    )
+                }
+            },
+            onShareInviteLink = {
+                val link = state.inviteUrl
+                val shared = !link.isNullOrBlank() && runCatching {
+                    context.startActivity(
+                        Intent.createChooser(
+                            buildInviteShareIntent(link),
+                            context.getString(R.string.appointment_share_chooser_title)
+                        )
+                    )
+                }.isSuccess
+                if (!shared) {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(context.getString(R.string.appointment_share_unavailable))
+                    }
+                }
+            }
         )
         SnackbarHost(
             hostState = snackbarHostState,

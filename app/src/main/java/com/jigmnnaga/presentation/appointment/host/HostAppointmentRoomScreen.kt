@@ -212,23 +212,29 @@ private fun AppointmentSummaryCard(
             if (state.isSummaryExpanded) {
                 Spacer(Modifier.height(AppDimens.Spacing12))
                 val empty = stringResource(R.string.room_summary_candidate_empty)
-                if (state.isConfirmed) {
-                    RoomSummaryDetails(
-                        dateLabel = stringResource(R.string.host_room_date_label),
-                        dateValue = state.dateSummary ?: empty,
-                        placeLabel = stringResource(R.string.host_room_place_label),
-                        placeValue = state.placeSummary ?: empty,
-                        showUndecidedBadge = false
-                    )
-                } else {
-                    RoomSummaryDetails(
-                        dateLabel = stringResource(R.string.room_summary_candidate_date),
-                        dateValue = state.candidateDateSummary ?: empty,
-                        placeLabel = stringResource(R.string.room_summary_candidate_place),
-                        placeValue = state.candidatePlaceSummary ?: empty,
-                        showUndecidedBadge = true
-                    )
-                }
+                // 약속 전체가 확정되기 전이어도 날짜·시간이나 장소가 정해졌으면 그 줄은 확정된 값을 보여 준다.
+                val dateConfirmed = state.isConfirmed || state.confirmedDateSummary != null
+                val placeConfirmed = state.isConfirmed || state.confirmedPlaceSummary != null
+                RoomSummaryDetails(
+                    dateLabel = stringResource(
+                        if (dateConfirmed) R.string.host_room_date_label else R.string.room_summary_candidate_date
+                    ),
+                    dateValue = if (dateConfirmed) {
+                        state.dateSummary ?: state.confirmedDateSummary ?: empty
+                    } else {
+                        state.candidateDateSummary ?: empty
+                    },
+                    placeLabel = stringResource(
+                        if (placeConfirmed) R.string.host_room_place_label else R.string.room_summary_candidate_place
+                    ),
+                    placeValue = if (placeConfirmed) {
+                        state.placeSummary ?: state.confirmedPlaceSummary ?: empty
+                    } else {
+                        state.candidatePlaceSummary ?: empty
+                    },
+                    showUndecidedBadge = !dateConfirmed,
+                    showPlaceUndecidedBadge = !placeConfirmed
+                )
             }
         }
     }

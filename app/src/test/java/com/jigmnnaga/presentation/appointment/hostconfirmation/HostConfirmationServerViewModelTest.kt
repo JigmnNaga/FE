@@ -103,6 +103,28 @@ class HostConfirmationServerViewModelTest {
         AppointmentLocation(11L, "잠실역", "서울 송파구", "2호선", 37.51, 127.10)
     )
 
+    private var confirmedCount = 0
+
+    private fun presetVm(
+        presetDetailPlace: ConfirmDetailPlace? = null
+    ) = HostConfirmationViewModel(
+        initialState = HostConfirmationUiState(
+            appointmentTitle = "저녁 약속",
+            selectedDateTime = "11월 20일 금요일 오후 7:00",
+            selectedPlace = null,
+            selectedDetailLocation = presetDetailPlace?.placeName
+        ),
+        appointmentId = 7L,
+        candidateLocations = locations,
+        confirmationRepository = confirmation,
+        placeSearchRepository = search,
+        searchDebounceMillis = 300L,
+        onConfirmed = { confirmedCount++ },
+        presetDateTime = "2026-11-20" to "19:00",
+        presetLocationId = 10L,
+        presetDetailPlace = presetDetailPlace
+    )
+
     private fun vm(isHost: Boolean = true) = HostConfirmationViewModel(
         initialState = HostConfirmationUiState(
             appointmentTitle = "저녁 약속",
@@ -114,7 +136,8 @@ class HostConfirmationServerViewModelTest {
         candidateLocations = locations,
         confirmationRepository = confirmation,
         placeSearchRepository = search,
-        searchDebounceMillis = 300L
+        searchDebounceMillis = 300L,
+        onConfirmed = { confirmedCount++ }
     )
 
     private fun TestScope.settle() {
@@ -239,6 +262,78 @@ class HostConfirmationServerViewModelTest {
         assertTrue(search.queries.isEmpty())
         assertTrue(vm.uiState.value.detailLocationChoices.isEmpty())
         assertEquals("", vm.uiState.value.detailSearchQuery)
+    }
+
+    @Test
+    fun `확정을 마치면 약속방이 새로 불러오도록 알린다`() = runTest(dispatcher) {
+        val vm = vm()
+        vm.loadTimeCandidates()
+        runCurrent()
+        vm.chooseDateTimeAndPlace()
+
+        vm.onConfirm()
+        runCurrent()
+
+        assertEquals(1, confirmedCount)
+    }
+
+    @Test
+    fun `확정이 실패하면 약속방에 알리지 않는다`() = runTest(dispatcher) {
+        confirmation.dateResult = ConfirmationResult.Failure(retryable = false)
+        val vm = vm()
+        vm.loadTimeCandidates()
+        runCurrent()
+        vm.chooseDateTimeAndPlace()
+
+        vm.onConfirm()
+        runCurrent()
+
+        assertEquals(0, confirmedCount)
+    }
+
+    @Test
+    fun `이미 확정된 날짜·시간과 장소는 처음부터 선택된 상태로 보인다`() = runTest(dispatcher) {
+        val vm = presetVm()
+
+        val state = vm.uiState.value
+        assertEquals("강남역", state.selectedPlace)
+        assertTrue(state.placeChoices.first { it.id == "10" }.selected)
+        assertTrue(state.canConfirm)
+    }
+
+    @Test
+    fun `이미 확정된 값이 있으면 새로 고르지 않아도 그대로 다시 확정한다`() = runTest(dispatcher) {
+        val vm = presetVm()
+
+        vm.onConfirm()
+        runCurrent()
+
+        assertEquals(listOf(Triple(7L, "2026-11-20", "19:00")), confirmation.dateCalls)
+        assertEquals(listOf(Triple(7L, 10L, null)), confirmation.locationCalls)
+        assertEquals(HostConfirmationStep.COMPLETE, vm.uiState.value.step)
+    }
+
+    @Test
+    fun `이미 정한 세부 위치는 새로 고르지 않으면 그대로 유지해서 보낸다`() = runTest(dispatcher) {
+        val kept = ConfirmDetailPlace("카공카페", "서울 강남구 1", 37.5, 127.0)
+        val vm = presetVm(presetDetailPlace = kept)
+
+        vm.onConfirm()
+        runCurrent()
+
+        assertEquals(listOf(Triple(7L, 10L, kept)), confirmation.locationCalls)
+    }
+
+    @Test
+    fun `세부 위치를 나중에 정하기로 하면 이미 정한 세부 위치도 비워서 보낸다`() = runTest(dispatcher) {
+        val kept = ConfirmDetailPlace("카공카페", "서울 강남구 1", 37.5, 127.0)
+        val vm = presetVm(presetDetailPlace = kept)
+
+        vm.onChooseDetailLater()
+        vm.onConfirm()
+        runCurrent()
+
+        assertEquals(listOf(Triple(7L, 10L, null)), confirmation.locationCalls)
     }
 
     @Test

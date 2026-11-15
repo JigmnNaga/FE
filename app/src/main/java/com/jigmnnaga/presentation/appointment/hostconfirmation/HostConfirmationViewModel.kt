@@ -2,6 +2,7 @@ package com.jigmnnaga.presentation.appointment.hostconfirmation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jigmnnaga.presentation.appointment.AppointmentRefreshSignal
 import com.jigmnnaga.domain.model.AppointmentLocation
 import com.jigmnnaga.domain.model.ConfirmDetailPlace
 import com.jigmnnaga.domain.model.ConfirmationRejectReason
@@ -52,12 +53,20 @@ class HostConfirmationViewModel(
     candidateLocations: List<AppointmentLocation> = emptyList(),
     private val confirmationRepository: ConfirmationRepository? = null,
     private val placeSearchRepository: PlaceSearchRepository? = null,
-    private val searchDebounceMillis: Long = DEFAULT_SEARCH_DEBOUNCE_MILLIS
+    private val searchDebounceMillis: Long = DEFAULT_SEARCH_DEBOUNCE_MILLIS,
+    private val onConfirmed: () -> Unit = AppointmentRefreshSignal::notifyChanged,
+    /** 이미 확정된 날짜와 시작 시간(`yyyy-MM-dd`, `HH:mm`). 다시 들어왔을 때 처음부터 선택된 상태로 둔다. */
+    private val presetDateTime: Pair<String, String>? = null,
+    /** 이미 확정된 장소의 후보 ID. */
+    presetLocationId: Long? = null,
+    /** 이미 정해진 세부 위치. 새로 고르지 않고 확정하면 그대로 유지한다. */
+    presetDetailPlace: ConfirmDetailPlace? = null
 ) : ViewModel() {
 
     private var timeCandidates: Map<String, TimeCandidate> = emptyMap()
     private var detailResults: Map<String, SearchedPlace> = emptyMap()
     private var selectedDetailPlace: SearchedPlace? = null
+    private var keptDetailPlace: ConfirmDetailPlace? = presetDetailPlace
     private var searchJob: Job? = null
     private var loadJob: Job? = null
     private val locationIds: Map<String, Long> = candidateLocations
@@ -65,7 +74,7 @@ class HostConfirmationViewModel(
         .toMap()
 
     private val _uiState = MutableStateFlow(
-        initialState.withPlaceChoices(candidateLocations).withConfirmEligibility()
+        initialState.withPlaceChoices(candidateLocations).withPresetPlace(presetLocationId).withConfirmEligibility()
     )
     val uiState: StateFlow<HostConfirmationUiState> = _uiState.asStateFlow()
 
@@ -117,6 +126,7 @@ class HostConfirmationViewModel(
     /** 세부 위치는 나중에 정하기로 하고 선택을 비운 채 확인 단계로 돌아간다. */
     fun onChooseDetailLater() {
         selectedDetailPlace = null
+        keptDetailPlace = null
         edit {
             copy(
                 detailLocationChoices = detailLocationChoices.map { it.copy(selected = false) },
@@ -148,16 +158,18 @@ class HostConfirmationViewModel(
         }
         val timeId = state.dateTimeChoices.firstOrNull { it.selected }?.id
         val time = timeId?.let { timeCandidates[it] }
+        // 날짜·시간을 새로 고르지 않았으면 이미 확정된 값을 그대로 쓴다.
+        val dateTime = time?.let { it.date to it.startTime } ?: presetDateTime.takeIf { timeId == null }
         val locationId = state.placeChoices.firstOrNull { it.selected }?.id?.let { locationIds[it] }
-        if (time == null || locationId == null) {
+        if (dateTime == null || locationId == null) {
             _notice.value = HostConfirmationNotice.INVALID_SELECTION
             return
         }
-        val detail = selectedDetailPlace?.toConfirmDetailPlace()
+        val detail = selectedDetailPlace?.toConfirmDetailPlace() ?: keptDetailPlace
 
         edit { copy(isBusy = true) }
         viewModelScope.launch {
-            val dateResult = repository.confirmDateTime(appointmentId, time.date, time.startTime)
+            val dateResult = repository.confirmDateTime(appointmentId, dateTime.first, dateTime.second)
             if (dateResult !is ConfirmationResult.Success) {
                 finishWithFailure(dateResult)
                 return@launch
@@ -167,6 +179,7 @@ class HostConfirmationViewModel(
                 finishWithFailure(locationResult)
                 return@launch
             }
+            onConfirmed()
             edit { copy(isBusy = false, step = HostConfirmationStep.COMPLETE) }
         }
     }
@@ -187,6 +200,7 @@ class HostConfirmationViewModel(
                     timeCandidates = result.value.candidates.associateBy { it.choiceId() }
                     edit {
                         val previous = dateTimeChoices.firstOrNull { it.selected }?.id
+                            ?: presetDateTime?.let { "${it.first}|${it.second}" }
                         copy(
                             dateTimeChoices = result.value.candidates.map {
                                 it.toChoice(total).copy(selected = it.choiceId() == previous)
@@ -271,6 +285,17 @@ class HostConfirmationViewModel(
                     selected = placeChoices.firstOrNull { it.id == id }?.selected == true
                 )
             }
+        )
+    }
+
+    /** 이미 확정된 장소가 있으면 처음부터 선택된 상태로 둔다. 후보에 없으면 그대로 둔다. */
+    private fun HostConfirmationUiState.withPresetPlace(locationId: Long?): HostConfirmationUiState {
+        val id = locationId?.toString() ?: return this
+        val choice = placeChoices.firstOrNull { it.id == id } ?: return this
+        return copy(
+            placeChoices = placeChoices.map { it.copy(selected = it.id == id) },
+            selectedPlace = choice.title,
+            selectedPlaceDescription = choice.supportingText
         )
     }
 
