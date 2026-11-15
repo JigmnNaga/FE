@@ -35,6 +35,8 @@ data class ParticipantAppointmentRoomUiState(
     val scheduleStatusLabel: String? = null,
     val dateSummary: String? = null,
     val placeSummary: String? = null,
+    val candidateDateSummary: String? = null,
+    val candidatePlaceSummary: String? = null,
     val members: List<ParticipantRoomMemberUiState> = emptyList(),
     val messages: List<ParticipantRoomMessageUiState> = emptyList(),
     val draftMessage: String = "",

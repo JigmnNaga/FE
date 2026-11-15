@@ -433,6 +433,30 @@ internal fun LeaveConfirmDialog(
             stringResource(R.string.appointment_leave_dialog_confirm_delete)
         )
     }
+    ManageConfirmDialog(
+        title = title,
+        message = message,
+        confirmText = confirmText,
+        onDismiss = onDismiss,
+        onConfirm = onConfirm,
+        dialogTag = "appointment-manage-leave-dialog",
+        cancelTag = "appointment-manage-leave-dialog-cancel",
+        confirmTag = "appointment-manage-leave-dialog-confirm"
+    )
+}
+
+/** 약속방 관리의 확인 팝업. Figma(APT-004-06)처럼 경고 아이콘, 취소/확인 버튼 두 개로 그린다. */
+@Composable
+internal fun ManageConfirmDialog(
+    title: String,
+    message: String,
+    confirmText: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    dialogTag: String,
+    cancelTag: String,
+    confirmTag: String
+) {
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -440,7 +464,7 @@ internal fun LeaveConfirmDialog(
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setDimAmount(0.44f) }
         Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 34.dp).testTag("appointment-manage-leave-dialog"),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 34.dp).testTag(dialogTag),
             shape = RoundedCornerShape(20.dp),
             color = AppColors.Monotone.White
         ) {
@@ -478,13 +502,13 @@ internal fun LeaveConfirmDialog(
                         text = stringResource(R.string.appointment_manage_dialog_cancel),
                         filled = false,
                         onClick = onDismiss,
-                        modifier = Modifier.weight(1f).testTag("appointment-manage-leave-dialog-cancel")
+                        modifier = Modifier.weight(1f).testTag(cancelTag)
                     )
                     DialogButton(
                         text = confirmText,
                         filled = true,
                         onClick = onConfirm,
-                        modifier = Modifier.weight(1f).testTag("appointment-manage-leave-dialog-confirm")
+                        modifier = Modifier.weight(1f).testTag(confirmTag)
                     )
                 }
             }
