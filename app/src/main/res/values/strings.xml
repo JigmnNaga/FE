@@ -517,4 +517,7 @@
     <string name="route_my_card_description">%1$s 이동 경로 설정</string>
     <string name="route_my_route_expand_description">내 이동 경로 펼치기</string>
     <string name="route_my_route_collapse_description">내 이동 경로 접기</string>
+    <string name="route_member_not_started">미출발</string>
+    <string name="route_member_waiting">아직 출발 전이에요</string>
+    <string name="route_member_set_route_hint">이동 경로를 설정해주세요.</string>
 </resources>

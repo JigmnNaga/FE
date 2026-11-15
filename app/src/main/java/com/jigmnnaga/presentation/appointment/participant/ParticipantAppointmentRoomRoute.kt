@@ -34,7 +34,8 @@ fun ParticipantAppointmentRoomRoute(
     onPlaceClick: () -> Unit,
     onManagementClick: () -> Unit,
     modifier: Modifier = Modifier,
-    chatViewModel: AppointmentChatViewModel? = null
+    chatViewModel: AppointmentChatViewModel? = null,
+    onMapStatusClick: (() -> Unit)? = null
 ) {
     val roomState by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
@@ -76,7 +77,15 @@ fun ParticipantAppointmentRoomRoute(
             onCalendarClick = onCalendarClick,
             onPlaceClick = onPlaceClick,
             onManagementClick = onManagementClick,
-            onTabSelected = viewModel::onTabSelected,
+            onTabSelected = { tab ->
+                // 확정된 약속방의 "지도·현황" 탭은 이동 경로 화면으로 넘어간다.
+                val confirmed = state.appointmentStatus == ParticipantAppointmentStatus.CONFIRMED
+                if (tab == ParticipantAppointmentRoomTab.MAP_STATUS && confirmed && onMapStatusClick != null) {
+                    onMapStatusClick()
+                } else {
+                    viewModel.onTabSelected(tab)
+                }
+            },
             onSummaryExpandedChange = viewModel::onSummaryExpandedChange,
             onMessageChange = viewModel::onMessageChange,
             onSendMessage = {

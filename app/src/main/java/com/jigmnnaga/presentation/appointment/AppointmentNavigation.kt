@@ -2,7 +2,11 @@ package com.jigmnnaga.presentation.appointment
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,6 +42,10 @@ import com.jigmnnaga.presentation.appointment.detail.toHostRoomUiState
 import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
 import com.jigmnnaga.presentation.appointment.detail.toParticipantManagementUiState
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
+import com.jigmnnaga.presentation.appointment.route.RouteRoute
+import com.jigmnnaga.presentation.appointment.route.RouteViewModel
+import com.jigmnnaga.presentation.appointment.route.rememberRouteMemberLabels
+import com.jigmnnaga.presentation.appointment.route.toRouteUiState
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateViewModel
 import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddRoute
@@ -128,6 +136,10 @@ data class ExistingAppointmentAddDestination(val appointmentId: Long)
 /** 방장 약속방 관리 화면(APT-006). 약속 ID를 인자로 받는다. */
 @Serializable
 data class AppointmentManageDestination(val appointmentId: Long)
+
+/** 이동 경로 화면(ROU-001). 확정된 약속방의 "지도·현황" 탭에서 열린다. 약속 ID를 인자로 받는다. */
+@Serializable
+data class RouteDestination(val appointmentId: Long)
 
 /** 약속 기능이 소유하는 이동 경로 그래프. 앱 호스트에는 이 객체만 등록한다. */
 object AppointmentNavigationGraph : AppNavigationGraph {
@@ -358,6 +370,21 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             }
         }
 
+        // 약속 제목, 멤버, 약속 장소를 약속 상세 조회 값으로 채운다.
+        // 경로 선택지와 도착 예정 시각은 이동 경로 API 연동 전이라 예시 값이다.
+        builder.composable<RouteDestination> { entry ->
+            val appointmentId = entry.toRoute<RouteDestination>().appointmentId
+            val loader = rememberAppointmentDetailLoader(appointmentId)
+            val labels = rememberAppointmentDetailLabels()
+            AppointmentDetailLoader(
+                viewModel = loader,
+                onBack = { navigator.navigateBack() },
+                onLoginRequired = { resume -> navigator.requestLogin(resume) }
+            ) { detail ->
+                RouteContent(navigator, appointmentId, detail, labels)
+            }
+        }
+
         // 약속 제목, 예정 시간·장소, 멤버 목록을 약속 상세 조회 값으로 채운다.
         // "약속 요청하기"는 고른 참여자를 이전 약속 멤버로 담아 약속 생성 화면으로 이동한다.
         // TODO: 약속방에서 이 화면으로 가는 연결은 약속방에 진입점이 정해질 때 붙인다.
@@ -567,7 +594,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
             onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
             onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) },
-            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId),
+            onMapStatusClick = { navigator.navigate(RouteDestination(appointmentId)) }
         )
     }
 
@@ -597,8 +625,66 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onManagementClick = {
                 navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
             },
-            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId),
+            onMapStatusClick = { navigator.navigate(RouteDestination(appointmentId)) }
         )
+    }
+
+    /**
+     * 이동 경로 화면. 내 멤버 ID를 알아낸 뒤에 화면 상태를 만들어, 처음부터 "나" 카드가 맞게 보이게 한다.
+     * 방장이면 약속 관리, 참여자면 참여자 관리 화면으로 더보기를 연결한다.
+     */
+    @Composable
+    private fun RouteContent(
+        navigator: AppNavigator,
+        appointmentId: Long,
+        detail: AppointmentDetail,
+        labels: AppointmentDetailLabels
+    ) {
+        val applicationContext = LocalContext.current.applicationContext
+        val routeLabels = rememberRouteMemberLabels()
+        var myMemberId by remember { mutableStateOf<Long?>(null) }
+        var myMemberResolved by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            myMemberId = EntryPointAccessors
+                .fromApplication(applicationContext, ChatEntryPoint::class.java)
+                .myMemberIdProvider()
+                .myMemberId()
+            myMemberResolved = true
+        }
+        if (myMemberResolved) {
+            val viewModel: RouteViewModel = viewModel(
+                key = "route-$appointmentId",
+                factory = remember(detail, myMemberId) {
+                    viewModelFactory {
+                        initializer {
+                            RouteViewModel(
+                                detail.toRouteUiState(
+                                    memberSummary = labels.memberSummary(detail.joinedCount),
+                                    labels = routeLabels,
+                                    myMemberId = myMemberId
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            val isHost = detail.myRole != AppointmentMemberRole.MEMBER
+            RouteRoute(
+                viewModel = viewModel,
+                onBackClick = { navigator.navigateBack() },
+                onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
+                onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = isHost)) },
+                onMoreClick = {
+                    if (isHost) {
+                        navigator.navigate(AppointmentManageDestination(appointmentId))
+                    } else {
+                        navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
+                    }
+                },
+                onChatTabClick = { navigator.navigateBack() }
+            )
+        }
     }
 
     /**
