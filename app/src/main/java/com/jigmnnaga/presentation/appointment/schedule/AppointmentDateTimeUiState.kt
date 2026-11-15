@@ -46,6 +46,21 @@ data class AppointmentDateValue(
     fun shortLabel(): String = "$month/$day"
 
     fun accessibilityLabel(): String = "${year}년 ${month}월 ${day}일"
+
+    /** 서버에서 쓰는 `yyyy-MM-dd` 형식. */
+    fun toIsoString(): String = String.format(Locale.US, "%04d-%02d-%02d", year, month, day)
+
+    companion object {
+        /** `yyyy-MM-dd` 문자열을 날짜로 바꾼다. 형식이 맞지 않거나 없는 날짜면 null. */
+        fun parseIso(value: String): AppointmentDateValue? {
+            val parts = value.trim().split("-")
+            if (parts.size != 3) return null
+            val year = parts[0].toIntOrNull() ?: return null
+            val month = parts[1].toIntOrNull()?.takeIf { it in 1..12 } ?: return null
+            val day = parts[2].toIntOrNull()?.takeIf { it in 1..31 } ?: return null
+            return AppointmentDateValue(year, month, day)
+        }
+    }
 }
 
 data class AppointmentTimeValue(
@@ -58,6 +73,17 @@ data class AppointmentTimeValue(
     }
 
     fun label(): String = String.format(Locale.KOREA, "%02d:%02d", hour, minute)
+
+    companion object {
+        /** `HH:mm` 문자열을 시각으로 바꾼다. 형식이 맞지 않으면 null. */
+        fun parse(value: String): AppointmentTimeValue? {
+            val parts = value.trim().split(":")
+            if (parts.size < 2) return null
+            val hour = parts[0].toIntOrNull()?.takeIf { it in 0..23 } ?: return null
+            val minute = parts[1].toIntOrNull()?.takeIf { it in 0..59 } ?: return null
+            return AppointmentTimeValue(hour, minute)
+        }
+    }
 }
 
 data class AppointmentTimeRange(
@@ -105,7 +131,11 @@ data class AppointmentDateTimeUiState(
     val isStatusExpanded: Boolean = false,
     val timePicker: TimePickerUiState? = null,
     val canAdvance: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    /** 고를 수 있는 날짜. null이면 제한이 없고, 값이 있으면 그 날짜만 고를 수 있다(약속의 후보 날짜). */
+    val availableDates: Set<AppointmentDateValue>? = null,
+    /** 서버에 일정을 보내는 중. */
+    val isSubmitting: Boolean = false
 ) {
     val completedMembers: List<MemberResponseUiState>
         get() = memberResponses.filter { it.status == MemberResponseStatus.COMPLETED }

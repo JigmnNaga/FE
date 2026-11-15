@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,6 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -53,6 +58,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -140,7 +146,7 @@ fun AppointmentDateTimeScreen(
         }
         AppButton(
             text = buttonText,
-            enabled = state.step == AppointmentDateTimeStep.COMPLETE || state.canAdvance,
+            enabled = state.step == AppointmentDateTimeStep.COMPLETE || (state.canAdvance && !state.isSubmitting),
             onClick = if (state.step == AppointmentDateTimeStep.COMPLETE) onGoToChat else onNext,
             modifier = Modifier
                 .fillMaxWidth()
@@ -406,22 +412,37 @@ private fun DateSelectionContent(
             .padding(horizontal = AppDimens.Spacing20),
         verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing4)) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing4)
+        ) {
             Text(
                 text = stringResource(R.string.appointment_schedule_select_dates),
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = AppColors.Monotone.SoftBlack
             )
             Text(
                 text = stringResource(R.string.appointment_schedule_dates_helper),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
                 color = AppColors.Monotone.Gray500
             )
         }
 
+        if (state.availableDates != null) {
+            DateLegend(modifier = Modifier.padding(horizontal = 10.dp))
+        }
+
+        Text(
+            text = stringResource(R.string.appointment_schedule_date_placeholder),
+            style = MaterialTheme.typography.bodySmall,
+            color = AppColors.Monotone.Gray500,
+            modifier = Modifier.padding(horizontal = AppDimens.Spacing12)
+        )
+
         CalendarCard(
             month = state.displayedMonth,
             selectedDates = state.selectedDates,
+            availableDates = state.availableDates,
             onMonthChange = onMonthChange,
             onDateToggle = onDateToggle
         )
@@ -432,10 +453,43 @@ private fun DateSelectionContent(
     }
 }
 
+/** 내가 고른 날짜(진한 초록)와 방장이 정한 후보 날짜(연한 초록)의 색 안내. */
+@Composable
+private fun DateLegend(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing16)
+    ) {
+        LegendItem(color = AppColors.MainGreen.Green700, label = stringResource(R.string.appointment_schedule_legend_me))
+        LegendItem(color = AppColors.MainGreen.Green300, label = stringResource(R.string.appointment_schedule_legend_host))
+    }
+}
+
+@Composable
+private fun LegendItem(color: Color, label: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(12.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Normal),
+            color = AppColors.Monotone.Gray500
+        )
+    }
+}
+
 @Composable
 private fun CalendarCard(
     month: AppointmentCalendarMonth,
     selectedDates: Set<AppointmentDateValue>,
+    availableDates: Set<AppointmentDateValue>?,
     onMonthChange: (AppointmentCalendarMonth) -> Unit,
     onDateToggle: (AppointmentDateValue) -> Unit
 ) {
@@ -475,9 +529,9 @@ private fun CalendarCard(
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.labelSmall,
                         color = when (index) {
-                            0 -> AppColors.Danger.Red600
-                            6 -> AppColors.MainGreen.Green700
-                            else -> AppColors.Monotone.Gray600
+                            0 -> SundayColor
+                            6 -> SaturdayColor
+                            else -> AppColors.Monotone.Gray500
                         }
                     )
                 }
@@ -495,6 +549,9 @@ private fun CalendarCard(
                             CalendarDateCell(
                                 date = date,
                                 selected = date in selectedDates,
+                                candidate = availableDates != null && date in availableDates,
+                                enabled = availableDates == null || date in availableDates,
+                                weekday = columnIndex,
                                 onClick = { onDateToggle(date) },
                                 modifier = Modifier.weight(1f)
                             )
@@ -539,32 +596,46 @@ private fun MonthArrow(description: String, flipped: Boolean, onClick: () -> Uni
 private fun CalendarDateCell(
     date: AppointmentDateValue,
     selected: Boolean,
+    candidate: Boolean,
+    enabled: Boolean,
+    weekday: Int,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = 36.dp)
             .semantics(mergeDescendants = true) {
                 contentDescription = date.accessibilityLabel()
                 this.selected = selected
                 this.role = Role.Button
+                if (!enabled) disabled()
             }
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
+        // 후보 날짜는 연한 초록, 내가 고른 날짜는 진한 초록 알약 모양으로 채운다.
         Box(
             modifier = Modifier
-                .size(32.dp)
+                .width(42.dp)
+                .height(36.dp)
                 .clip(CircleShape)
-                .background(if (selected) AppColors.MainGreen.Green700 else AppColors.Monotone.White),
+                .background(
+                    when {
+                        selected -> AppColors.MainGreen.Green700
+                        candidate -> AppColors.MainGreen.Green300
+                        else -> AppColors.Monotone.White
+                    }
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = date.day.toString(),
-                style = MaterialTheme.typography.bodySmall,
-                color = if (selected) AppColors.Monotone.White else when {
-                    date.day == 1 -> AppColors.Danger.Red600
+                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                color = when {
+                    selected || candidate -> AppColors.MainGreen.Green200
+                    weekday == 0 -> SundayColor
+                    weekday == 6 -> SaturdayColor
                     else -> AppColors.Monotone.SoftBlack
                 }
             )
@@ -572,6 +643,10 @@ private fun CalendarDateCell(
     }
 }
 
+private val SundayColor = Color(0xFFEA4335)
+private val SaturdayColor = Color(0xFF4285F4)
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SelectedDatesCard(dates: List<AppointmentDateValue>) {
     Surface(
@@ -589,23 +664,24 @@ private fun SelectedDatesCard(dates: List<AppointmentDateValue>) {
                     dates.size,
                     dates.size
                 ),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                 color = AppColors.Monotone.SoftBlack
             )
-            Row(
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            // 날짜가 많아지면 가로 스크롤 없이 아래로 줄바꿈한다.
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 dates.forEach { date ->
                     Surface(
                         shape = CircleShape,
-                        color = AppColors.Monotone.Gray100
+                        color = AppColors.MainGreen.Green900.copy(alpha = 0.08f)
                     ) {
                         Text(
                             text = date.shortLabel(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = AppColors.Monotone.SoftBlack,
-                            modifier = Modifier.padding(horizontal = AppDimens.Spacing8, vertical = AppDimens.Spacing4)
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                            color = AppColors.MainGreen.Green700,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = AppDimens.Spacing4)
                         )
                     }
                 }
@@ -1034,6 +1110,25 @@ private fun AppointmentDateTimeDatePreview() {
     JigmnnagaTheme {
         AppointmentDateTimeScreen(
             state = previewDateTimeState(),
+            onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
+            onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
+            onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},
+            onNext = {}, onGoToChat = {}
+        )
+    }
+}
+
+/** Figma APT-005-03 날짜 선택 2: 방장이 정한 9/4~9/11 후보 날짜 중 9/5, 9/6을 고른 모습. */
+@Preview(showBackground = true, widthDp = 412, heightDp = 892)
+@Composable
+private fun AppointmentDateTimeCandidateDatesPreview() {
+    JigmnnagaTheme {
+        AppointmentDateTimeScreen(
+            state = previewDateTimeState().copy(
+                availableDates = (4..11).map { AppointmentDateValue(2026, 9, it) }.toSet(),
+                selectedDates = setOf(AppointmentDateValue(2026, 9, 5), AppointmentDateValue(2026, 9, 6)),
+                canAdvance = true
+            ),
             onBack = {}, onStatusToggle = {}, onMonthChange = {}, onDateToggle = {}, onActiveDateSelect = {},
             onStartTimeClick = {}, onEndTimeClick = {}, onQuickTimeClick = {},
             onTimePickerValueChange = {}, onTimePickerDismiss = {}, onTimePickerConfirm = {},

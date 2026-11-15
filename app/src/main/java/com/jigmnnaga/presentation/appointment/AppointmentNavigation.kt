@@ -23,6 +23,7 @@ import com.jigmnnaga.di.AttendanceEntryPoint
 import com.jigmnnaga.di.ChatEntryPoint
 import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
+import com.jigmnnaga.di.ScheduleEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentMemberRole
@@ -58,6 +59,7 @@ import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointment
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomRoute
 import com.jigmnnaga.presentation.appointment.participant.ParticipantAppointmentRoomViewModel
 import com.jigmnnaga.presentation.appointment.schedule.AppointmentCalendarMonth
+import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateValue
 import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeRoute
 import com.jigmnnaga.presentation.appointment.schedule.AppointmentDateTimeViewModel
 import com.jigmnnaga.presentation.appointment.placevote.PlaceVoteRole
@@ -394,25 +396,36 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             }
         }
 
-        // 약속 제목과 참여자 응답 현황(일정 제출 여부)을 약속 상세 조회 값으로 채운다.
-        // TODO: 일정 제출·조회 API(시트 50번) 연동 시 후보 날짜 제한과 참여자별 실제 응답을 서버 값으로 채운다.
+        // 약속 제목과 후보 날짜는 약속 상세 조회 값으로 채운다.
+        // 내가 낸 일정과 참여자 응답 현황은 화면을 열 때 불러오고, 다음 버튼으로 일정을 서버에 제출한다.
         builder.composable<AppointmentDateTimeDestination> { entry ->
             val appointmentId = entry.toRoute<AppointmentDateTimeDestination>().appointmentId
             val loader = rememberAppointmentDetailLoader(appointmentId)
+            val scheduleContext = LocalContext.current.applicationContext
             AppointmentDetailLoader(
                 viewModel = loader,
                 onBack = { navigator.navigateBack() },
                 onLoginRequired = { resume -> navigator.requestLogin(resume) }
             ) { detail ->
+                val candidateDates = detail.candidateDates
+                    .mapNotNull { AppointmentDateValue.parseIso(it) }
+                    .toSet()
                 val viewModel: AppointmentDateTimeViewModel = viewModel(
                     key = "date-time-$appointmentId",
                     factory = remember(detail) {
                         viewModelFactory {
                             initializer {
+                                val scheduleRepository = EntryPointAccessors.fromApplication(
+                                    scheduleContext,
+                                    ScheduleEntryPoint::class.java
+                                ).scheduleRepository()
                                 AppointmentDateTimeViewModel(
                                     appointmentTitle = detail.title,
-                                    initialMonth = currentCalendarMonth(),
-                                    memberResponses = detail.toMemberResponses()
+                                    initialMonth = candidateDates.firstCalendarMonth() ?: currentCalendarMonth(),
+                                    memberResponses = detail.toMemberResponses(),
+                                    appointmentId = appointmentId,
+                                    scheduleRepository = scheduleRepository,
+                                    candidateDates = candidateDates
                                 )
                             }
                         }
@@ -421,7 +434,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                 AppointmentDateTimeRoute(
                     viewModel = viewModel,
                     onExit = { navigator.navigateBack() },
-                    onGoToChat = { navigator.navigateBack() }
+                    onGoToChat = { navigator.navigateBack() },
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
                 )
             }
         }
@@ -655,6 +669,11 @@ private fun rememberAppointmentDetailLoader(
         }
     )
 }
+
+/** 후보 날짜 중 가장 이른 날짜의 달. 후보가 없으면 null. */
+private fun Set<AppointmentDateValue>.firstCalendarMonth(): AppointmentCalendarMonth? =
+    minWithOrNull(compareBy<AppointmentDateValue>({ it.year }, { it.month }, { it.day }))
+        ?.let { AppointmentCalendarMonth(it.year, it.month) }
 
 private fun currentCalendarMonth(): AppointmentCalendarMonth {
     val now = Calendar.getInstance()

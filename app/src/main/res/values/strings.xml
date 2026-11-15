@@ -186,7 +186,10 @@
 <string name="appointment_schedule_next">다음</string>
 <string name="appointment_schedule_go_to_chat">채팅방으로 이동</string>
 <string name="appointment_schedule_select_dates">날짜를 선택하세요</string>
-<string name="appointment_schedule_dates_helper">가능한 날짜를 선택해 주세요.</string>
+<string name="appointment_schedule_dates_helper">방장이 설정한 기간 내에서 가능한 날을 골라주세요</string>
+<string name="appointment_schedule_date_placeholder">날짜를 선택해주세요</string>
+<string name="appointment_schedule_legend_me">나</string>
+<string name="appointment_schedule_legend_host">방장</string>
 <string name="appointment_schedule_previous_month">이전 달</string>
 <string name="appointment_schedule_next_month">다음 달</string>
 <plurals name="appointment_schedule_selected_dates_count">

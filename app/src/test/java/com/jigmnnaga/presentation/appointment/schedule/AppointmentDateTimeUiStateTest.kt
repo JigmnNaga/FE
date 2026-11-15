@@ -39,4 +39,18 @@ class AppointmentDateTimeUiStateTest {
         assertEquals(listOf("나", "하은"), state.pendingMembers.map { it.name })
         assertEquals("태", state.completedMembers.first().initial)
     }
+
+    @Test
+    fun isoStringsRoundTripAndRejectInvalidValues() {
+        val date = AppointmentDateValue(2026, 3, 5)
+        assertEquals("2026-03-05", date.toIsoString())
+        assertEquals(date, AppointmentDateValue.parseIso("2026-03-05"))
+        assertEquals(null, AppointmentDateValue.parseIso("2026-13-05"))
+        assertEquals(null, AppointmentDateValue.parseIso("2026-03"))
+        assertEquals(null, AppointmentDateValue.parseIso("abc"))
+
+        assertEquals(AppointmentTimeValue(9, 5), AppointmentTimeValue.parse("09:05"))
+        assertEquals(null, AppointmentTimeValue.parse("25:00"))
+        assertEquals(null, AppointmentTimeValue.parse("9"))
+    }
 }
