@@ -5,6 +5,7 @@ import com.jigmnnaga.data.remote.api.InviteApi
 import com.jigmnnaga.data.remote.dto.ApiResponse
 import com.jigmnnaga.data.remote.dto.InviteAcceptDto
 import com.jigmnnaga.data.remote.dto.InviteDetailDto
+import com.jigmnnaga.data.remote.dto.ReceivedInviteDto
 import com.jigmnnaga.domain.model.InviteOperationResult
 import com.jigmnnaga.domain.model.InviteParticipantRole
 import com.jigmnnaga.domain.model.InviteParticipationStatus
@@ -49,6 +50,9 @@ class AppointmentInviteRepositoryImplTest {
             calls++; lastAuthorization = authorization; lastInviteCode = inviteCode
             return onDecline()
         }
+
+        override suspend fun getReceivedInvites(authorization: String?): Response<ApiResponse<List<ReceivedInviteDto>>> =
+            error("not used in this test")
     }
 
     private class FakeTokenManager(private val token: String?) : TokenManager {

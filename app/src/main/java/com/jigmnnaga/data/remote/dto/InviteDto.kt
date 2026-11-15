@@ -30,3 +30,13 @@ data class InviteParticipantDto(
 data class InviteAcceptDto(
     val appointmentId: Long
 )
+
+/** `GET api/v1/invites/me` — 수신한 초대 목록의 각 항목. */
+@Serializable
+data class ReceivedInviteDto(
+    val inviteCode: String,
+    val appointmentId: Long,
+    val title: String,
+    val hostNickname: String? = null,
+    val expired: Boolean = false
+)

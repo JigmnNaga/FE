@@ -10,8 +10,8 @@ data class MockParticipant(
 )
 
 /**
- * 홈 화면에서 표시할 약속 목업 모델.
- * API 연동 시 domain 레이어의 Appointment 모델로 교체한다.
+ * 홈 화면에서 표시할 약속 뷰 모델.
+ * API 연동 전에는 목업 데이터로, API 연동 후에는 HomeViewModel이 HomeAppointment를 변환해 채운다.
  */
 data class MockAppointment(
     val id: String,
@@ -26,23 +26,40 @@ data class MockAppointment(
     val lateMinutes: Int = 0
 )
 
+/** 약속 목록 로드 오류. */
+data class HomeListError(val retryable: Boolean)
+
 /**
  * 홈 화면 UI 상태.
- * API 연동 시 HomeViewModel이 이 상태를 StateFlow로 노출한다.
+ *
+ * - [isLoading]: 최초 로드 또는 새로 고침 진행 중
+ * - [loginRequired]: 인증 필요 — Route에서 로그인 화면으로 이동 후 [consumeLoginRequired] 호출
+ * - [upcomingError], [pastError]: 각 목록의 오류 (null이면 정상)
  */
 data class HomeUiState(
     val selectedTab: HomeTab = HomeTab.UPCOMING,
     val upcomingAppointments: List<MockAppointment> = emptyList(),
     val pastAppointments: List<MockAppointment> = emptyList(),
-    /** 오늘의 약속 배너에 표시할 가장 가까운 약속 */
+    /** 오늘의 약속 배너에 표시할 가장 가까운 약속 (오늘 날짜가 아니면 null) */
     val todayAppointment: MockAppointment? = null,
     /** 대기 중인 약속 초대 수 */
-    val pendingInviteCount: Int = 0
+    val pendingInviteCount: Int = 0,
+    // ── 로딩/오류 상태 ──────────────────────────────────────────────────────
+    val isLoading: Boolean = false,
+    val loginRequired: Boolean = false,
+    val upcomingError: HomeListError? = null,
+    val pastError: HomeListError? = null
 ) {
     val currentAppointments: List<MockAppointment>
         get() = when (selectedTab) {
             HomeTab.UPCOMING -> upcomingAppointments
             HomeTab.PAST -> pastAppointments
+        }
+
+    val currentTabError: HomeListError?
+        get() = when (selectedTab) {
+            HomeTab.UPCOMING -> upcomingError
+            HomeTab.PAST -> pastError
         }
 
     companion object {
@@ -139,5 +156,14 @@ data class HomeUiState(
 
         /** Preview: 빈 상태 — 지난 약속 탭 */
         val PreviewEmptyPast = HomeUiState(selectedTab = HomeTab.PAST)
+
+        /** Preview: 로딩 중 */
+        val PreviewLoading = HomeUiState(isLoading = true)
+
+        /** Preview: 오류 — 빈 목록 (재시도 가능) */
+        val PreviewError = HomeUiState(upcomingError = HomeListError(retryable = true))
+
+        /** Preview: 오류 — 목록 있음 (배너) */
+        val PreviewErrorWithData = PreviewWithList.copy(upcomingError = HomeListError(retryable = true))
     }
 }
