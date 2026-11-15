@@ -566,7 +566,7 @@ class AppointmentManageViewModelTest {
         val vm = viewModel()
 
         assertEquals(
-            listOf(ManageMember(1L, "방장", true), ManageMember(2L, "민수", false)),
+            listOf(ManageMember(1L, "방장", true, scheduleSubmitted = true), ManageMember(2L, "민수", false)),
             vm.uiState.value.members
         )
     }
@@ -708,5 +708,74 @@ class AppointmentManageViewModelTest {
         runCurrent()
 
         assertTrue(manage.calls.isEmpty())
+    }
+
+    @Test
+    fun `응답 현황은 날짜·시간을 저장한 멤버와 아직인 멤버로 센다`() = runTest(dispatcher) {
+        val vm = viewModel()
+
+        val state = vm.uiState.value
+        assertEquals(1, state.respondedCount)
+        assertEquals(1, state.pendingCount)
+        assertFalse(state.isConfirmed)
+        assertNull(state.confirmedDateTime)
+        assertNull(state.confirmedPlace)
+    }
+
+    @Test
+    fun `약속 상세를 다시 불러오면 확정 정보와 멤버 응답을 새로 채운다`() = runTest(dispatcher) {
+        val vm = viewModel()
+        val refreshed = detail().copy(
+            confirmed = true,
+            confirmedDate = "2026-11-20",
+            confirmedTime = "19:00",
+            confirmedLocation = gangnam,
+            detailPlace = com.jigmnnaga.domain.model.AppointmentDetailPlace("카공카페", null, null, null),
+            members = detail().members.map { it.copy(scheduleSubmitted = true) }
+        )
+
+        vm.onDetailRefreshed(refreshed)
+
+        val state = vm.uiState.value
+        assertTrue(state.isConfirmed)
+        assertTrue(state.confirmedDateTime.orEmpty().contains("11월 20일"))
+        assertEquals("강남역 카공카페", state.confirmedPlace)
+        assertEquals(0, state.pendingCount)
+        assertEquals(2, state.respondedCount)
+    }
+
+    @Test
+    fun `약속 상세를 다시 불러와도 편집 중인 입력값은 그대로 둔다`() = runTest(dispatcher) {
+        val vm = viewModel()
+        vm.openStep(AppointmentManageStep.TITLE)
+        vm.onFormChange(vm.uiState.value.form.copy(appointmentName = "새 이름"))
+
+        vm.onDetailRefreshed(detail())
+
+        assertEquals("새 이름", vm.uiState.value.form.appointmentName)
+        assertEquals(AppointmentManageStep.TITLE, vm.uiState.value.step)
+    }
+
+    @Test
+    fun `세부 장소가 아직 없어도 확정된 날짜가 있으면 일정 조율 칸에 보여 준다`() = runTest(dispatcher) {
+        val partial = detail().copy(
+            confirmed = false,
+            confirmedDate = "2026-11-20",
+            confirmedTime = "19:00",
+            confirmedLocation = gangnam,
+            detailPlace = null
+        )
+        val vm = AppointmentManageViewModel(
+            detail = partial,
+            repository = manage,
+            placeSearchRepository = search,
+            nowMillis = { now },
+            onChanged = { changedCount++ }
+        )
+
+        val state = vm.uiState.value
+        assertFalse(state.isConfirmed)
+        assertTrue(state.confirmedDateTime.orEmpty().contains("11월 20일"))
+        assertEquals("강남역", state.confirmedPlace)
     }
 }

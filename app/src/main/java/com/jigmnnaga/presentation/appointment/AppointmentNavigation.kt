@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.appointment
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,7 +33,11 @@ import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
+import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadState
+import com.jigmnnaga.presentation.appointment.detail.confirmedDateTimeSummary
+import com.jigmnnaga.domain.model.AppointmentDetailPlace
 import com.jigmnnaga.domain.model.AppointmentMemberRole
+import com.jigmnnaga.domain.model.ConfirmDetailPlace
 import com.jigmnnaga.domain.model.PreviousMembers
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLabels
@@ -233,11 +238,20 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                         }
                     }
                 )
+                // 일정 확정을 마치고 돌아오면 확정 정보와 멤버 응답을 새 값으로 채운다.
+                val liveLoader = rememberAppointmentDetailLoader(appointmentId)
+                val liveState by liveLoader.state.collectAsState()
+                LaunchedEffect(liveState) {
+                    (liveState as? AppointmentDetailLoadState.Loaded)?.let { viewModel.onDetailRefreshed(it.detail) }
+                }
                 AppointmentManageRoute(
                     viewModel = viewModel,
                     onExit = { navigator.navigateBack() },
                     onDeleted = { navigator.navigateToHome() },
-                    onLoginRequired = { resume -> navigator.requestLogin(resume) }
+                    onLoginRequired = { resume -> navigator.requestLogin(resume) },
+                    onOpenConfirmation = {
+                        navigator.navigate(HostAppointmentConfirmationDestination(appointmentId))
+                    }
                 )
             }
         }
@@ -269,14 +283,20 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                 HostConfirmationViewModel(
                                     initialState = HostConfirmationUiState(
                                         appointmentTitle = detail.title,
-                                        selectedDateTime = null,
-                                        selectedPlace = null
+                                        selectedDateTime = detail.confirmedDateTimeSummary(),
+                                        selectedPlace = null,
+                                        selectedDetailLocation = detail.detailPlace?.placeName
                                     ),
                                     isHost = detail.myRole != AppointmentMemberRole.MEMBER,
                                     appointmentId = appointmentId,
                                     candidateLocations = detail.candidateLocations,
                                     confirmationRepository = confirmationEntryPoint.confirmationRepository(),
-                                    placeSearchRepository = searchEntryPoint.placeSearchRepository()
+                                    placeSearchRepository = searchEntryPoint.placeSearchRepository(),
+                                    presetDateTime = detail.confirmedDate?.let { date ->
+                                        detail.confirmedTime?.let { time -> date to time }
+                                    },
+                                    presetLocationId = detail.confirmedLocation?.locationId,
+                                    presetDetailPlace = detail.detailPlace?.toConfirmDetailPlace()
                                 )
                             }
                         }
@@ -766,4 +786,11 @@ private fun Set<AppointmentDateValue>.firstCalendarMonth(): AppointmentCalendarM
 private fun currentCalendarMonth(): AppointmentCalendarMonth {
     val now = Calendar.getInstance()
     return AppointmentCalendarMonth(now.get(Calendar.YEAR), now.get(Calendar.MONTH) + 1)
+}
+
+/** 이미 정해진 세부 위치를 확정 요청 값으로 바꾼다. 좌표가 없으면 서버가 받지 않으므로 null이다. */
+private fun AppointmentDetailPlace.toConfirmDetailPlace(): ConfirmDetailPlace? {
+    val lat = latitude ?: return null
+    val lng = longitude ?: return null
+    return ConfirmDetailPlace(placeName = placeName, address = address, latitude = lat, longitude = lng)
 }

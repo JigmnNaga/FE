@@ -38,6 +38,10 @@ data class HostAppointmentRoomUiState(
     val isConfirmed: Boolean = false,
     val candidateDateSummary: String? = null,
     val candidatePlaceSummary: String? = null,
+    /** 약속 전체가 확정되기 전이어도 이미 정해진 날짜·시간. 없으면 null. */
+    val confirmedDateSummary: String? = null,
+    /** 약속 전체가 확정되기 전이어도 이미 정해진 장소. 없으면 null. */
+    val confirmedPlaceSummary: String? = null,
     val responseCount: Int = 0,
     val participantCount: Int = 0,
     val participants: List<HostRoomParticipantUiState> = emptyList(),

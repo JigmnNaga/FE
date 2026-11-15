@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.appointment.manage
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jigmnnaga.domain.model.AppointmentDetail
+import com.jigmnnaga.domain.model.AppointmentMember
 import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.domain.model.AppointmentManageRejectReason
 import com.jigmnnaga.domain.model.AppointmentManageResult
@@ -18,6 +19,8 @@ import com.jigmnnaga.presentation.appointment.create.MAX_SELECTED_LOCATIONS
 import com.jigmnnaga.presentation.appointment.create.candidateDateRequest
 import com.jigmnnaga.presentation.appointment.create.responseDeadlineRequest
 import com.jigmnnaga.presentation.appointment.create.toLocation
+import com.jigmnnaga.presentation.appointment.detail.confirmedDateTimeSummary
+import com.jigmnnaga.presentation.appointment.detail.placeSummary
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,10 +85,12 @@ class AppointmentManageViewModel(
                 saved = form,
                 form = form,
                 savedDeadline = detail.responseDeadline,
-                members = detail.members.map {
-                    ManageMember(it.memberId, it.nickname, it.role == AppointmentMemberRole.HOST)
-                },
-                isCanceled = detail.canceled
+                members = detail.members.map { it.toManageMember() },
+                isCanceled = detail.canceled,
+                confirmedDateTime = detail.confirmedDateTimeSummary(),
+                confirmedPlace = detail.placeSummary(),
+                isConfirmed = detail.confirmed,
+                inviteUrl = detail.inviteUrl
             )
         }
     )
@@ -270,6 +275,21 @@ class AppointmentManageViewModel(
             else AppointmentManageNotice.REMINDER_NONE
             _uiState.value = _uiState.value.copy(isWorking = false, lastReminderSentCount = summary.sentCount)
         }
+    }
+
+    /**
+     * 약속 상세를 다시 불러왔을 때(예: 일정 확정을 마치고 돌아왔을 때) 확정 정보와 멤버 응답만 새로 채운다.
+     * 편집 중인 입력값은 건드리지 않는다.
+     */
+    fun onDetailRefreshed(detail: AppointmentDetail) {
+        _uiState.value = _uiState.value.copy(
+            members = detail.members.map { it.toManageMember() },
+            isCanceled = detail.canceled,
+            confirmedDateTime = detail.confirmedDateTimeSummary(),
+            confirmedPlace = detail.placeSummary(),
+            isConfirmed = detail.confirmed,
+            inviteUrl = detail.inviteUrl
+        )
     }
 
     /** 나가기 화면에서 새 방장을 고른다. 방장 자신이나 멤버가 아닌 ID는 무시한다. */
@@ -499,3 +519,10 @@ class AppointmentManageViewModel(
         const val DEFAULT_SEARCH_DEBOUNCE_MILLIS = 300L
     }
 }
+
+private fun AppointmentMember.toManageMember() = ManageMember(
+    memberId = memberId,
+    nickname = nickname,
+    isHost = role == AppointmentMemberRole.HOST,
+    scheduleSubmitted = scheduleSubmitted
+)

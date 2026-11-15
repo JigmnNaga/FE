@@ -386,7 +386,7 @@
     <!-- 약속 관리 화면 -->
     <string name="appointment_manage_title">약속방 관리</string>
     <string name="appointment_manage_section_info">약속 정보</string>
-    <string name="appointment_manage_section_cleanup">약속방 정리</string>
+    <string name="appointment_manage_section_cleanup">약속방 정리 · 방장 전용</string>
     <string name="appointment_manage_item_title">약속 이름</string>
     <string name="appointment_manage_item_dates">날짜·시간 변경</string>
     <string name="appointment_manage_item_locations">장소 변경</string>
@@ -397,7 +397,7 @@
     <string name="appointment_manage_date_multiple">%1$d월 %2$d일 외 %3$d일</string>
     <string name="appointment_manage_locations_more">%1$s 외 %2$d곳</string>
     <string name="appointment_manage_deadline_value">%1$d월 %2$d일까지</string>
-    <string name="appointment_manage_info_note">약속 정보를 바꾸면 멤버에게 알림이 전송돼요.</string>
+    <string name="appointment_manage_info_note">확정 정보를 변경하면 멤버에게 알림이 전송돼요.</string>
     <string name="appointment_manage_canceled_banner">취소된 약속이에요. 정보를 바꿀 수 없어요.</string>
     <string name="appointment_manage_cancel">약속 취소</string>
     <string name="appointment_manage_cancel_desc">모든 멤버에게 취소를 알려요.</string>
@@ -422,6 +422,21 @@
     <string name="appointment_manage_failed">변경하지 못했어요. 입력한 내용은 그대로 남아 있어요.</string>
     <string name="appointment_manage_section_members">참여 멤버</string>
     <string name="appointment_manage_item_reminder">미응답자 알림</string>
+    <string name="appointment_manage_section_schedule">일정 조율</string>
+    <string name="appointment_manage_item_confirmed_date">날짜 및 시간</string>
+    <string name="appointment_manage_item_confirmed_place">장소</string>
+    <string name="appointment_manage_section_responses">참여 멤버 응답 현황</string>
+    <string name="appointment_manage_response_title">날짜·시간 선택 현황</string>
+    <string name="appointment_manage_response_count">%1$d/%2$d명</string>
+    <string name="appointment_manage_response_done">선택 완료 · %1$d명</string>
+    <string name="appointment_manage_response_pending">미완료 · %1$d명</string>
+    <string name="appointment_manage_response_note">조율 중 · 저장된 응답만 시간표에 반영돼요.</string>
+    <string name="appointment_manage_reminder_pending_count">%1$d명</string>
+    <string name="appointment_manage_badge_host_only">방장만 편집</string>
+    <string name="appointment_manage_share_link">공유하기</string>
+    <string name="appointment_manage_response_footnote">위 현황은 사전 참석 응답이에요.</string>
+    <string name="appointment_manage_reminder_target_one">%1$s님에게 참석 응답 요청</string>
+    <string name="appointment_manage_reminder_target_many">%1$s님 외 %2$d명에게 참석 응답 요청</string>
     <string name="appointment_manage_item_reminder_desc">응답하지 않은 멤버에게 알림을 보내요.</string>
     <string name="appointment_manage_item_members">멤버 관리</string>
     <string name="appointment_manage_item_members_desc">참여 멤버 내보내기</string>

@@ -56,7 +56,9 @@ const val MAX_APPOINTMENT_TITLE_LENGTH = 30
 data class ManageMember(
     val memberId: Long,
     val nickname: String,
-    val isHost: Boolean
+    val isHost: Boolean,
+    /** 날짜·시간을 골라 저장했는지. 응답 현황 카드에 쓴다. */
+    val scheduleSubmitted: Boolean = false
 )
 
 /**
@@ -89,8 +91,26 @@ data class AppointmentManageUiState(
 
     /** 나가기·삭제가 끝나면 채워진다. 값이 있으면 완료 화면을 보여 준다. */
     val completion: AppointmentManageCompletion? = null,
-    val finished: AppointmentManageFinish? = null
+    val finished: AppointmentManageFinish? = null,
+
+    /** 확정된 날짜·시간 요약. 확정 전이면 null이다. */
+    val confirmedDateTime: String? = null,
+
+    /** 확정된 장소 요약. 확정 전이면 null이다. */
+    val confirmedPlace: String? = null,
+    val isConfirmed: Boolean = false,
+
+    /** 초대 링크. 아직 발급되지 않았으면 null이다. */
+    val inviteUrl: String? = null
 ) {
+    /** 날짜·시간을 저장한 멤버 수. */
+    val respondedCount: Int
+        get() = members.count { it.scheduleSubmitted }
+
+    /** 아직 날짜·시간을 저장하지 않은 멤버 수. */
+    val pendingCount: Int
+        get() = members.size - respondedCount
+
     val leaveMode: AppointmentManageLeaveMode
         get() = when {
             members.size >= 3 -> AppointmentManageLeaveMode.DELEGATE

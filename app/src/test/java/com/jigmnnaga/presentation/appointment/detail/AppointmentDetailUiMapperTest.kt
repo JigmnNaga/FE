@@ -150,6 +150,30 @@ class AppointmentDetailUiMapperTest {
     }
 
     @Test
+    fun `세부 장소 없이 날짜와 장소만 정해져도 약속방 상태에 확정 값이 담기고 전체 확정은 아니다`() {
+        val partial = detail(confirmed = false).copy(detailPlace = null)
+
+        val host = partial.toHostRoomUiState(labels)
+        assertFalse(host.isConfirmed)
+        assertEquals("11월 20일 금요일 오후 3:00", host.confirmedDateSummary)
+        assertEquals("강남역", host.confirmedPlaceSummary)
+
+        val participant = partial.toParticipantRoomUiState(labels)
+        assertEquals("11월 20일 금요일 오후 3:00", participant.confirmedDateSummary)
+        assertEquals("강남역", participant.confirmedPlaceSummary)
+    }
+
+    @Test
+    fun `날짜와 장소가 정해지지 않았으면 확정 값은 비어 있다`() {
+        val none = detail(confirmed = false, confirmedDate = null, confirmedTime = null)
+            .copy(confirmedLocation = null, detailPlace = null)
+
+        val host = none.toHostRoomUiState(labels)
+        assertNull(host.confirmedDateSummary)
+        assertNull(host.confirmedPlaceSummary)
+    }
+
+    @Test
     fun `방장 약속방 상태에 약속 정보와 참여자가 담긴다`() {
         val state = detail().toHostRoomUiState(labels)
 

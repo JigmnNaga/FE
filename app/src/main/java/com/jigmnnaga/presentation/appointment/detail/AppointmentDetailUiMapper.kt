@@ -75,6 +75,16 @@ internal fun AppointmentDetail.dateSummary(): String? {
 }
 
 /**
+ * 확정된 날짜·시간을 "11월 20일 금요일 오후 7:00"로 만든다. [dateSummary]와 달리 약속 전체가 확정되지 않아도
+ * (세부 장소를 아직 안 정했어도) 날짜가 정해져 있으면 보여 준다. 날짜가 없거나 읽을 수 없으면 null.
+ */
+internal fun AppointmentDetail.confirmedDateTimeSummary(): String? {
+    val date = formatDateLabel(confirmedDate) ?: return null
+    val time = formatTimeLabel(confirmedTime)
+    return if (time != null) "$date $time" else date
+}
+
+/**
  * 확정 전에 보여 줄 날짜 후보. 기간이면 "9월 4일~9월 11일", 그 밖에는 "9월 4일, 9월 6일 외 1일"처럼 만든다.
  * 후보가 없으면 null.
  */
@@ -146,6 +156,8 @@ internal fun AppointmentDetail.toHostRoomUiState(labels: AppointmentDetailLabels
     isConfirmed = confirmed,
     candidateDateSummary = candidateDateSummary(),
     candidatePlaceSummary = candidatePlaceSummary(),
+    confirmedDateSummary = confirmedDateTimeSummary(),
+    confirmedPlaceSummary = confirmedLocation?.let { placeSummary() },
     isSummaryExpanded = !confirmed,
     responseCount = scheduleSubmittedCount,
     participantCount = joinedCount,
@@ -174,6 +186,8 @@ internal fun AppointmentDetail.toParticipantRoomUiState(labels: AppointmentDetai
         placeSummary = placeSummary(),
         candidateDateSummary = candidateDateSummary(),
         candidatePlaceSummary = candidatePlaceSummary(),
+        confirmedDateSummary = confirmedDateTimeSummary(),
+        confirmedPlaceSummary = confirmedLocation?.let { placeSummary() },
         isSummaryExpanded = !confirmed,
         members = members.map {
             ParticipantRoomMemberUiState(

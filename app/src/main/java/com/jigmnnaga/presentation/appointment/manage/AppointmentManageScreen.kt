@@ -3,13 +3,20 @@ package com.jigmnnaga.presentation.appointment.manage
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.Image
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -28,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
@@ -72,7 +80,10 @@ fun AppointmentManageScreen(
     onRequestLeave: () -> Unit = {},
     onDismissLeave: () -> Unit = {},
     onConfirmLeave: () -> Unit = {},
-    onGoHome: () -> Unit = {}
+    onGoHome: () -> Unit = {},
+    onOpenConfirmation: () -> Unit = {},
+    onCopyInviteLink: () -> Unit = {},
+    onShareInviteLink: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
     state.completion?.let { completion ->
@@ -109,7 +120,10 @@ fun AppointmentManageScreen(
                     state = state,
                     onOpenStep = onOpenStep,
                     onRequestConfirm = onRequestConfirm,
-                    onSendReminders = onSendReminders
+                    onSendReminders = onSendReminders,
+                    onOpenConfirmation = onOpenConfirmation,
+                    onCopyInviteLink = onCopyInviteLink,
+                    onShareInviteLink = onShareInviteLink
                 )
 
                 AppointmentManageStep.MEMBERS -> MemberManager(state = state, onRequestKick = onRequestKick)
@@ -232,7 +246,10 @@ private fun ManageMenu(
     state: AppointmentManageUiState,
     onOpenStep: (AppointmentManageStep) -> Unit,
     onRequestConfirm: (AppointmentManageConfirm) -> Unit,
-    onSendReminders: () -> Unit
+    onSendReminders: () -> Unit,
+    onOpenConfirmation: () -> Unit,
+    onCopyInviteLink: () -> Unit,
+    onShareInviteLink: () -> Unit
 ) {
     val undecided = stringResource(R.string.appointment_manage_undecided)
     val editable = !state.isCanceled && !state.isWorking
@@ -245,7 +262,10 @@ private fun ManageMenu(
         )
     }
 
-    SectionTitle(stringResource(R.string.appointment_manage_section_info))
+    SectionTitle(
+        text = stringResource(R.string.appointment_manage_section_info),
+        badge = stringResource(R.string.appointment_manage_badge_host_only)
+    )
     ManageCard {
         ManageRow(
             title = stringResource(R.string.appointment_manage_item_title),
@@ -291,14 +311,56 @@ private fun ManageMenu(
         color = AppColors.Monotone.Gray600
     )
 
-    SectionTitle(stringResource(R.string.appointment_manage_section_members))
+    SectionTitle(
+        text = stringResource(R.string.appointment_manage_section_schedule),
+        badge = stringResource(R.string.appointment_manage_badge_host_only)
+    )
+    ManageCard {
+        ManageRow(
+            title = stringResource(R.string.appointment_manage_item_confirmed_date),
+            subtitle = state.confirmedDateTime ?: undecided,
+            enabled = editable,
+            tag = "appointment-manage-confirm-date",
+            icon = R.drawable.calendar,
+            tintIcon = true,
+            onClick = onOpenConfirmation
+        )
+        HorizontalDivider(color = AppColors.Monotone.Gray100)
+        ManageRow(
+            title = stringResource(R.string.appointment_manage_item_confirmed_place),
+            subtitle = state.confirmedPlace ?: undecided,
+            enabled = editable,
+            tag = "appointment-manage-confirm-place",
+            icon = R.drawable.place,
+            tintIcon = true,
+            onClick = onOpenConfirmation
+        )
+    }
+    Text(
+        text = stringResource(R.string.appointment_manage_info_note),
+        style = MaterialTheme.typography.labelSmall,
+        color = AppColors.Monotone.Gray600
+    )
+
+    SectionTitle(stringResource(R.string.appointment_manage_section_responses))
+    ResponseStatusCard(
+        state = state,
+        onCopyInviteLink = onCopyInviteLink,
+        onShareInviteLink = onShareInviteLink
+    )
+
     ManageCard {
         ManageRow(
             title = stringResource(R.string.appointment_manage_item_reminder),
-            subtitle = stringResource(R.string.appointment_manage_item_reminder_desc),
+            subtitle = reminderSubtitle(state),
             enabled = editable,
             tag = "appointment-manage-reminder",
             icon = R.drawable.deadline_notification,
+            trailing = if (state.isConfirmed || state.pendingCount == 0) {
+                null
+            } else {
+                stringResource(R.string.appointment_manage_reminder_pending_count, state.pendingCount)
+            },
             onClick = onSendReminders
         )
         HorizontalDivider(color = AppColors.Monotone.Gray100)
@@ -312,7 +374,11 @@ private fun ManageMenu(
         )
     }
 
-    SectionTitle(stringResource(R.string.appointment_manage_section_cleanup))
+    Text(
+        text = stringResource(R.string.appointment_manage_section_cleanup),
+        style = MaterialTheme.typography.labelMedium,
+        color = AppColors.Monotone.Gray600
+    )
     ManageCard {
         ManageRow(
             title = stringResource(R.string.appointment_manage_cancel),
@@ -466,20 +532,256 @@ private fun MemberRow(member: ManageMember, canKick: Boolean, onKick: () -> Unit
     }
 }
 
+/**
+ * 참여 멤버의 날짜·시간 선택 현황(Figma APT-004-02). 몇 명이 골랐는지와 선택 완료·미완료 멤버,
+ * 초대 링크 복사·공유를 보여 준다. 머리줄을 누르면 접고 펼친다.
+ */
 @Composable
-private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleSmall,
-        color = AppColors.Monotone.SoftBlack
-    )
+private fun ResponseStatusCard(
+    state: AppointmentManageUiState,
+    onCopyInviteLink: () -> Unit,
+    onShareInviteLink: () -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(true) }
+    val total = state.members.size
+    val responded = state.members.filter { it.scheduleSubmitted }
+    val pending = state.members.filterNot { it.scheduleSubmitted }
+    ManageCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(AppDimens.Spacing20)
+                .testTag("appointment-manage-response-card"),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .testTag("appointment-manage-response-toggle"),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                Text(
+                    text = stringResource(R.string.appointment_manage_response_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = AppColors.Monotone.SoftBlack,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = stringResource(R.string.appointment_manage_response_count, responded.size, total),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AppColors.MainGreen.Green700,
+                    modifier = Modifier
+                        .background(Color(0xFFE9EFE3), CircleShape)
+                        .padding(horizontal = 10.dp, vertical = AppDimens.Spacing4)
+                        .testTag("appointment-manage-response-count")
+                )
+                Image(
+                    painter = painterResource(if (expanded) R.drawable.chevron_up else R.drawable.chevron_down),
+                    contentDescription = null,
+                    modifier = Modifier.size(AppDimens.HeaderIconSize)
+                )
+            }
+            if (expanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(5.dp)
+                        .clip(CircleShape)
+                        .background(AppColors.Monotone.Gray100)
+                ) {
+                    if (total > 0 && responded.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(responded.size.toFloat() / total)
+                                .fillMaxHeight()
+                                .background(AppColors.MainGreen.Green400, CircleShape)
+                        )
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing16)) {
+                    ResponseGroup(
+                        label = stringResource(R.string.appointment_manage_response_done, responded.size),
+                        members = responded,
+                        responded = true,
+                        modifier = Modifier.weight(1f).testTag("appointment-manage-response-done")
+                    )
+                    ResponseGroup(
+                        label = stringResource(R.string.appointment_manage_response_pending, pending.size),
+                        members = pending,
+                        responded = false,
+                        modifier = Modifier.weight(1f).testTag("appointment-manage-response-pending")
+                    )
+                }
+                if (!state.isConfirmed) {
+                    Text(
+                        text = stringResource(R.string.appointment_manage_response_note),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = AppColors.Monotone.Gray600
+                    )
+                }
+                HorizontalDivider(color = AppColors.Monotone.Gray100)
+                Text(
+                    text = stringResource(R.string.appointment_invite_link_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.Monotone.Gray600
+                )
+                Text(
+                    text = state.inviteUrl?.takeIf { it.isNotBlank() }
+                        ?: stringResource(R.string.appointment_invite_link_pending),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.Monotone.Gray700,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AppColors.Monotone.Gray100, RoundedCornerShape(8.dp))
+                        .padding(AppDimens.Spacing12)
+                        .testTag("appointment-manage-invite-link")
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+                    InviteActionButton(
+                        text = stringResource(R.string.appointment_copy_link),
+                        filled = false,
+                        tag = "appointment-manage-copy-link",
+                        onClick = onCopyInviteLink,
+                        modifier = Modifier.weight(1f)
+                    )
+                    InviteActionButton(
+                        text = stringResource(R.string.appointment_manage_share_link),
+                        filled = true,
+                        tag = "appointment-manage-share-link",
+                        onClick = onShareInviteLink,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.appointment_manage_response_footnote),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = AppColors.Monotone.Gray600
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InviteActionButton(
+    text: String,
+    filled: Boolean,
+    tag: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 56.dp).testTag(tag),
+        shape = RoundedCornerShape(12.dp),
+        color = if (filled) AppColors.MainGreen.Green600 else AppColors.Monotone.White,
+        border = if (filled) null else BorderStroke(1.dp, AppColors.Monotone.Gray200)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (filled) AppColors.Monotone.White else AppColors.MainGreen.Green700
+            )
+        }
+    }
+}
+
+@Composable
+private fun ResponseGroup(
+    label: String,
+    members: List<ManageMember>,
+    responded: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (responded) AppColors.MainGreen.Green700 else AppColors.Monotone.Gray600
+        )
+        members.forEach { member ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing8)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            if (responded) AppColors.MainGreen.Green400 else AppColors.Monotone.Gray300,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = member.nickname.take(1),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = if (responded) AppColors.Monotone.White else AppColors.Monotone.Gray700
+                    )
+                }
+                Text(
+                    text = member.nickname,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (responded) AppColors.Monotone.SoftBlack else AppColors.Monotone.Gray600,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String, badge: String? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            color = AppColors.Monotone.SoftBlack,
+            modifier = Modifier.weight(1f)
+        )
+        if (badge != null) {
+            Text(
+                text = badge,
+                style = MaterialTheme.typography.labelMedium,
+                color = AppColors.MainGreen.Green700,
+                modifier = Modifier
+                    .background(Color(0xFFE9EFE3), CircleShape)
+                    .padding(horizontal = 10.dp, vertical = AppDimens.Spacing4)
+            )
+        }
+    }
+}
+
+/** 미응답자 알림 줄의 설명. 아직 응답하지 않은 멤버 이름을 보여 주고, 없으면 기본 설명을 보여 준다. */
+@Composable
+private fun reminderSubtitle(state: AppointmentManageUiState): String {
+    val pending = state.members.filterNot { it.scheduleSubmitted }
+    if (state.isConfirmed || pending.isEmpty()) {
+        return stringResource(R.string.appointment_manage_item_reminder_desc)
+    }
+    return if (pending.size == 1) {
+        stringResource(R.string.appointment_manage_reminder_target_one, pending.first().nickname)
+    } else {
+        stringResource(
+            R.string.appointment_manage_reminder_target_many,
+            pending.first().nickname,
+            pending.size - 1
+        )
+    }
 }
 
 @Composable
 private fun ManageCard(content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(20.dp),
         color = AppColors.Monotone.White
     ) {
         Column { content() }
@@ -495,7 +797,8 @@ private fun ManageRow(
     onClick: () -> Unit,
     icon: Int,
     danger: Boolean = false,
-    tintIcon: Boolean = false
+    tintIcon: Boolean = false,
+    trailing: String? = null
 ) {
     val titleColor = when {
         !enabled -> AppColors.Monotone.Gray500
@@ -509,7 +812,7 @@ private fun ManageRow(
         color = Color.Transparent
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = AppDimens.Spacing16, vertical = AppDimens.Spacing12),
+            modifier = Modifier.padding(horizontal = AppDimens.Spacing20, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
         ) {
@@ -527,6 +830,13 @@ private fun ManageRow(
                     color = AppColors.Monotone.Gray500,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (trailing != null) {
+                Text(
+                    text = trailing,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AppColors.MainGreen.Green700
                 )
             }
             Box { Text(text = "›", style = MaterialTheme.typography.titleMedium, color = AppColors.Monotone.Gray500) }
