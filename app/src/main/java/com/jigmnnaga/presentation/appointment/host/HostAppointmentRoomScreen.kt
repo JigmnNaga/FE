@@ -68,6 +68,7 @@ fun HostAppointmentRoomScreen(
     onSendMessage: () -> Unit,
     modifier: Modifier = Modifier,
     mapContent: (@Composable (Modifier) -> Unit)? = null,
+    routeContent: (@Composable (Modifier) -> Unit)? = null,
     canLoadMoreMessages: Boolean = false,
     onLoadMoreMessages: () -> Unit = {}
 ) {
@@ -120,6 +121,8 @@ fun HostAppointmentRoomScreen(
                         },
                         modifier = Modifier.weight(1f).testTag("host-room-map-status")
                     )
+                } else if (routeContent != null) {
+                    routeContent(Modifier.weight(1f))
                 } else {
                     HostMapStatusContent(
                         state = state,

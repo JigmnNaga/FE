@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -74,6 +75,38 @@ class HostAppointmentRoomScreenTest {
         composeRule.onNodeWithText("태희").assertIsDisplayed()
         composeRule.onNodeWithText("약속이 아직 조율 중이에요").assertIsDisplayed()
         composeRule.onNodeWithText("지금 나가기").assertIsDisplayed()
+    }
+
+    @Test
+    fun confirmedRoomShowsRouteContentInMapTabAndKeepsTabs() {
+        val currentState = mutableStateOf(testState().copy(isConfirmed = true))
+        composeRule.setContent {
+            JigmnnagaTheme {
+                HostAppointmentRoomScreen(
+                    state = currentState.value,
+                    onBackClick = {},
+                    onCalendarClick = {},
+                    onPlaceClick = {},
+                    onMoreClick = {},
+                    onTabSelected = { tab -> currentState.value = currentState.value.copy(selectedTab = tab) },
+                    onSummaryExpandedChange = {},
+                    onMessageChange = {},
+                    onSendMessage = {},
+                    routeContent = { modifier ->
+                        Box(modifier.testTag("fake-route-content"))
+                    }
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("host-room-tab-map").performClick()
+        composeRule.onNodeWithTag("fake-route-content").assertExists()
+        composeRule.onNodeWithTag("host-room-tab-map").assertIsSelected()
+
+        composeRule.onNodeWithTag("host-room-tab-chat").performClick()
+        composeRule.onNodeWithTag("host-room-tab-chat").assertIsSelected()
+        composeRule.onNodeWithTag("host-room-chat-input").assertIsDisplayed()
+        composeRule.onNodeWithTag("fake-route-content").assertDoesNotExist()
     }
 
     @Test
