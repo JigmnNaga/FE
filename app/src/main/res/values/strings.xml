@@ -457,4 +457,38 @@
     <string name="appointment_leave_new_host_required">다음 방장을 먼저 정해 주세요.</string>
     <string name="appointment_leave_invalid_target">선택한 멤버에게 방장을 넘길 수 없어요. 멤버 목록을 다시 확인해 주세요.</string>
     <string name="appointment_leave_last_member">혼자 남은 약속방은 나갈 수 없어요. 삭제해 주세요.</string>
+
+    <!-- 이동 경로 화면(ROU-001) -->
+    <string name="route_me">나</string>
+    <string name="route_badge_arrived">나 · 도착</string>
+    <string name="route_tab_chat">채팅</string>
+    <string name="route_tab_map_status">지도·현황</string>
+    <string name="route_map_area">이동 경로 지도</string>
+    <string name="route_my_location_button">내 위치로 지도 이동</string>
+    <string name="route_current_location">현재 위치</string>
+    <string name="route_expected_meeting_time">예상 모임 시각</string>
+    <string name="route_friend_location_hint">친구 위치는 지도에서\n확인할 수 있어요</string>
+    <string name="route_member_status_title">멤버 현황</string>
+    <string name="route_live_label">실시간</string>
+    <string name="route_destination_caption">약속 장소</string>
+    <string name="route_member_movement_title">멤버 이동 현황</string>
+    <string name="route_my_route_only_hint">내 경로만 상세 확인</string>
+    <string name="route_my_route_title">내 이동 경로</string>
+    <string name="route_estimate_note">예상 경로는 교통 상황에 따라 달라질 수 있어요.</string>
+    <string name="route_action_leave_now">지금 나가기</string>
+    <string name="route_action_depart_now">지금 출발하기</string>
+    <string name="route_action_moving">이동 중</string>
+    <string name="route_action_arrive">도착</string>
+    <string name="route_transport_bus">버스</string>
+    <string name="route_transport_subway">지하철</string>
+    <string name="route_transport_taxi">택시</string>
+    <string name="route_step_walk">도보</string>
+    <string name="route_step_start">출발</string>
+    <string name="route_step_arrival">도착</string>
+    <string name="route_option_detail_title">%1$s 이동 경로</string>
+    <string name="route_expand_description">%1$s 경로 상세 펼치기</string>
+    <string name="route_collapse_description">%1$s 경로 상세 접기</string>
+    <string name="route_my_card_description">%1$s 이동 경로 설정</string>
+    <string name="route_my_route_expand_description">내 이동 경로 펼치기</string>
+    <string name="route_my_route_collapse_description">내 이동 경로 접기</string>
 </resources>
