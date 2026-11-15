@@ -120,6 +120,8 @@ class HostAppointmentRoomScreenTest {
         scheduleStatusLabel = "확정 전",
         dateSummary = "9월 4일–9월 11일",
         placeSummary = "강남역, 잠실역",
+        candidateDateSummary = "9월 4일–9월 11일",
+        candidatePlaceSummary = "강남역, 잠실역",
         responseCount = 2,
         participantCount = 3,
         participants = listOf(
