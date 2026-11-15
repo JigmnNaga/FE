@@ -313,6 +313,10 @@
     <string name="home_late_minutes">%d분 지각</string>
     <string name="home_participant_count">%d명</string>
     <string name="home_appointment_detail">약속 상세</string>
+    <string name="home_error_title">불러오지 못했어요</string>
+    <string name="home_error_subtitle">잠시 후 다시 시도해 주세요.</string>
+    <string name="home_error_banner">목록을 불러오지 못했어요.</string>
+    <string name="home_error_retry">다시 시도</string>
 
     <!-- 캘린더 화면 (HOM-002) -->
     <string name="calendar_empty_title">아직 일정이 없어요!</string>

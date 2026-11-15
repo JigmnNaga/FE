@@ -24,6 +24,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,6 +73,7 @@ fun HomeScreen(
     onProfileClick: () -> Unit,
     onAppointmentClick: (String) -> Unit,
     onInvitationClick: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -125,20 +127,43 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
+            val currentError = state.currentTabError
             val appointments = state.currentAppointments
-            if (appointments.isEmpty()) {
-                item(key = "empty_state") {
-                    HomeEmptyState(tab = state.selectedTab)
-                }
-            } else {
-                items(items = appointments, key = { it.id }) { appointment ->
-                    AppointmentCard(
-                        appointment = appointment,
-                        isPast = state.selectedTab == HomeTab.PAST,
-                        onClick = { onAppointmentClick(appointment.id) }
+
+            // 데이터가 있고 오류도 있으면 — 배너만 표시 (목록은 아래서 그린다)
+            if (currentError != null && appointments.isNotEmpty()) {
+                item(key = "error_banner") {
+                    HomeErrorBanner(
+                        retryable = currentError.retryable,
+                        isLoading = state.isLoading,
+                        onRetry = onRetry
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                 }
+            }
+
+            when {
+                // 로딩 중 & 목록 없음 → 로딩 인디케이터
+                state.isLoading && appointments.isEmpty() ->
+                    item(key = "loading_state") { HomeLoadingState() }
+                // 로딩 완료 & 목록 없음 & 오류 → 전체 오류 화면
+                !state.isLoading && appointments.isEmpty() && currentError != null ->
+                    item(key = "error_state") {
+                        HomeErrorState(retryable = currentError.retryable, onRetry = onRetry)
+                    }
+                // 로딩 완료 & 목록 없음 & 오류 없음 → 빈 상태
+                appointments.isEmpty() ->
+                    item(key = "empty_state") { HomeEmptyState(tab = state.selectedTab) }
+                // 목록 있음 → 카드 목록
+                else ->
+                    items(items = appointments, key = { it.id }) { appointment ->
+                        AppointmentCard(
+                            appointment = appointment,
+                            isPast = state.selectedTab == HomeTab.PAST,
+                            onClick = { onAppointmentClick(appointment.id) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
             }
         }
 
@@ -355,6 +380,136 @@ private fun HomeTabItem(
                     if (selected) AppColors.MainGreen.Green900 else Color.Transparent
                 )
         )
+    }
+}
+
+// ─────────────────────────────────────────
+// 로딩 상태
+// ─────────────────────────────────────────
+
+@Composable
+private fun HomeLoadingState(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(500.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = AppColors.MainGreen.Green700)
+    }
+}
+
+// ─────────────────────────────────────────
+// 오류 상태 (전체 화면)
+// ─────────────────────────────────────────
+
+@Composable
+private fun HomeErrorState(
+    retryable: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(500.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(AppColors.Danger.Red200, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(R.drawable.close),
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                colorFilter = ColorFilter.tint(AppColors.Danger.Red600)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        Text(
+            text = stringResource(R.string.home_error_title),
+            style = TextStyle(
+                fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                lineHeight = 28.sp
+            ),
+            color = AppColors.Monotone.SoftBlack,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = stringResource(R.string.home_error_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = AppColors.Monotone.Gray500,
+            textAlign = TextAlign.Center
+        )
+
+        if (retryable) {
+            Spacer(modifier = Modifier.height(24.dp))
+            Box(
+                modifier = Modifier
+                    .background(AppColors.MainGreen.Green900, RoundedCornerShape(50))
+                    .clickable(onClick = onRetry)
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.home_error_retry),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = AppColors.MainGreen.Green200
+                )
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────
+// 오류 배너 (목록 위)
+// ─────────────────────────────────────────
+
+@Composable
+private fun HomeErrorBanner(
+    retryable: Boolean,
+    isLoading: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(AppColors.Danger.Red200, RoundedCornerShape(12.dp))
+            .padding(horizontal = 15.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = stringResource(R.string.home_error_banner),
+            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.Danger.Red600,
+            modifier = Modifier.weight(1f)
+        )
+        if (retryable && !isLoading) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .clickable(onClick = onRetry)
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.home_error_retry),
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = AppColors.Danger.Red600
+                )
+            }
+        }
     }
 }
 
@@ -694,7 +849,8 @@ private fun HomeScreenUpcomingListPreview() {
             onNotificationClick = {},
             onProfileClick = {},
             onAppointmentClick = {},
-            onInvitationClick = {}
+            onInvitationClick = {},
+            onRetry = {}
         )
     }
 }
@@ -711,7 +867,8 @@ private fun HomeScreenPastListPreview() {
             onNotificationClick = {},
             onProfileClick = {},
             onAppointmentClick = {},
-            onInvitationClick = {}
+            onInvitationClick = {},
+            onRetry = {}
         )
     }
 }
@@ -728,7 +885,8 @@ private fun HomeScreenEmptyUpcomingPreview() {
             onNotificationClick = {},
             onProfileClick = {},
             onAppointmentClick = {},
-            onInvitationClick = {}
+            onInvitationClick = {},
+            onRetry = {}
         )
     }
 }
@@ -745,7 +903,62 @@ private fun HomeScreenEmptyPastPreview() {
             onNotificationClick = {},
             onProfileClick = {},
             onAppointmentClick = {},
-            onInvitationClick = {}
+            onInvitationClick = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "로딩 중")
+@Composable
+private fun HomeScreenLoadingPreview() {
+    JigmnnagaTheme {
+        HomeScreen(
+            state = HomeUiState.PreviewLoading,
+            onTabSelect = {},
+            onAddClick = {},
+            onScheduleClick = {},
+            onNotificationClick = {},
+            onProfileClick = {},
+            onAppointmentClick = {},
+            onInvitationClick = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "오류 — 빈 목록")
+@Composable
+private fun HomeScreenErrorEmptyPreview() {
+    JigmnnagaTheme {
+        HomeScreen(
+            state = HomeUiState.PreviewError,
+            onTabSelect = {},
+            onAddClick = {},
+            onScheduleClick = {},
+            onNotificationClick = {},
+            onProfileClick = {},
+            onAppointmentClick = {},
+            onInvitationClick = {},
+            onRetry = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "오류 — 목록 있음 (배너)")
+@Composable
+private fun HomeScreenErrorWithDataPreview() {
+    JigmnnagaTheme {
+        HomeScreen(
+            state = HomeUiState.PreviewErrorWithData,
+            onTabSelect = {},
+            onAddClick = {},
+            onScheduleClick = {},
+            onNotificationClick = {},
+            onProfileClick = {},
+            onAppointmentClick = {},
+            onInvitationClick = {},
+            onRetry = {}
         )
     }
 }
