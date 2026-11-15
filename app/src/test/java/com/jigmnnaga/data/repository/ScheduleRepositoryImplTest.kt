@@ -187,6 +187,37 @@ class ScheduleRepositoryImplTest {
     }
 
     @Test
+    fun `희망 장소만 보내면 날짜 목록은 null로 두고 날짜만 보내면 장소는 null로 둔다`() = runTest {
+        val api = FakeApi().apply { onSubmit = { Response.success(Unit) } }
+
+        repo(api).submitSchedule(7L, ScheduleSubmission(preferredLocationId = 5L))
+        assertNull(api.lastRequest!!.availabilities)
+        assertEquals(5L, api.lastRequest!!.preferredLocationId)
+
+        repo(api).submitSchedule(
+            7L,
+            ScheduleSubmission(availabilities = listOf(ScheduleAvailability("2026-11-20", "15:00", "18:00")))
+        )
+        assertNull(api.lastRequest!!.preferredLocationId)
+        assertEquals(1, api.lastRequest!!.availabilities!!.size)
+    }
+
+    @Test
+    fun `보내지 않은 항목은 요청 JSON에 나타나지 않고 빈 목록은 그대로 나간다`() {
+        val onlyPlace = json.encodeToString(
+            ScheduleSubmitRequestDto.serializer(),
+            ScheduleSubmitRequestDto(preferredLocationId = 5L)
+        )
+        assertEquals("{\"preferredLocationId\":5}", onlyPlace)
+
+        val cleared = json.encodeToString(
+            ScheduleSubmitRequestDto.serializer(),
+            ScheduleSubmitRequestDto(availabilities = emptyList())
+        )
+        assertEquals("{\"availabilities\":[]}", cleared)
+    }
+
+    @Test
     fun `응답 본문이 비어 있으면 재시도할 수 없는 실패이다`() = runTest {
         val api = FakeApi().apply {
             onMy = { Response.success(ApiResponse<MyScheduleDto>()) }
@@ -237,7 +268,8 @@ class ScheduleRepositoryImplTest {
             "INVALID_AVAILABLE_DATE" to ScheduleRejectReason.INVALID_DATE,
             "DUPLICATE_AVAILABLE_DATE" to ScheduleRejectReason.DUPLICATE_DATE,
             "INVALID_AVAILABLE_TIME" to ScheduleRejectReason.INVALID_TIME,
-            "INVALID_PREFERRED_LOCATION" to ScheduleRejectReason.INVALID_LOCATION
+            "INVALID_PREFERRED_LOCATION" to ScheduleRejectReason.INVALID_LOCATION,
+            "EMPTY_SCHEDULE_UPDATE" to ScheduleRejectReason.EMPTY_UPDATE
         )
         for ((code, reason) in expected) {
             val api = FakeApi().apply { onSubmit = { errorBody(400, """{"code":"$code"}""") } }

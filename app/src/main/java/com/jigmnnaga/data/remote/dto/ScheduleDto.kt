@@ -12,8 +12,8 @@ data class AvailabilityDto(
 /** 일정 제출(`PUT api/v1/appointments/{appointmentId}/schedules/me`) 요청. */
 @Serializable
 data class ScheduleSubmitRequestDto(
-    val availabilities: List<AvailabilityDto>,
-    val preferredLocationId: Long
+    val availabilities: List<AvailabilityDto>? = null,
+    val preferredLocationId: Long? = null
 )
 
 /** 내 일정 조회(`GET .../schedules/me`) 응답. */

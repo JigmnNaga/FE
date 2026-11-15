@@ -16,7 +16,7 @@ import com.jigmnnaga.domain.model.ScheduleSubmission
 import com.jigmnnaga.domain.model.ScheduleVoter
 
 internal fun ScheduleSubmission.toDto(): ScheduleSubmitRequestDto = ScheduleSubmitRequestDto(
-    availabilities = availabilities.map { AvailabilityDto(it.date, it.startTime, it.endTime) },
+    availabilities = availabilities?.map { AvailabilityDto(it.date, it.startTime, it.endTime) },
     preferredLocationId = preferredLocationId
 )
 
