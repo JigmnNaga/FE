@@ -64,13 +64,23 @@ fun AppointmentManageScreen(
     onRequestKick: (Long) -> Unit,
     onDismissKick: () -> Unit,
     onConfirmKick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSelectNewHost: (Long) -> Unit = {},
+    onRequestLeave: () -> Unit = {},
+    onDismissLeave: () -> Unit = {},
+    onConfirmLeave: () -> Unit = {},
+    onGoHome: () -> Unit = {}
 ) {
     val focusManager = LocalFocusManager.current
+    state.completion?.let { completion ->
+        LeaveCompletionScreen(completion = completion, onGoHome = onGoHome, modifier = modifier)
+        return
+    }
     val headerTitle = when (state.step) {
         AppointmentManageStep.MENU -> stringResource(R.string.appointment_manage_title)
         AppointmentManageStep.TITLE -> stringResource(R.string.appointment_manage_title_edit)
         AppointmentManageStep.MEMBERS -> stringResource(R.string.appointment_manage_members_title)
+        AppointmentManageStep.LEAVE -> leaveHeaderTitle(state.leaveMode)
         else -> state.saved.appointmentName.ifBlank { stringResource(R.string.appointment_manage_title) }
     }
 
@@ -101,6 +111,8 @@ fun AppointmentManageScreen(
 
                 AppointmentManageStep.MEMBERS -> MemberManager(state = state, onRequestKick = onRequestKick)
 
+                AppointmentManageStep.LEAVE -> LeaveContent(state = state, onSelectNewHost = onSelectNewHost)
+
                 AppointmentManageStep.TITLE -> TitleEditor(form = state.form, onFormChange = onFormChange)
 
                 AppointmentManageStep.SCHEDULE -> AppointmentScheduleStep(
@@ -120,7 +132,22 @@ fun AppointmentManageScreen(
             }
         }
 
-        if (state.step != AppointmentManageStep.MENU && state.step != AppointmentManageStep.MEMBERS) {
+        if (state.step == AppointmentManageStep.LEAVE) {
+            AppButton(
+                text = leaveButtonText(state),
+                variant = ButtonVariant.DEFAULT,
+                enabled = state.canLeave(),
+                onClick = onRequestLeave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = AppDimens.Spacing20,
+                        end = AppDimens.Spacing20,
+                        bottom = AppDimens.Spacing16
+                    )
+                    .testTag("appointment-manage-leave-button")
+            )
+        } else if (state.step != AppointmentManageStep.MENU && state.step != AppointmentManageStep.MEMBERS) {
             AppButton(
                 text = stringResource(R.string.appointment_manage_save),
                 variant = ButtonVariant.DEFAULT,
@@ -160,6 +187,10 @@ fun AppointmentManageScreen(
                 }
             }
         )
+    }
+
+    if (state.isLeaveDialogVisible) {
+        LeaveConfirmDialog(state = state, onDismiss = onDismissLeave, onConfirm = onConfirmLeave)
     }
 
     state.confirm?.let { confirm ->
@@ -282,6 +313,15 @@ private fun ManageMenu(
             danger = true,
             tag = "appointment-manage-delete",
             onClick = { onRequestConfirm(AppointmentManageConfirm.DELETE_APPOINTMENT) }
+        )
+        HorizontalDivider(color = AppColors.Monotone.Gray100)
+        ManageRow(
+            title = stringResource(R.string.appointment_manage_leave),
+            subtitle = leaveMenuDescription(state.leaveMode),
+            enabled = !state.isWorking,
+            danger = true,
+            tag = "appointment-manage-leave",
+            onClick = { onOpenStep(AppointmentManageStep.LEAVE) }
         )
     }
 }
