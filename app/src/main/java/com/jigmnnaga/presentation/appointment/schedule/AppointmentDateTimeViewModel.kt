@@ -329,6 +329,55 @@ class AppointmentDateTimeViewModel(
             )
         }
         if (responses.isNotEmpty()) updateMemberResponses(responses)
+        _uiState.value = _uiState.value.copy(heatmap = buildHeatmap(status))
+    }
+
+    /** 참여자가 낸 가능 시간을 날짜·1시간 칸마다 겹치는 인원 수로 센다. 낸 응답이 없으면 null. */
+    private fun buildHeatmap(status: ScheduleStatus): AvailabilityHeatmapUiState? {
+        val perMember = status.members.map { member ->
+            member.availabilities.mapNotNull { item ->
+                val date = AppointmentDateValue.parseIso(item.date) ?: return@mapNotNull null
+                val start = AppointmentTimeValue.parse(item.startTime)?.totalMinutes() ?: return@mapNotNull null
+                val end = AppointmentTimeValue.parse(item.endTime)?.totalMinutes() ?: return@mapNotNull null
+                if (start >= end) return@mapNotNull null
+                Triple(date, start, end)
+            }
+        }
+        val entries = perMember.flatten()
+        if (entries.isEmpty()) return null
+        val dates = (availableDates ?: entries.map { it.first }.toSet())
+            .sortedWith(compareBy({ it.year }, { it.month }, { it.day }))
+        if (dates.isEmpty()) return null
+        val firstHour = entries.minOf { it.second } / 60
+        val lastHour = (entries.maxOf { it.third } + 59) / 60
+        val rows = (firstHour until maxOf(lastHour, firstHour + 1)).map { hour ->
+            val hourStart = hour * 60
+            val hourEnd = hourStart + 60
+            AvailabilityTimeRowUiState(
+                label = java.lang.String.format(java.util.Locale.US, "%02d:00", hour),
+                availableCounts = dates.map { date ->
+                    perMember.count { mine ->
+                        mine.any { it.first == date && it.second < hourEnd && it.third > hourStart }
+                    }
+                }
+            )
+        }
+        val first = dates.first()
+        return AvailabilityHeatmapUiState(
+            monthLabel = "${first.year}년 ${first.month}월",
+            dates = dates.map {
+                AvailabilityDateColumnUiState(id = it.toIsoString(), label = "${it.day}일 (${weekdayLabel(it)})")
+            },
+            rows = rows
+        )
+    }
+
+    private fun weekdayLabel(date: AppointmentDateValue): String {
+        val calendar = java.util.Calendar.getInstance().apply {
+            clear()
+            set(date.year, date.month - 1, date.day)
+        }
+        return "일월화수목금토"[calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1].toString()
     }
 
     /** 서버 저장이 성공했을 때 호출한다. 내 응답을 완료로 바꾸고 완료 화면으로 이동한다. */

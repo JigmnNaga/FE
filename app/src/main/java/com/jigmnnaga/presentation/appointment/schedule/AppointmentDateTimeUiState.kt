@@ -135,7 +135,9 @@ data class AppointmentDateTimeUiState(
     /** 고를 수 있는 날짜. null이면 제한이 없고, 값이 있으면 그 날짜만 고를 수 있다(약속의 후보 날짜). */
     val availableDates: Set<AppointmentDateValue>? = null,
     /** 서버에 일정을 보내는 중. */
-    val isSubmitting: Boolean = false
+    val isSubmitting: Boolean = false,
+    /** 참여자들이 낸 가능 시간을 시간대별로 센 시간표. 낸 응답이 없으면 null. */
+    val heatmap: AvailabilityHeatmapUiState? = null
 ) {
     val completedMembers: List<MemberResponseUiState>
         get() = memberResponses.filter { it.status == MemberResponseStatus.COMPLETED }

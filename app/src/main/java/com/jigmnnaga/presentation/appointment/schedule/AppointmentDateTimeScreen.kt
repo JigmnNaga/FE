@@ -104,11 +104,15 @@ fun AppointmentDateTimeScreen(
     ) {
         BackHeader(title = state.appointmentTitle, onBackClick = onBack)
 
-        if (state.step != AppointmentDateTimeStep.COMPLETE && state.memberResponses.isNotEmpty()) {
+        val showStatus = state.step != AppointmentDateTimeStep.COMPLETE && state.memberResponses.isNotEmpty()
+        if (showStatus) {
             MemberSelectionStatus(state = state, onToggle = onStatusToggle)
         }
 
-        when (state.step) {
+        // 선택 현황을 펼치면 Figma처럼 현황 카드와 시간표가 본문을 대신한다.
+        if (showStatus && state.isStatusExpanded) {
+            StatusDetailContent(state = state, modifier = Modifier.weight(1f))
+        } else when (state.step) {
             AppointmentDateTimeStep.DATES -> DateSelectionContent(
                 state = state,
                 onMonthChange = onMonthChange,
@@ -178,10 +182,24 @@ private fun MemberSelectionStatus(
             .padding(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing8)
     ) {
         StatusSummaryBar(state = state, onToggle = onToggle)
-        if (state.isStatusExpanded) {
-            Spacer(Modifier.height(AppDimens.Spacing8))
-            StatusDetailCard(state = state)
-        }
+    }
+}
+
+@Composable
+private fun StatusDetailContent(
+    state: AppointmentDateTimeUiState,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = AppDimens.Spacing20)
+            .padding(bottom = AppDimens.Spacing16),
+        verticalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)
+    ) {
+        StatusDetailCard(state = state)
+        state.heatmap?.let { AvailabilityHeatmap(state = it) }
     }
 }
 
