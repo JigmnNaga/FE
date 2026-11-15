@@ -70,6 +70,7 @@ fun ParticipantAppointmentRoomScreen(
     onDepartureClick: () -> Unit,
     modifier: Modifier = Modifier,
     mapContent: (@Composable (Modifier) -> Unit)? = null,
+    routeContent: (@Composable (Modifier) -> Unit)? = null,
     canLoadMoreMessages: Boolean = false,
     onLoadMoreMessages: () -> Unit = {}
 ) {
@@ -101,6 +102,10 @@ fun ParticipantAppointmentRoomScreen(
                 )
             }
             ParticipantAppointmentRoomTab.MAP_STATUS -> {
+                if (routeContent != null && state.appointmentStatus == ParticipantAppointmentStatus.CONFIRMED) {
+                    routeContent(Modifier.weight(1f))
+                    return@Column
+                }
                 ParticipantMapStatus(
                     state = state,
                     mapContent = mapContent,

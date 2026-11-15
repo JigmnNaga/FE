@@ -34,7 +34,8 @@ fun ParticipantAppointmentRoomRoute(
     onPlaceClick: () -> Unit,
     onManagementClick: () -> Unit,
     modifier: Modifier = Modifier,
-    chatViewModel: AppointmentChatViewModel? = null
+    chatViewModel: AppointmentChatViewModel? = null,
+    routeContent: (@Composable (Modifier) -> Unit)? = null
 ) {
     val roomState by viewModel.uiState.collectAsState()
     val notice by viewModel.notice.collectAsState()
@@ -88,6 +89,7 @@ fun ParticipantAppointmentRoomRoute(
                 }
             },
             onDepartureClick = viewModel::onDepartureClick,
+            routeContent = routeContent,
             canLoadMoreMessages = chatViewModel != null && chatState.hasMore && !chatState.isLoadingMore,
             onLoadMoreMessages = { chatViewModel?.loadMore() }
         )

@@ -90,7 +90,36 @@ fun RouteScreen(
             subtitle = state.memberSummary
         )
         RouteTabs(onChatClick = onChatTabClick)
+        RouteBody(
+            state = state,
+            onMyCardClick = onMyCardClick,
+            onSelectTransport = onSelectTransport,
+            onToggleOption = onToggleOption,
+            onStartMoving = onStartMoving,
+            onToggleMyRoute = onToggleMyRoute,
+            onArrive = onArrive,
+            onMyLocationClick = onMyLocationClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
 
+/**
+ * 헤더와 탭을 뺀 이동 경로 본문(스크롤 영역 + 하단 버튼). 약속방의 "지도·현황" 탭 안에 그대로 끼워 넣는다.
+ */
+@Composable
+fun RouteBody(
+    state: RouteUiState,
+    onMyCardClick: () -> Unit,
+    onSelectTransport: (RouteTransport) -> Unit,
+    onToggleOption: (RouteTransport) -> Unit,
+    onStartMoving: () -> Unit,
+    onToggleMyRoute: () -> Unit,
+    onArrive: () -> Unit,
+    onMyLocationClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
                 .weight(1f)

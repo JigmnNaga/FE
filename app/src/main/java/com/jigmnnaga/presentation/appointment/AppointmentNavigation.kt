@@ -2,7 +2,11 @@ package com.jigmnnaga.presentation.appointment
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -26,6 +30,8 @@ import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.ScheduleEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
 import com.jigmnnaga.domain.model.AppointmentMemberRole
 import com.jigmnnaga.domain.model.PreviousMembers
 import com.jigmnnaga.presentation.appointment.detail.AppointmentDetailLoadViewModel
@@ -38,6 +44,10 @@ import com.jigmnnaga.presentation.appointment.detail.toHostRoomUiState
 import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
 import com.jigmnnaga.presentation.appointment.detail.toParticipantManagementUiState
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
+import com.jigmnnaga.presentation.appointment.route.RouteRoute
+import com.jigmnnaga.presentation.appointment.route.RouteViewModel
+import com.jigmnnaga.presentation.appointment.route.rememberRouteMemberLabels
+import com.jigmnnaga.presentation.appointment.route.toRouteUiState
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateRoute
 import com.jigmnnaga.presentation.appointment.create.AppointmentCreateViewModel
 import com.jigmnnaga.presentation.appointment.existingadd.ExistingAppointmentAddRoute
@@ -567,7 +577,8 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onCalendarClick = { navigator.navigate(AppointmentDateTimeDestination(appointmentId)) },
             onPlaceClick = { navigator.navigate(PlaceVoteDestination(appointmentId, isHost = true)) },
             onMoreClick = { navigator.navigate(AppointmentManageDestination(appointmentId)) },
-            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId),
+            routeContent = { routeModifier -> RouteTabContent(appointmentId, detail, labels, routeModifier) }
         )
     }
 
@@ -597,8 +608,54 @@ object AppointmentNavigationGraph : AppNavigationGraph {
             onManagementClick = {
                 navigator.navigate(ParticipantAppointmentManagementDestination(appointmentId))
             },
-            chatViewModel = rememberAppointmentChatViewModel(appointmentId)
+            chatViewModel = rememberAppointmentChatViewModel(appointmentId),
+            routeContent = { routeModifier -> RouteTabContent(appointmentId, detail, labels, routeModifier) }
         )
+    }
+
+    /**
+     * 확정된 약속방 "지도·현황" 탭 안에 들어가는 이동 경로 내용. 내 멤버 ID를 알아낸 뒤에 화면 상태를 만들어,
+     * 처음부터 "나" 카드가 맞게 보이게 한다. 헤더와 "채팅 / 지도·현황" 탭은 약속방이 그린다.
+     */
+    @Composable
+    private fun RouteTabContent(
+        appointmentId: Long,
+        detail: AppointmentDetail,
+        labels: AppointmentDetailLabels,
+        modifier: Modifier
+    ) {
+        val applicationContext = LocalContext.current.applicationContext
+        val routeLabels = rememberRouteMemberLabels()
+        var myMemberId by remember { mutableStateOf<Long?>(null) }
+        var myMemberResolved by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) {
+            myMemberId = EntryPointAccessors
+                .fromApplication(applicationContext, ChatEntryPoint::class.java)
+                .myMemberIdProvider()
+                .myMemberId()
+            myMemberResolved = true
+        }
+        if (myMemberResolved) {
+            val viewModel: RouteViewModel = viewModel(
+                key = "route-$appointmentId",
+                factory = remember(detail, myMemberId) {
+                    viewModelFactory {
+                        initializer {
+                            RouteViewModel(
+                                detail.toRouteUiState(
+                                    memberSummary = labels.memberSummary(detail.joinedCount),
+                                    labels = routeLabels,
+                                    myMemberId = myMemberId
+                                )
+                            )
+                        }
+                    }
+                }
+            )
+            RouteRoute(viewModel = viewModel, modifier = modifier)
+        } else {
+            Box(modifier)
+        }
     }
 
     /**
