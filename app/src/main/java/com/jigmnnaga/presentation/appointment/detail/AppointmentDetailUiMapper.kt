@@ -154,7 +154,8 @@ internal fun AppointmentDetail.toHostRoomUiState(labels: AppointmentDetailLabels
             id = it.memberId.toString(),
             name = it.nickname,
             statusLabel = memberStatusLabel(it, labels),
-            isHost = it.role == AppointmentMemberRole.HOST
+            isHost = it.role == AppointmentMemberRole.HOST,
+            hasResponded = it.scheduleSubmitted
         )
     }
 )
@@ -179,7 +180,8 @@ internal fun AppointmentDetail.toParticipantRoomUiState(labels: AppointmentDetai
                 id = it.memberId.toString(),
                 name = it.nickname,
                 statusLabel = memberStatusLabel(it, labels),
-                isCurrentUser = isCurrentUser(it)
+                isCurrentUser = isCurrentUser(it),
+                hasResponded = it.scheduleSubmitted
             )
         }
     )

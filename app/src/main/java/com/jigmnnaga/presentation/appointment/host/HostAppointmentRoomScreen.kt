@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.appointment.RoomMemberStatusUi
+import com.jigmnnaga.presentation.appointment.RoomPendingMapStatus
 import com.jigmnnaga.presentation.appointment.RoomSummaryDetails
 import com.jigmnnaga.presentation.appointment.RoomTabRow
 import com.jigmnnaga.core.designsystem.component.ChatInputBar
@@ -89,13 +91,13 @@ fun HostAppointmentRoomScreen(
             selectedTab = state.selectedTab,
             onTabSelected = onTabSelected
         )
-        AppointmentSummaryCard(
-            state = state,
-            onExpandedChange = onSummaryExpandedChange
-        )
 
         when (state.selectedTab) {
             HostAppointmentRoomTab.CHAT -> {
+                AppointmentSummaryCard(
+                    state = state,
+                    onExpandedChange = onSummaryExpandedChange
+                )
                 HostChatContent(
                     state = state,
                     canLoadMore = canLoadMoreMessages,
@@ -111,11 +113,20 @@ fun HostAppointmentRoomScreen(
             }
 
             HostAppointmentRoomTab.MAP_STATUS -> {
-                HostMapStatusContent(
-                    state = state,
-                    mapContent = mapContent,
-                    modifier = Modifier.weight(1f)
-                )
+                if (!state.isConfirmed) {
+                    RoomPendingMapStatus(
+                        members = state.participants.map {
+                            RoomMemberStatusUi(it.name, it.isHost, it.hasResponded)
+                        },
+                        modifier = Modifier.weight(1f).testTag("host-room-map-status")
+                    )
+                } else {
+                    HostMapStatusContent(
+                        state = state,
+                        mapContent = mapContent,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }

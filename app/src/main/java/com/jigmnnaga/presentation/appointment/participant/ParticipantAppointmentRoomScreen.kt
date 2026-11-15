@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.appointment.RoomMemberStatusUi
+import com.jigmnnaga.presentation.appointment.RoomPendingMapStatus
 import com.jigmnnaga.presentation.appointment.RoomSummaryDetails
 import com.jigmnnaga.presentation.appointment.RoomTabRow
 import com.jigmnnaga.core.designsystem.component.ChatInputBar
@@ -86,11 +88,10 @@ fun ParticipantAppointmentRoomScreen(
             subtitle = state.subtitle
         )
         ParticipantRoomTabs(state.selectedTab, onTabSelected)
-        ParticipantAppointmentSummary(state, onSummaryExpandedChange)
-        HorizontalDivider(color = AppColors.Monotone.Gray100)
 
         when (state.selectedTab) {
             ParticipantAppointmentRoomTab.CHAT -> {
+                ParticipantAppointmentSummary(state, onSummaryExpandedChange)
                 ParticipantChatList(state, canLoadMoreMessages, onLoadMoreMessages, Modifier.weight(1f))
                 ChatInputBar(
                     value = state.draftMessage,
@@ -401,6 +402,13 @@ private fun ParticipantMapStatus(
     onDepartureClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (state.appointmentStatus == ParticipantAppointmentStatus.AWAITING_CONFIRMATION) {
+        RoomPendingMapStatus(
+            members = state.members.map { RoomMemberStatusUi(it.name, it.isCurrentUser, it.hasResponded) },
+            modifier = modifier
+        )
+        return
+    }
     Column(modifier.fillMaxWidth()) {
         if (mapContent != null && state.appointmentStatus == ParticipantAppointmentStatus.CONFIRMED) {
             mapContent(Modifier.fillMaxWidth().height(220.dp))

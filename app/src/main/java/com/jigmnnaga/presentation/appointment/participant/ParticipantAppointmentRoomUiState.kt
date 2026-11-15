@@ -15,7 +15,8 @@ data class ParticipantRoomMemberUiState(
     val id: String,
     val name: String,
     val statusLabel: String? = null,
-    val isCurrentUser: Boolean = false
+    val isCurrentUser: Boolean = false,
+    val hasResponded: Boolean = false
 )
 
 data class ParticipantRoomMessageUiState(

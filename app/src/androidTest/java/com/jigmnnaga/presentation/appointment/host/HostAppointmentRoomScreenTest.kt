@@ -69,11 +69,11 @@ class HostAppointmentRoomScreenTest {
 
         composeRule.onNodeWithTag("host-room-tab-map").performClick()
         composeRule.onNodeWithTag("host-room-tab-map").assertIsSelected()
-        composeRule.onNodeWithText("지도 SDK 연결 영역").assertIsDisplayed()
-        composeRule.onNodeWithText("참여 멤버 현황").assertIsDisplayed()
+        composeRule.onNodeWithText("약속이 확정되면 지도가 활성화돼요").assertIsDisplayed()
+        composeRule.onNodeWithText("멤버 현황").assertIsDisplayed()
         composeRule.onNodeWithText("태희").assertIsDisplayed()
-        composeRule.onNodeWithText("선택 완료 · 2명").assertIsDisplayed()
-        composeRule.onNodeWithText("미응답 · 1명").assertIsDisplayed()
+        composeRule.onNodeWithText("약속이 아직 조율 중이에요").assertIsDisplayed()
+        composeRule.onNodeWithText("지금 나가기").assertIsDisplayed()
     }
 
     @Test

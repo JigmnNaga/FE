@@ -5,7 +5,8 @@ data class HostRoomParticipantUiState(
     val id: String,
     val name: String,
     val statusLabel: String? = null,
-    val isHost: Boolean = false
+    val isHost: Boolean = false,
+    val hasResponded: Boolean = false
 )
 
 /** A chat row supplied by the host-room feature. No sample messages are created by the screen. */
