@@ -25,3 +25,24 @@ data class MyAppointmentResponseDto(
     val memberCount: Int = 0,
     val unreadMessageCount: Int = 0
 )
+
+/**
+ * 월별 캘린더 조회(`GET api/v1/appointments/me/calendar`) 응답의 날짜별 항목.
+ * - [date]: `yyyy-MM-dd`
+ * - [appointments]: 해당 날짜의 약속 목록 (확정 시간 오름차순)
+ */
+@Serializable
+data class CalendarDayResponseDto(
+    val date: String,
+    val appointments: List<MyAppointmentResponseDto>
+)
+
+/**
+ * 월별 캘린더 조회 응답 최상위 DTO.
+ * 약속이 없는 날짜는 [days]에 포함되지 않는다.
+ * 약속이 없는 월은 `days = []`를 반환한다.
+ */
+@Serializable
+data class CalendarResponseDto(
+    val days: List<CalendarDayResponseDto>
+)

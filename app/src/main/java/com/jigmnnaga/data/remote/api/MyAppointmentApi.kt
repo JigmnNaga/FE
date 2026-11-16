@@ -1,6 +1,7 @@
 package com.jigmnnaga.data.remote.api
 
 import com.jigmnnaga.data.remote.dto.ApiResponse
+import com.jigmnnaga.data.remote.dto.CalendarResponseDto
 import com.jigmnnaga.data.remote.dto.MyAppointmentResponseDto
 import retrofit2.Response
 import retrofit2.http.GET
@@ -27,4 +28,16 @@ interface MyAppointmentApi {
     suspend fun getNextAppointment(
         @Header("Authorization") authorization: String?
     ): Response<ApiResponse<MyAppointmentResponseDto?>>
+
+    /**
+     * 월별 캘린더 조회.
+     * 해당 월에 날짜가 확정된 내 약속을 날짜별로 반환한다.
+     * 약속이 없는 날짜는 응답에 포함되지 않으며, 약속이 없는 월은 `days: []`를 반환한다.
+     * @param month `yyyy-MM` 형식 (예: `"2026-09"`)
+     */
+    @GET("api/v1/appointments/me/calendar")
+    suspend fun getCalendar(
+        @Header("Authorization") authorization: String?,
+        @Query("month") month: String
+    ): Response<ApiResponse<CalendarResponseDto>>
 }

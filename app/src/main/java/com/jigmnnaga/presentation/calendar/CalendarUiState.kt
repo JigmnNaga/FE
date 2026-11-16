@@ -25,7 +25,7 @@ data class CalendarMonth(val year: Int, val month: Int) {
 data class CalendarDate(val year: Int, val month: Int, val day: Int)
 
 // ─────────────────────────────────────────
-// 목업 모델
+// UI 모델
 // ─────────────────────────────────────────
 
 data class CalendarParticipant(
@@ -34,8 +34,10 @@ data class CalendarParticipant(
 )
 
 /**
- * 캘린더 화면에서 표시할 약속 목업 모델.
- * API 연동 시 domain 레이어의 Appointment 모델로 교체한다.
+ * 캘린더 화면에서 표시할 약속 UI 모델.
+ * - CalendarViewModel이 HomeAppointment를 변환해 채운다.
+ * - [participants]는 캘린더 API에서 개별 참여자 정보를 제공하지 않으므로 항상 `emptyList()`다.
+ * - [location]은 장소 정보가 없으면 "장소 미정"으로 채운다.
  */
 data class MockCalendarAppointment(
     val id: String,
@@ -43,7 +45,7 @@ data class MockCalendarAppointment(
     val year: Int,
     val month: Int,
     val day: Int,
-    /** 날짜 박스 상단에 표시할 레이블. 오늘이면 "TODAY", 아니면 요일(예: "토") */
+    /** 날짜 박스 상단 레이블. 오늘이면 "TODAY", 아니면 요일(예: "토") */
     val dayLabel: String,
     val time: String,
     val location: String,
@@ -51,34 +53,55 @@ data class MockCalendarAppointment(
     val isToday: Boolean = false
 )
 
+/** 캘린더 조회 오류. */
+data class CalendarError(val retryable: Boolean)
+
 // ─────────────────────────────────────────
 // UI 상태
 // ─────────────────────────────────────────
 
 /**
  * 캘린더 화면 UI 상태.
- * API 연동 시 CalendarViewModel이 이 상태를 StateFlow로 노출한다.
  *
- * API 연동 방법:
- * 1. CalendarViewModel 생성 후 CalendarRoute.kt의 remember 블록 제거
- * 2. `val uiState by viewModel.uiState.collectAsStateWithLifecycle()` 로 대체
- * 3. MockCalendarAppointment → domain 레이어의 Appointment 모델로 교체
- * 4. displayMonth 변경 시 viewModel::onPrevMonth / viewModel::onNextMonth 연결
+ * - [isLoading]: API 조회 진행 중
+ * - [error]: 조회 오류 (null이면 정상)
+ * - [loginRequired]: 인증 필요 — Route에서 로그인 화면으로 이동 후 consumeLoginRequired 호출
+ * - [selectedDate]: 선택된 날짜 (null이면 전체 월 표시)
  */
 data class CalendarUiState(
     val displayMonth: CalendarMonth,
     val today: CalendarDate,
-    val appointments: List<MockCalendarAppointment>
+    val appointments: List<MockCalendarAppointment>,
+    val isLoading: Boolean = false,
+    val error: CalendarError? = null,
+    val loginRequired: Boolean = false,
+    val selectedDate: CalendarDate? = null
 ) {
-    /** 현재 표시 중인 월에 해당하는 약속 목록 (날짜 오름차순) */
+    /**
+     * 현재 표시 중인 월의 약속 목록 (날짜·시간 오름차순).
+     * [selectedDate]가 설정되어 있으면 해당 날짜의 약속만 반환한다.
+     */
     val monthAppointments: List<MockCalendarAppointment>
+        get() {
+            val base = appointments
+                .filter { it.year == displayMonth.year && it.month == displayMonth.month }
+                .sortedWith(compareBy({ it.day }, { it.time }))
+            return if (selectedDate != null) {
+                base.filter { it.day == selectedDate.day }
+            } else {
+                base
+            }
+        }
+
+    /**
+     * 현재 표시 월에서 약속이 있는 날짜 집합.
+     * [selectedDate] 여부와 무관하게 모든 약속 날짜를 반환한다 (캘린더 그리드 하이라이트용).
+     */
+    val appointmentDays: Set<Int>
         get() = appointments
             .filter { it.year == displayMonth.year && it.month == displayMonth.month }
-            .sortedWith(compareBy({ it.day }, { it.time }))
-
-    /** 현재 표시 월에서 약속이 있는 날짜 집합 */
-    val appointmentDays: Set<Int>
-        get() = monthAppointments.map { it.day }.toSet()
+            .map { it.day }
+            .toSet()
 
     companion object {
         private fun todayDate(): CalendarDate = Calendar.getInstance().let {
@@ -101,7 +124,7 @@ data class CalendarUiState(
             CalendarParticipant("도")
         )
 
-        // 목업 약속 데이터 (Figma HOM-002-02 기준)
+        // Preview용 목업 약속 데이터 (Figma HOM-002-02 기준)
         private val mockAppointments = listOf(
             MockCalendarAppointment(
                 id = "cal_1",
@@ -153,7 +176,10 @@ data class CalendarUiState(
             appointments = emptyList()
         )
 
-        /** 실기기 사용 초기 상태 — 이번 달 목업 약속 표시 */
+        /**
+         * CalendarRoute에서 CalendarViewModel 없이 사용하는 초기 상태.
+         * ViewModel 연동 전까지 목업 데이터를 표시한다.
+         */
         fun initial(): CalendarUiState {
             val t = todayDate()
             return CalendarUiState(
