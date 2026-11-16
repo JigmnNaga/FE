@@ -8,6 +8,7 @@ import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
 import com.jigmnnaga.presentation.appointment.toAppointmentRoomDestination
 import com.jigmnnaga.presentation.common.login.LoginRoute
+import com.jigmnnaga.presentation.mypage.MypageRoute
 import com.jigmnnaga.presentation.notification.NotificationDestination
 
 /**
@@ -21,7 +22,7 @@ object CalendarNavigationGraph : AppNavigationGraph {
                 onAddClick = { navigator.navigate(AppointmentCreateDestination) },
                 onHomeClick = { navigator.navigateBack() },
                 onNotificationClick = { navigator.navigate(NotificationDestination) },
-                onProfileClick = { /* TODO: 마이페이지 화면 연결 */ },
+                onProfileClick = { navigator.navigate(MypageRoute) },
                 onAppointmentClick = { id ->
                     // toAppointmentRoomDestination()은 internal이나 같은 모듈이므로 접근 가능.
                     // 숫자가 아닌 ID면 null을 반환하므로 안전하게 무시한다.
