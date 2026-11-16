@@ -4,6 +4,7 @@ import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.InviteApi
 import com.jigmnnaga.data.remote.api.MyAppointmentApi
 import com.jigmnnaga.data.remote.dto.ApiResponse
+import com.jigmnnaga.data.remote.dto.CalendarResponseDto
 import com.jigmnnaga.data.remote.dto.InviteAcceptDto
 import com.jigmnnaga.data.remote.dto.InviteDetailDto
 import com.jigmnnaga.data.remote.dto.MyAppointmentResponseDto
@@ -53,6 +54,11 @@ class HomeRepositoryImplTest {
         override suspend fun getNextAppointment(
             authorization: String?
         ): Response<ApiResponse<MyAppointmentResponseDto?>> = onGetNextAppointment(authorization)
+
+        override suspend fun getCalendar(
+            authorization: String?,
+            month: String
+        ): Response<ApiResponse<CalendarResponseDto>> = error("not used in HomeRepositoryImplTest")
     }
 
     private class FakeInviteApi : InviteApi {

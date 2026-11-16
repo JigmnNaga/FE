@@ -23,6 +23,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,13 +61,19 @@ private val CalendarSaturdayColor = Color(0xFF4285F4)
 /**
  * 캘린더 화면 순수 UI Composable.
  * ViewModel 의존 없이 상태와 이벤트를 파라미터로 주고받는다.
- * API 연동 시 CalendarRoute(또는 CalendarViewModel)에서 state를 공급하면 된다.
+ *
+ * - [onDateSelect]: 날짜 셀 클릭 (day 값 전달). 같은 날짜를 다시 클릭하면 ViewModel에서 선택 해제.
+ * - [onAppointmentClick]: 약속 카드 클릭 (appointmentId 문자열 전달).
+ * - [onRetry]: 오류 화면의 재시도 버튼 클릭.
  */
 @Composable
 fun CalendarScreen(
     state: CalendarUiState,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit,
+    onDateSelect: (Int) -> Unit,
+    onAppointmentClick: (String) -> Unit,
+    onRetry: () -> Unit,
     onAddClick: () -> Unit,
     onHomeClick: () -> Unit,
     onNotificationClick: () -> Unit,
@@ -111,18 +118,25 @@ fun CalendarScreen(
             CalendarCard(
                 displayMonth = state.displayMonth,
                 today = state.today,
-                appointmentDays = state.appointmentDays
+                appointmentDays = state.appointmentDays,
+                selectedDate = state.selectedDate,
+                onDateSelect = onDateSelect
             )
 
             Spacer(modifier = Modifier.height(AppDimens.Spacing16))
 
             val monthAppointments = state.monthAppointments
-            if (monthAppointments.isEmpty()) {
-                CalendarEmptyState()
-            } else {
-                AppointmentSection(
+            when {
+                state.isLoading -> CalendarLoadingState()
+                state.error != null -> CalendarErrorState(
+                    retryable = state.error.retryable,
+                    onRetry = onRetry
+                )
+                monthAppointments.isEmpty() -> CalendarEmptyState()
+                else -> AppointmentSection(
                     appointments = monthAppointments,
-                    today = state.today
+                    today = state.today,
+                    onAppointmentClick = onAppointmentClick
                 )
             }
 
@@ -214,6 +228,8 @@ private fun CalendarCard(
     displayMonth: CalendarMonth,
     today: CalendarDate,
     appointmentDays: Set<Int>,
+    selectedDate: CalendarDate?,
+    onDateSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -230,7 +246,9 @@ private fun CalendarCard(
         CalendarDateGrid(
             displayMonth = displayMonth,
             today = today,
-            appointmentDays = appointmentDays
+            appointmentDays = appointmentDays,
+            selectedDate = selectedDate,
+            onDateSelect = onDateSelect
         )
     }
 }
@@ -271,12 +289,19 @@ private fun CalendarDateGrid(
     displayMonth: CalendarMonth,
     today: CalendarDate,
     appointmentDays: Set<Int>,
+    selectedDate: CalendarDate?,
+    onDateSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val offset = displayMonth.firstDayOfWeekOffset()
     val dayCount = displayMonth.dayCount()
     val totalCells = offset + dayCount
     val weekCount = (totalCells + 6) / 7
+
+    // 선택된 날짜가 현재 표시 월에 속할 때만 하이라이트. 월 이동 시 ViewModel이 null로 초기화한다.
+    val selectedDay: Int? = selectedDate?.takeIf {
+        it.year == displayMonth.year && it.month == displayMonth.month
+    }?.day
 
     Column(modifier = modifier.fillMaxWidth()) {
         for (week in 0 until weekCount) {
@@ -288,13 +313,18 @@ private fun CalendarDateGrid(
             ) {
                 for (slot in 0 until 7) {
                     val day = week * 7 + slot - offset + 1
+                    val isValidDay = day in 1..dayCount
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxHeight(),
+                            .fillMaxHeight()
+                            .then(
+                                if (isValidDay) Modifier.clickable { onDateSelect(day) }
+                                else Modifier
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (day in 1..dayCount) {
+                        if (isValidDay) {
                             val isToday = displayMonth.year == today.year &&
                                     displayMonth.month == today.month &&
                                     day == today.day
@@ -303,7 +333,8 @@ private fun CalendarDateGrid(
                                 day = day,
                                 dayOfWeekSlot = slot,
                                 isToday = isToday,
-                                hasAppointment = hasAppointment
+                                hasAppointment = hasAppointment,
+                                isSelected = day == selectedDay
                             )
                         }
                     }
@@ -317,7 +348,7 @@ private fun CalendarDateGrid(
  * 날짜 셀 콘텐츠.
  * - 오늘: Green600 원형 배경 + White 텍스트
  * - 약속 있는 날 (오늘 아님): Gray200 원형 배경 + 기본 텍스트 색상
- * - 클릭 불가 (UI 표시 전용)
+ * - 선택된 날 (오늘 아님): 기존 배경 + Green600 테두리 링
  */
 @Composable
 private fun DateCellContent(
@@ -325,6 +356,7 @@ private fun DateCellContent(
     dayOfWeekSlot: Int,  // 0=일, 6=토
     isToday: Boolean,
     hasAppointment: Boolean,
+    isSelected: Boolean,
     modifier: Modifier = Modifier
 ) {
     val isSunday = dayOfWeekSlot == 0
@@ -348,7 +380,14 @@ private fun DateCellContent(
     Box(
         modifier = modifier
             .size(32.dp)
-            .background(circleBg, CircleShape),
+            .background(circleBg, CircleShape)
+            // 오늘 날짜는 Green600 배경으로 이미 선택 상태가 명확하므로 테두리 미적용
+            .then(
+                if (isSelected && !isToday)
+                    Modifier.border(2.dp, AppColors.MainGreen.Green600, CircleShape)
+                else
+                    Modifier
+            ),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -357,6 +396,61 @@ private fun DateCellContent(
             color = textColor,
             textAlign = TextAlign.Center
         )
+    }
+}
+
+// ─────────────────────────────────────────
+// 로딩 상태
+// ─────────────────────────────────────────
+
+@Composable
+private fun CalendarLoadingState(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = AppColors.MainGreen.Green600)
+    }
+}
+
+// ─────────────────────────────────────────
+// 오류 상태
+// ─────────────────────────────────────────
+
+@Composable
+private fun CalendarErrorState(
+    retryable: Boolean,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(160.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "약속을 불러올 수 없어요",
+                style = MaterialTheme.typography.bodyMedium,
+                color = AppColors.Monotone.Gray500,
+                textAlign = TextAlign.Center
+            )
+            if (retryable) {
+                Text(
+                    text = "다시 시도",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = AppColors.MainGreen.Green600,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.clickable(onClick = onRetry)
+                )
+            }
+        }
     }
 }
 
@@ -400,6 +494,7 @@ private fun CalendarEmptyState(modifier: Modifier = Modifier) {
 private fun AppointmentSection(
     appointments: List<MockCalendarAppointment>,
     today: CalendarDate,
+    onAppointmentClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -411,7 +506,11 @@ private fun AppointmentSection(
         Spacer(modifier = Modifier.height(12.dp))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             appointments.forEach { appointment ->
-                CalendarAppointmentCard(appointment = appointment, today = today)
+                CalendarAppointmentCard(
+                    appointment = appointment,
+                    today = today,
+                    onAppointmentClick = onAppointmentClick
+                )
             }
         }
     }
@@ -421,6 +520,7 @@ private fun AppointmentSection(
 private fun CalendarAppointmentCard(
     appointment: MockCalendarAppointment,
     today: CalendarDate,
+    onAppointmentClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val isToday = appointment.year == today.year &&
@@ -434,6 +534,7 @@ private fun CalendarAppointmentCard(
             .background(AppColors.Monotone.White, RoundedCornerShape(16.dp))
             .border(0.567.dp, AppColors.Monotone.Gray100, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
+            .clickable { onAppointmentClick(appointment.id) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -579,6 +680,7 @@ private fun CalendarScreenEmptyPreview() {
         CalendarScreen(
             state = CalendarUiState.PreviewEmpty,
             onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
             onAddClick = {}, onHomeClick = {},
             onNotificationClick = {}, onProfileClick = {}
         )
@@ -592,6 +694,7 @@ private fun CalendarScreenWithAppointmentsPreview() {
         CalendarScreen(
             state = CalendarUiState.PreviewWithAppointments,
             onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
             onAddClick = {}, onHomeClick = {},
             onNotificationClick = {}, onProfileClick = {}
         )
@@ -605,6 +708,7 @@ private fun CalendarScreenTodayAtEndPreview() {
         CalendarScreen(
             state = CalendarUiState.PreviewTodayAtEnd,
             onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
             onAddClick = {}, onHomeClick = {},
             onNotificationClick = {}, onProfileClick = {}
         )
@@ -618,6 +722,51 @@ private fun CalendarScreenEmptyMonthPreview() {
         CalendarScreen(
             state = CalendarUiState.PreviewEmptyMonth,
             onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
+            onAddClick = {}, onHomeClick = {},
+            onNotificationClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "캘린더 — 날짜 선택 (6일)")
+@Composable
+private fun CalendarScreenSelectedDatePreview() {
+    JigmnnagaTheme {
+        CalendarScreen(
+            state = CalendarUiState.PreviewWithAppointments.copy(
+                selectedDate = CalendarDate(2026, 9, 6)
+            ),
+            onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
+            onAddClick = {}, onHomeClick = {},
+            onNotificationClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "캘린더 — 로딩 중")
+@Composable
+private fun CalendarScreenLoadingPreview() {
+    JigmnnagaTheme {
+        CalendarScreen(
+            state = CalendarUiState.PreviewEmpty.copy(isLoading = true),
+            onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
+            onAddClick = {}, onHomeClick = {},
+            onNotificationClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "캘린더 — 네트워크 오류")
+@Composable
+private fun CalendarScreenErrorPreview() {
+    JigmnnagaTheme {
+        CalendarScreen(
+            state = CalendarUiState.PreviewEmpty.copy(error = CalendarError(retryable = true)),
+            onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
             onAddClick = {}, onHomeClick = {},
             onNotificationClick = {}, onProfileClick = {}
         )
