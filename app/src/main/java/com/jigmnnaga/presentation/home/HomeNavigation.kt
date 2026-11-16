@@ -9,6 +9,7 @@ import com.jigmnnaga.presentation.appointment.AppointmentCreateDestination
 import com.jigmnnaga.presentation.appointment.toAppointmentRoomDestination
 import com.jigmnnaga.presentation.calendar.CalendarRoute
 import com.jigmnnaga.presentation.common.login.LoginRoute
+import com.jigmnnaga.presentation.mypage.MypageRoute
 import com.jigmnnaga.presentation.notification.NotificationDestination
 
 /**
@@ -22,7 +23,7 @@ object HomeNavigationGraph : AppNavigationGraph {
                 onAddClick = { navigator.navigate(AppointmentCreateDestination) },
                 onScheduleClick = { navigator.navigateSingleTop(CalendarRoute) },
                 onNotificationClick = { navigator.navigate(NotificationDestination) },
-                onProfileClick = { /* TODO: 마이페이지 화면 연결 */ },
+                onProfileClick = { navigator.navigate(MypageRoute) },
                 onAppointmentClick = { id ->
                     id.toAppointmentRoomDestination()?.let { navigator.navigate(it) }
                 },
