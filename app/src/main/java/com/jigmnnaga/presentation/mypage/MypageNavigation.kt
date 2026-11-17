@@ -13,6 +13,12 @@ object MypageNavigationGraph : AppNavigationGraph {
     override fun register(builder: NavGraphBuilder, navigator: AppNavigator) {
         builder.composable<MypageRoute> {
             MypageRoute(
+                onBackClick = { navigator.navigateBack() },
+                onEditProfileClick = { navigator.navigate(ProfileEditRoute) }
+            )
+        }
+        builder.composable<ProfileEditRoute> {
+            ProfileEditRoute(
                 onBackClick = { navigator.navigateBack() }
             )
         }

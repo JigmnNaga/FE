@@ -17,12 +17,13 @@ data object MypageRoute
 @Composable
 fun MypageRoute(
     onBackClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MypageScreen(
         state = MypageUiState.PreviewDefault,
         onBackClick = onBackClick,
-        onEditProfileClick = { /* TODO: 프로필 수정 화면 연결 */ },
+        onEditProfileClick = onEditProfileClick,
         onNotificationSettingsClick = { /* TODO: 알림 설정 화면 연결 */ },
         onLocationSharingSettingsClick = { /* TODO: 위치 공유 설정 화면 연결 */ },
         onHelpClick = { /* TODO: 도움말 및 문의 화면 연결 */ },
