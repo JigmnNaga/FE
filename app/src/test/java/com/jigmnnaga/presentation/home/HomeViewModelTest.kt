@@ -280,6 +280,36 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `예정 약속 isNetworkError=true Failure 시 upcomingError의 isNetworkError가 true이다`() = runTest {
+        val repo = FakeHomeRepository().apply {
+            upcomingResult = HomeAppointmentListResult.Failure(retryable = true, isNetworkError = true)
+        }
+        val vm = viewModel(repo)
+
+        assertTrue(vm.uiState.value.upcomingError!!.isNetworkError)
+    }
+
+    @Test
+    fun `예정 약속 isNetworkError=false Failure 시 upcomingError의 isNetworkError가 false이다`() = runTest {
+        val repo = FakeHomeRepository().apply {
+            upcomingResult = HomeAppointmentListResult.Failure(retryable = true, isNetworkError = false)
+        }
+        val vm = viewModel(repo)
+
+        assertFalse(vm.uiState.value.upcomingError!!.isNetworkError)
+    }
+
+    @Test
+    fun `지난 약속 isNetworkError=true Failure 시 pastError의 isNetworkError가 true이다`() = runTest {
+        val repo = FakeHomeRepository().apply {
+            pastResult = HomeAppointmentListResult.Failure(retryable = true, isNetworkError = true)
+        }
+        val vm = viewModel(repo)
+
+        assertTrue(vm.uiState.value.pastError!!.isNetworkError)
+    }
+
+    @Test
     fun `초대 API만 실패해도 약속 목록은 정상 반영된다`() = runTest {
         val repo = FakeHomeRepository().apply {
             upcomingResult = HomeAppointmentListResult.Success(listOf(appointment()))

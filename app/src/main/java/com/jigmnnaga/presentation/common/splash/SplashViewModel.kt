@@ -18,8 +18,9 @@ sealed interface SplashAuthState {
     /**
      * 네트워크 오류 또는 서버 일시적 오류.
      * 저장된 토큰을 삭제하지 않으며 [SplashViewModel.retry]로 재시도할 수 있습니다.
+     * - [isNetworkError] true = IOException 등 연결 오류, false = 서버/기타 오류
      */
-    data object RetryableError : SplashAuthState
+    data class RetryableError(val isNetworkError: Boolean) : SplashAuthState
 }
 
 /**
@@ -72,9 +73,9 @@ class SplashViewModel(
                             SplashAuthState.Unauthenticated           // Case D
                         }
                         is ReissueResult.NetworkError ->
-                            SplashAuthState.RetryableError            // Case E
+                            SplashAuthState.RetryableError(isNetworkError = true)   // Case E
                         is ReissueResult.ServerError ->
-                            SplashAuthState.RetryableError            // Case E
+                            SplashAuthState.RetryableError(isNetworkError = false)  // Case E
                     }
                 }
             } catch (e: Exception) {

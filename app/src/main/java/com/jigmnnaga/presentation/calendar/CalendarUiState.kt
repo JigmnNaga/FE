@@ -1,5 +1,6 @@
 package com.jigmnnaga.presentation.calendar
 
+import com.jigmnnaga.presentation.common.error.ErrorType
 import java.util.Calendar
 
 // ─────────────────────────────────────────
@@ -54,7 +55,10 @@ data class MockCalendarAppointment(
 )
 
 /** 캘린더 조회 오류. */
-data class CalendarError(val retryable: Boolean)
+data class CalendarError(val retryable: Boolean, val isNetworkError: Boolean = false)
+
+fun CalendarError.toErrorType(): ErrorType =
+    if (isNetworkError) ErrorType.Network else ErrorType.Service
 
 // ─────────────────────────────────────────
 // UI 상태

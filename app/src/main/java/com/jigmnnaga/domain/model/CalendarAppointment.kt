@@ -15,5 +15,9 @@ sealed interface CalendarResult {
     /** 조회 성공. [days]가 비어 있으면 해당 월에 약속 없음. */
     data class Success(val days: List<CalendarDay>) : CalendarResult
     data object LoginRequired : CalendarResult
-    data class Failure(val retryable: Boolean) : CalendarResult
+    /**
+     * @param retryable 재시도 가능 여부
+     * @param isNetworkError true = IOException 등 네트워크 연결 오류, false = 서버/클라이언트 오류
+     */
+    data class Failure(val retryable: Boolean, val isNetworkError: Boolean = false) : CalendarResult
 }

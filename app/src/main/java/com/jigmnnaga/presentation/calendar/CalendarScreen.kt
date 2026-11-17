@@ -53,6 +53,7 @@ import com.jigmnnaga.core.designsystem.component.MainHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.common.error.ErrorScreen
 
 // Figma 캘린더 전용 색상 (AppColors에 없는 값)
 private val CalendarSundayColor = Color(0xFFEA4335)
@@ -80,6 +81,16 @@ fun CalendarScreen(
     onProfileClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 오류 발생 시 전체 화면 오류 페이지 표시
+    if (!state.isLoading && state.error != null) {
+        ErrorScreen(
+            type = state.error.toErrorType(),
+            onActionClick = onRetry,
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -128,10 +139,6 @@ fun CalendarScreen(
             val monthAppointments = state.monthAppointments
             when {
                 state.isLoading -> CalendarLoadingState()
-                state.error != null -> CalendarErrorState(
-                    retryable = state.error.retryable,
-                    onRetry = onRetry
-                )
                 monthAppointments.isEmpty() -> CalendarEmptyState()
                 else -> AppointmentSection(
                     appointments = monthAppointments,
@@ -412,45 +419,6 @@ private fun CalendarLoadingState(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(color = AppColors.MainGreen.Green600)
-    }
-}
-
-// ─────────────────────────────────────────
-// 오류 상태
-// ─────────────────────────────────────────
-
-@Composable
-private fun CalendarErrorState(
-    retryable: Boolean,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(160.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "약속을 불러올 수 없어요",
-                style = MaterialTheme.typography.bodyMedium,
-                color = AppColors.Monotone.Gray500,
-                textAlign = TextAlign.Center
-            )
-            if (retryable) {
-                Text(
-                    text = "다시 시도",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = AppColors.MainGreen.Green600,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.clickable(onClick = onRetry)
-                )
-            }
-        }
     }
 }
 
@@ -761,10 +729,24 @@ private fun CalendarScreenLoadingPreview() {
 
 @Preview(showSystemUi = true, name = "캘린더 — 네트워크 오류")
 @Composable
-private fun CalendarScreenErrorPreview() {
+private fun CalendarScreenNetworkErrorPreview() {
     JigmnnagaTheme {
         CalendarScreen(
-            state = CalendarUiState.PreviewEmpty.copy(error = CalendarError(retryable = true)),
+            state = CalendarUiState.PreviewEmpty.copy(error = CalendarError(retryable = true, isNetworkError = true)),
+            onPrevMonth = {}, onNextMonth = {},
+            onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
+            onAddClick = {}, onHomeClick = {},
+            onNotificationClick = {}, onProfileClick = {}
+        )
+    }
+}
+
+@Preview(showSystemUi = true, name = "캘린더 — 서비스 오류")
+@Composable
+private fun CalendarScreenServiceErrorPreview() {
+    JigmnnagaTheme {
+        CalendarScreen(
+            state = CalendarUiState.PreviewEmpty.copy(error = CalendarError(retryable = true, isNetworkError = false)),
             onPrevMonth = {}, onNextMonth = {},
             onDateSelect = {}, onAppointmentClick = {}, onRetry = {},
             onAddClick = {}, onHomeClick = {},

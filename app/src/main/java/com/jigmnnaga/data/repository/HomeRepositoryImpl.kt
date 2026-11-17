@@ -38,7 +38,7 @@ class HomeRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            HomeAppointmentListResult.Failure(retryable = true)
+            HomeAppointmentListResult.Failure(retryable = true, isNetworkError = true)
         } catch (e: Exception) {
             HomeAppointmentListResult.Failure(retryable = false)
         }
@@ -60,7 +60,7 @@ class HomeRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            HomeAppointmentListResult.Failure(retryable = true)
+            HomeAppointmentListResult.Failure(retryable = true, isNetworkError = true)
         } catch (e: Exception) {
             HomeAppointmentListResult.Failure(retryable = false)
         }
@@ -82,7 +82,7 @@ class HomeRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            NextAppointmentResult.Failure(retryable = true)
+            NextAppointmentResult.Failure(retryable = true, isNetworkError = true)
         } catch (e: Exception) {
             NextAppointmentResult.Failure(retryable = false)
         }
@@ -104,7 +104,7 @@ class HomeRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            PendingInviteCountResult.Failure(retryable = true)
+            PendingInviteCountResult.Failure(retryable = true, isNetworkError = true)
         } catch (e: Exception) {
             PendingInviteCountResult.Failure(retryable = false)
         }

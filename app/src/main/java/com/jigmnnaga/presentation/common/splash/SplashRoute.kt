@@ -1,34 +1,28 @@
 package com.jigmnnaga.presentation.common.splash
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.di.AuthEntryPoint
 import com.jigmnnaga.di.TokenEntryPoint
+import com.jigmnnaga.presentation.common.error.ErrorScreen
+import com.jigmnnaga.presentation.common.error.ErrorType
 import dagger.hilt.android.EntryPointAccessors
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+
+// 애니메이션이 충분히 보이도록 최소 표시 시간을 보장 (ms)
+// 로고(400ms) + 대기(500ms) + 기능 태그(300+240ms) + 여유 ≈ 1500ms
+private const val SPLASH_MIN_DURATION_MS = 1500L
 
 @Serializable
 data object SplashRoute
@@ -40,7 +34,7 @@ data object SplashRoute
  * - Loading: 스플래시 화면 유지
  * - Authenticated → [onAuthenticated]
  * - Unauthenticated → [onUnauthenticated]
- * - RetryableError: 오류 안내 + 재시도 버튼 표시
+ * - RetryableError: 공통 오류 화면 표시 (네트워크/서비스 오류 구분)
  */
 @Composable
 fun SplashRoute(
@@ -71,41 +65,34 @@ fun SplashRoute(
     )
     val authState by viewModel.authState.collectAsState()
 
-    LaunchedEffect(authState) {
+    // 오류 상태 → 공통 오류 화면 전체 표시 (스플래시 대신)
+    val retryableError = authState as? SplashAuthState.RetryableError
+    if (retryableError != null) {
+        ErrorScreen(
+            type = if (retryableError.isNetworkError) ErrorType.Network else ErrorType.Service,
+            onActionClick = viewModel::retry,
+            modifier = modifier
+        )
+        return
+    }
+
+    // 최소 표시 시간을 보장: 애니메이션이 모두 끝난 뒤 화면 이동
+    var splashReady by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(SPLASH_MIN_DURATION_MS)
+        splashReady = true
+    }
+
+    // splashReady 와 authState 가 모두 준비됐을 때만 화면 이동
+    LaunchedEffect(authState, splashReady) {
+        if (!splashReady) return@LaunchedEffect
         when (authState) {
             SplashAuthState.Authenticated -> onAuthenticated()
             SplashAuthState.Unauthenticated -> onUnauthenticated()
-            SplashAuthState.Loading, SplashAuthState.RetryableError -> Unit
+            SplashAuthState.Loading -> Unit
+            is SplashAuthState.RetryableError -> Unit  // 위 early-return에서 처리됨
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
-        SplashScreen()
-
-        if (authState is SplashAuthState.RetryableError) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 32.dp, vertical = 40.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "네트워크 연결을 확인해 주세요.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = AppColors.MainGreen.Green700
-                )
-                Spacer(Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = viewModel::retry,
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = AppColors.MainGreen.Green700
-                    )
-                ) {
-                    Text("다시 시도")
-                }
-            }
-        }
-    }
+    SplashScreen(modifier = modifier)
 }

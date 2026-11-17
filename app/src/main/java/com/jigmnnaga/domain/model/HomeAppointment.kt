@@ -27,19 +27,23 @@ data class HomeAppointment(
 sealed interface HomeAppointmentListResult {
     data class Success(val appointments: List<HomeAppointment>) : HomeAppointmentListResult
     data object LoginRequired : HomeAppointmentListResult
-    data class Failure(val retryable: Boolean) : HomeAppointmentListResult
+    /**
+     * @param retryable 재시도 가능 여부
+     * @param isNetworkError true = IOException 등 네트워크 연결 오류, false = 서버/클라이언트 오류
+     */
+    data class Failure(val retryable: Boolean, val isNetworkError: Boolean = false) : HomeAppointmentListResult
 }
 
 /** 홈 화면 다음 약속 조회 결과. [appointment]가 null이면 다음 확정 약속 없음. */
 sealed interface NextAppointmentResult {
     data class Success(val appointment: HomeAppointment?) : NextAppointmentResult
     data object LoginRequired : NextAppointmentResult
-    data class Failure(val retryable: Boolean) : NextAppointmentResult
+    data class Failure(val retryable: Boolean, val isNetworkError: Boolean = false) : NextAppointmentResult
 }
 
 /** 대기 중인 초대 수 조회 결과. */
 sealed interface PendingInviteCountResult {
     data class Success(val count: Int) : PendingInviteCountResult
     data object LoginRequired : PendingInviteCountResult
-    data class Failure(val retryable: Boolean) : PendingInviteCountResult
+    data class Failure(val retryable: Boolean, val isNetworkError: Boolean = false) : PendingInviteCountResult
 }
