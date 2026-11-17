@@ -342,6 +342,26 @@ class CalendarViewModelTest {
         assertFalse(vm.uiState.value.error!!.retryable)
     }
 
+    @Test
+    fun `isNetworkError=true Failure 시 error의 isNetworkError가 true이다`() = runTest {
+        val repo = FakeCalendarRepository().apply {
+            result = CalendarResult.Failure(retryable = true, isNetworkError = true)
+        }
+        val vm = viewModel(repo)
+
+        assertTrue(vm.uiState.value.error!!.isNetworkError)
+    }
+
+    @Test
+    fun `isNetworkError=false Failure 시 error의 isNetworkError가 false이다`() = runTest {
+        val repo = FakeCalendarRepository().apply {
+            result = CalendarResult.Failure(retryable = true, isNetworkError = false)
+        }
+        val vm = viewModel(repo)
+
+        assertFalse(vm.uiState.value.error!!.isNetworkError)
+    }
+
     // ── 재시도 ────────────────────────────────────────────────────────────────
 
     @Test

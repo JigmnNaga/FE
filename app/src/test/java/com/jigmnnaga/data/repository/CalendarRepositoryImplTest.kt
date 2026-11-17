@@ -395,6 +395,28 @@ class CalendarRepositoryImplTest {
     }
 
     @Test
+    fun `IOException 시 isNetworkError가 true이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetCalendar = { _, _ -> throw IOException("network error") }
+        }
+
+        val result = repo(api).getCalendar("2026-09") as CalendarResult.Failure
+
+        assertTrue(result.isNetworkError)
+    }
+
+    @Test
+    fun `500 응답 시 isNetworkError가 false이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetCalendar = { _, _ -> errorResponse(500, "INTERNAL_SERVER_ERROR") }
+        }
+
+        val result = repo(api).getCalendar("2026-09") as CalendarResult.Failure
+
+        assertFalse(result.isNetworkError)
+    }
+
+    @Test
     fun `일반 Exception 시 non-retryable Failure를 반환한다`() = runTest {
         val api = FakeMyAppointmentApi().apply {
             onGetCalendar = { _, _ -> throw RuntimeException("unexpected") }
@@ -403,6 +425,17 @@ class CalendarRepositoryImplTest {
         val result = repo(api).getCalendar("2026-09") as CalendarResult.Failure
 
         assertFalse(result.retryable)
+    }
+
+    @Test
+    fun `일반 Exception 시 isNetworkError가 false이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetCalendar = { _, _ -> throw RuntimeException("unexpected") }
+        }
+
+        val result = repo(api).getCalendar("2026-09") as CalendarResult.Failure
+
+        assertFalse(result.isNetworkError)
     }
 
     // ── 코루틴 취소 처리 ──────────────────────────────────────────────────────

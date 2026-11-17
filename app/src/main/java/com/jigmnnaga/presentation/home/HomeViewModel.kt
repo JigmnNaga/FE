@@ -98,7 +98,7 @@ class HomeViewModel(
                 }
                 is HomeAppointmentListResult.Failure -> {
                     upcomingAppointments = _uiState.value.upcomingAppointments
-                    upcomingError = HomeListError(upcomingResult.retryable)
+                    upcomingError = HomeListError(upcomingResult.retryable, upcomingResult.isNetworkError)
                 }
             }
 
@@ -117,7 +117,7 @@ class HomeViewModel(
                 }
                 is HomeAppointmentListResult.Failure -> {
                     pastAppointments = _uiState.value.pastAppointments
-                    pastError = HomeListError(pastResult.retryable)
+                    pastError = HomeListError(pastResult.retryable, pastResult.isNetworkError)
                 }
             }
 

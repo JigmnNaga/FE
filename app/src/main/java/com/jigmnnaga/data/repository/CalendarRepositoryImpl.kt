@@ -34,7 +34,7 @@ class CalendarRepositoryImpl @Inject constructor(
         } catch (e: CancellationException) {
             throw e
         } catch (e: IOException) {
-            CalendarResult.Failure(retryable = true)
+            CalendarResult.Failure(retryable = true, isNetworkError = true)
         } catch (e: Exception) {
             CalendarResult.Failure(retryable = false)
         }

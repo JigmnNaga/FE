@@ -1,5 +1,7 @@
 package com.jigmnnaga.presentation.home
 
+import com.jigmnnaga.presentation.common.error.ErrorType
+
 enum class HomeTab { UPCOMING, PAST }
 
 enum class ArrivalStatus { ON_TIME, LATE }
@@ -27,7 +29,10 @@ data class MockAppointment(
 )
 
 /** 약속 목록 로드 오류. */
-data class HomeListError(val retryable: Boolean)
+data class HomeListError(val retryable: Boolean, val isNetworkError: Boolean = false)
+
+fun HomeListError.toErrorType(): ErrorType =
+    if (isNetworkError) ErrorType.Network else ErrorType.Service
 
 /**
  * 홈 화면 UI 상태.

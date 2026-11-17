@@ -139,7 +139,10 @@ class CalendarViewModel(
                     is CalendarResult.Failure -> {
                         state.copy(
                             isLoading = false,
-                            error = CalendarError(retryable = result.retryable)
+                            error = CalendarError(
+                                retryable = result.retryable,
+                                isNetworkError = result.isNetworkError
+                            )
                         )
                     }
                 }

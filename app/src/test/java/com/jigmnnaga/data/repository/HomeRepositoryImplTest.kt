@@ -328,6 +328,28 @@ class HomeRepositoryImplTest {
         assertTrue(result.retryable)
     }
 
+    @Test
+    fun `예정 약속 IOException 시 isNetworkError가 true이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetMyAppointments = { _, _ -> throw IOException("network error") }
+        }
+
+        val result = repo(api).getUpcomingAppointments() as HomeAppointmentListResult.Failure
+
+        assertTrue(result.isNetworkError)
+    }
+
+    @Test
+    fun `예정 약속 500 응답 시 isNetworkError가 false이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetMyAppointments = { _, _ -> appointmentListErrorResponse(500) }
+        }
+
+        val result = repo(api).getUpcomingAppointments() as HomeAppointmentListResult.Failure
+
+        assertFalse(result.isNetworkError)
+    }
+
     // ── getPastAppointments ───────────────────────────────────────────────────
 
     @Test
@@ -444,6 +466,28 @@ class HomeRepositoryImplTest {
         val result = repo(api).getNextAppointment() as NextAppointmentResult.Failure
 
         assertTrue(result.retryable)
+    }
+
+    @Test
+    fun `다음 약속 IOException 시 isNetworkError가 true이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetNextAppointment = { throw IOException("network") }
+        }
+
+        val result = repo(api).getNextAppointment() as NextAppointmentResult.Failure
+
+        assertTrue(result.isNetworkError)
+    }
+
+    @Test
+    fun `다음 약속 500 응답 시 isNetworkError가 false이다`() = runTest {
+        val api = FakeMyAppointmentApi().apply {
+            onGetNextAppointment = { nextErrorResponse(500) }
+        }
+
+        val result = repo(api).getNextAppointment() as NextAppointmentResult.Failure
+
+        assertFalse(result.isNetworkError)
     }
 
     // ── getPendingInviteCount ─────────────────────────────────────────────────

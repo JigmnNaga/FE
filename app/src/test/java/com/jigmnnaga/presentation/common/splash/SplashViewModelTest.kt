@@ -164,7 +164,21 @@ class SplashViewModelTest {
         }
         val vm = viewModel(tokenManager, repo)
 
-        assertEquals(SplashAuthState.RetryableError, vm.authState.value)
+        assertEquals(SplashAuthState.RetryableError(isNetworkError = true), vm.authState.value)
+    }
+
+    @Test
+    fun `Case E - 네트워크 오류 시 isNetworkError가 true이다`() = runTest {
+        val tokenManager = FakeTokenManager().apply {
+            validateResult = true
+            isAccessExpired = true
+        }
+        val repo = FakeAuthRepository().apply {
+            nextReissueResult = ReissueResult.NetworkError()
+        }
+        val vm = viewModel(tokenManager, repo)
+
+        assertEquals(true, (vm.authState.value as SplashAuthState.RetryableError).isNetworkError)
     }
 
     @Test
@@ -178,7 +192,21 @@ class SplashViewModelTest {
         }
         val vm = viewModel(tokenManager, repo)
 
-        assertEquals(SplashAuthState.RetryableError, vm.authState.value)
+        assertEquals(SplashAuthState.RetryableError(isNetworkError = false), vm.authState.value)
+    }
+
+    @Test
+    fun `Case E - 서버 오류 시 isNetworkError가 false이다`() = runTest {
+        val tokenManager = FakeTokenManager().apply {
+            validateResult = true
+            isAccessExpired = true
+        }
+        val repo = FakeAuthRepository().apply {
+            nextReissueResult = ReissueResult.ServerError()
+        }
+        val vm = viewModel(tokenManager, repo)
+
+        assertEquals(false, (vm.authState.value as SplashAuthState.RetryableError).isNetworkError)
     }
 
     @Test
@@ -217,7 +245,7 @@ class SplashViewModelTest {
             nextReissueResult = ReissueResult.NetworkError()
         }
         val vm = viewModel(tokenManager, repo)
-        assertEquals(SplashAuthState.RetryableError, vm.authState.value)
+        assertEquals(SplashAuthState.RetryableError(isNetworkError = true), vm.authState.value)
 
         repo.nextReissueResult = ReissueResult.Success
         vm.retry()

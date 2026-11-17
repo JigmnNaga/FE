@@ -57,6 +57,7 @@ import com.jigmnnaga.core.designsystem.component.MainHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.presentation.common.error.ErrorScreen
 
 /**
  * 홈 화면 순수 UI Composable.
@@ -76,6 +77,18 @@ fun HomeScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // 데이터 없음 + 오류 → 전체 화면 오류 페이지
+    val currentError = state.currentTabError
+    val appointments = state.currentAppointments
+    if (!state.isLoading && appointments.isEmpty() && currentError != null) {
+        ErrorScreen(
+            type = currentError.toErrorType(),
+            onActionClick = onRetry,
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -127,9 +140,6 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            val currentError = state.currentTabError
-            val appointments = state.currentAppointments
-
             // 데이터가 있고 오류도 있으면 — 배너만 표시 (목록은 아래서 그린다)
             if (currentError != null && appointments.isNotEmpty()) {
                 item(key = "error_banner") {
@@ -146,11 +156,6 @@ fun HomeScreen(
                 // 로딩 중 & 목록 없음 → 로딩 인디케이터
                 state.isLoading && appointments.isEmpty() ->
                     item(key = "loading_state") { HomeLoadingState() }
-                // 로딩 완료 & 목록 없음 & 오류 → 전체 오류 화면
-                !state.isLoading && appointments.isEmpty() && currentError != null ->
-                    item(key = "error_state") {
-                        HomeErrorState(retryable = currentError.retryable, onRetry = onRetry)
-                    }
                 // 로딩 완료 & 목록 없음 & 오류 없음 → 빈 상태
                 appointments.isEmpty() ->
                     item(key = "empty_state") { HomeEmptyState(tab = state.selectedTab) }
@@ -396,78 +401,6 @@ private fun HomeLoadingState(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(color = AppColors.MainGreen.Green700)
-    }
-}
-
-// ─────────────────────────────────────────
-// 오류 상태 (전체 화면)
-// ─────────────────────────────────────────
-
-@Composable
-private fun HomeErrorState(
-    retryable: Boolean,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(500.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(AppColors.Danger.Red200, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(R.drawable.close),
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-                colorFilter = ColorFilter.tint(AppColors.Danger.Red600)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(30.dp))
-
-        Text(
-            text = stringResource(R.string.home_error_title),
-            style = TextStyle(
-                fontFamily = MaterialTheme.typography.bodyMedium.fontFamily,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                lineHeight = 28.sp
-            ),
-            color = AppColors.Monotone.SoftBlack,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = stringResource(R.string.home_error_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = AppColors.Monotone.Gray500,
-            textAlign = TextAlign.Center
-        )
-
-        if (retryable) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Box(
-                modifier = Modifier
-                    .background(AppColors.MainGreen.Green900, RoundedCornerShape(50))
-                    .clickable(onClick = onRetry)
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.home_error_retry),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = AppColors.MainGreen.Green200
-                )
-            }
-        }
     }
 }
 
