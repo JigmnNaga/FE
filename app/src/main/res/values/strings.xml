@@ -555,4 +555,7 @@
     <string name="route_start_search_empty">검색 결과가 없어요.</string>
     <string name="route_start_search_failed">검색하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
     <string name="route_start_confirm">여기에서 출발하기</string>
+    <string name="route_options_loading">경로를 찾고 있어요.</string>
+    <string name="route_options_failed">경로를 불러오지 못했어요. 눌러서 다시 시도해 주세요.</string>
+    <string name="route_action_failed">요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 </resources>

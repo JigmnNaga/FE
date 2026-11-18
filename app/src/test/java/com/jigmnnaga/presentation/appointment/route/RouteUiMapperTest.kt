@@ -91,10 +91,19 @@ class RouteUiMapperTest {
     }
 
     @Test
-    fun `경로 선택지와 이동 정보는 예시 값을 그대로 쓴다`() {
+    fun `경로 선택지와 이동 정보는 출발 위치를 고른 뒤 서버에서 받으므로 처음에는 비어 있다`() {
         val state = detail().toRouteUiState("3명", labels, myMemberId = 1L)
 
-        assertEquals(RouteSampleData.options, state.options)
-        assertEquals(RouteSampleData.overview.moving, state.moving)
+        assertTrue(state.options.isEmpty())
+        assertEquals(null, state.moving)
+        assertEquals("", state.destinationEstimateTitle)
+    }
+
+    @Test
+    fun `약속 시각은 확정된 시간을 오전 오후 문구로 보여 준다`() {
+        val state = detail().toRouteUiState("3명", labels, myMemberId = 1L)
+
+        assertEquals(RouteTime.formatClockText("15:00"), state.meetingTimeLabel)
+        assertTrue(state.meetingTimeLabel.endsWith("3:00"))
     }
 }

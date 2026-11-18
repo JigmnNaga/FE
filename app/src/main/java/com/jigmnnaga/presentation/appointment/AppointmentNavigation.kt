@@ -31,6 +31,7 @@ import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.ScheduleEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
 import com.jigmnnaga.di.MemberLocationEntryPoint
+import com.jigmnnaga.di.TravelEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
@@ -680,7 +681,11 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                     .fromApplication(applicationContext, PlaceSearchEntryPoint::class.java)
                                     .placeSearchRepository(),
                                 currentLocationProvider = AndroidCurrentLocationProvider(applicationContext),
-                                currentLocationName = currentLocationName
+                                currentLocationName = currentLocationName,
+                                appointmentId = appointmentId,
+                                travelRepository = EntryPointAccessors
+                                    .fromApplication(applicationContext, TravelEntryPoint::class.java)
+                                    .travelRepository()
                             )
                         }
                     }

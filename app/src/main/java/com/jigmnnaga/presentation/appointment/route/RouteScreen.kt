@@ -76,7 +76,8 @@ fun RouteScreen(
     onArrive: () -> Unit,
     onMyLocationClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenStartPicker: () -> Unit = {}
+    onOpenStartPicker: () -> Unit = {},
+    onRetryOptions: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -102,7 +103,8 @@ fun RouteScreen(
             onArrive = onArrive,
             onMyLocationClick = onMyLocationClick,
             modifier = Modifier.weight(1f),
-            onOpenStartPicker = onOpenStartPicker
+            onOpenStartPicker = onOpenStartPicker,
+            onRetryOptions = onRetryOptions
         )
     }
 }
@@ -121,7 +123,8 @@ fun RouteBody(
     onArrive: () -> Unit,
     onMyLocationClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onOpenStartPicker: () -> Unit = {}
+    onOpenStartPicker: () -> Unit = {},
+    onRetryOptions: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -137,7 +140,8 @@ fun RouteBody(
                     onSelectTransport = onSelectTransport,
                     onToggleOption = onToggleOption,
                     onMyLocationClick = onMyLocationClick,
-                    onOpenStartPicker = onOpenStartPicker
+                    onOpenStartPicker = onOpenStartPicker,
+                    onRetryOptions = onRetryOptions
                 )
                 RouteStage.MOVING -> MovingBody(
                     state = state,
@@ -447,7 +451,8 @@ private fun SelectBody(
     onSelectTransport: (RouteTransport) -> Unit,
     onToggleOption: (RouteTransport) -> Unit,
     onMyLocationClick: () -> Unit,
-    onOpenStartPicker: () -> Unit
+    onOpenStartPicker: () -> Unit,
+    onRetryOptions: () -> Unit
 ) {
     RouteMap(state = state, onMyLocationClick = onMyLocationClick)
     Column(
@@ -455,6 +460,19 @@ private fun SelectBody(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         DestinationCard(state, onOpenStartPicker)
+        when (state.optionsStatus) {
+            RouteRequestStatus.LOADING -> RouteStatusText(
+                text = stringResource(R.string.route_options_loading),
+                tag = "route-options-loading"
+            )
+            RouteRequestStatus.FAILED -> RouteStatusText(
+                text = stringResource(R.string.route_options_failed),
+                tag = "route-options-failed",
+                isError = true,
+                onClick = onRetryOptions
+            )
+            RouteRequestStatus.IDLE -> Unit
+        }
         state.options.forEach { option ->
             OptionCard(
                 option = option,
@@ -475,6 +493,27 @@ private fun SelectBody(
         }
         state.selectedOption?.timeSummary?.let { TimeSummaryCard(it) }
     }
+}
+
+/** 경로를 불러오는 중이거나 실패했다는 안내 한 줄. [onClick]이 있으면 눌러서 다시 시도한다. */
+@Composable
+private fun RouteStatusText(
+    text: String,
+    tag: String,
+    isError: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    Text(
+        text = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = AppDimens.Spacing8)
+            .testTag(tag),
+        style = MaterialTheme.typography.labelSmall.sized(12, 18),
+        color = if (isError) AppColors.Danger.Red600 else AppColors.Monotone.Gray600,
+        textAlign = TextAlign.Center
+    )
 }
 
 @Composable
@@ -968,6 +1007,19 @@ private fun ActionBar(state: RouteUiState, onStartMoving: () -> Unit, onArrive: 
         RouteStage.OVERVIEW -> false
         RouteStage.SELECT -> state.canStart()
         RouteStage.MOVING -> state.canArrive()
+    }
+    if (state.actionStatus == RouteRequestStatus.FAILED) {
+        Text(
+            text = stringResource(R.string.route_action_failed),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = AppDimens.Spacing20)
+                .padding(bottom = AppDimens.Spacing8)
+                .testTag("route-action-failed"),
+            style = MaterialTheme.typography.labelSmall.sized(12, 18),
+            color = AppColors.Danger.Red600,
+            textAlign = TextAlign.Center
+        )
     }
     AppButton(
         text = label,
