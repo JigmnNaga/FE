@@ -1,6 +1,7 @@
 package com.jigmnnaga.presentation.appointment.route
 
 import com.jigmnnaga.domain.model.MemberLocation
+import com.jigmnnaga.domain.model.MemberLocationInput
 import com.jigmnnaga.domain.model.MemberLocationResult
 import com.jigmnnaga.domain.model.PlaceSearchPage
 import com.jigmnnaga.domain.model.PlaceSearchResult
@@ -34,6 +35,17 @@ class RouteStartViewModelTest {
             calls++
             return result
         }
+
+        override suspend fun createLocation(input: MemberLocationInput): MemberLocationResult<MemberLocation> =
+            MemberLocationResult.Failure(retryable = false)
+
+        override suspend fun updateLocation(
+            locationId: Long,
+            input: MemberLocationInput
+        ): MemberLocationResult<MemberLocation> = MemberLocationResult.Failure(retryable = false)
+
+        override suspend fun deleteLocation(locationId: Long): MemberLocationResult<Unit> =
+            MemberLocationResult.Failure(retryable = false)
     }
 
     private class FakeSearch : PlaceSearchRepository {
