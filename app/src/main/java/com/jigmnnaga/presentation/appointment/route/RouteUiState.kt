@@ -65,6 +65,48 @@ data class RouteMovingUiState(
     val hasArrived: Boolean = false
 )
 
+/** 출발 위치를 어디서 골랐는지. */
+enum class RouteStartKind { BASIC, CURRENT, SEARCH }
+
+/**
+ * 출발 위치 후보 한 곳. 경로를 조회하려면 좌표가 있어야 해서, 좌표가 없는 후보는 고를 수 없다.
+ * [detail]은 후보 이름 아래에 보이는 주소 또는 노선 문구다.
+ */
+data class RouteStartLocation(
+    val id: String,
+    val kind: RouteStartKind,
+    val name: String,
+    val detail: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
+) {
+    val hasCoordinates: Boolean get() = latitude != null && longitude != null
+}
+
+/** 현재 위치를 가져오는 중이거나 실패한 이유. */
+enum class RouteCurrentLocationStatus { IDLE, LOADING, FAILED, PERMISSION_DENIED }
+
+/** 장소 검색 진행 상태. */
+enum class RouteSearchStatus { IDLE, LOADING, EMPTY, FAILED }
+
+/** 출발 위치 선택 화면 상태. 내 기본 위치, 현재 위치, 검색 결과 중 하나를 골라 "여기에서 출발하기"를 누른다. */
+data class RouteStartPickerUiState(
+    val isOpen: Boolean = false,
+    val basicLocations: List<RouteStartLocation> = emptyList(),
+    val basicLocationsFailed: Boolean = false,
+    val current: RouteStartLocation? = null,
+    val currentStatus: RouteCurrentLocationStatus = RouteCurrentLocationStatus.IDLE,
+    val query: String = "",
+    val searchResults: List<RouteStartLocation> = emptyList(),
+    val searchStatus: RouteSearchStatus = RouteSearchStatus.IDLE,
+    val selected: RouteStartLocation? = null
+) {
+    fun isSelected(id: String): Boolean = selected?.id == id
+
+    /** "여기에서 출발하기"를 누를 수 있는지. 좌표가 있는 위치를 골라야 한다. */
+    val canConfirm: Boolean get() = selected?.hasCoordinates == true
+}
+
 /** 화면이 보여 주는 단계. 초기화면 → 내 이동 경로 설정 → 약속 이동 순으로 넘어간다. */
 enum class RouteStage { OVERVIEW, SELECT, MOVING }
 
@@ -87,7 +129,10 @@ data class RouteUiState(
     val selectedTransport: RouteTransport? = null,
     val expandedTransport: RouteTransport? = null,
     val moving: RouteMovingUiState? = null,
-    val isMyRouteExpanded: Boolean = false
+    val isMyRouteExpanded: Boolean = false,
+    /** 내가 고른 출발 위치. 아직 고르지 않았으면 null이다. */
+    val startLocation: RouteStartLocation? = null,
+    val startPicker: RouteStartPickerUiState = RouteStartPickerUiState()
 ) {
     val selectedOption: RouteOptionUiState?
         get() = options.firstOrNull { it.transport == selectedTransport }
@@ -110,6 +155,34 @@ data class RouteUiState(
     fun closeRouteSelection(): RouteUiState =
         if (stage == RouteStage.SELECT) {
             copy(stage = RouteStage.OVERVIEW, expandedTransport = null)
+        } else {
+            this
+        }
+
+    /** 경로 선택에서 도착지 카드를 눌러 출발 위치 선택 화면을 연다. 이미 고른 위치가 있으면 선택된 채로 보인다. */
+    fun openStartPicker(): RouteUiState =
+        if (stage == RouteStage.SELECT) {
+            copy(startPicker = startPicker.copy(isOpen = true, selected = startLocation))
+        } else {
+            this
+        }
+
+    /** 위치를 고르지 않고 출발 위치 선택 화면을 닫는다. */
+    fun closeStartPicker(): RouteUiState =
+        if (startPicker.isOpen) copy(startPicker = startPicker.copy(isOpen = false)) else this
+
+    /** 후보를 고른다. 열려 있고 좌표가 있는 후보만 고를 수 있다. */
+    fun selectStartCandidate(candidate: RouteStartLocation): RouteUiState =
+        if (startPicker.isOpen && candidate.hasCoordinates) {
+            copy(startPicker = startPicker.copy(selected = candidate))
+        } else {
+            this
+        }
+
+    /** "여기에서 출발하기". 고른 위치를 출발 위치로 확정하고 화면을 닫는다. */
+    fun confirmStartLocation(): RouteUiState =
+        if (startPicker.isOpen && startPicker.canConfirm) {
+            copy(startLocation = startPicker.selected, startPicker = startPicker.copy(isOpen = false))
         } else {
             this
         }
