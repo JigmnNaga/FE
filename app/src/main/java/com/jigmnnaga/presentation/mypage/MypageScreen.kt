@@ -68,7 +68,8 @@ fun MypageScreen(
     onLocationSharingSettingsClick: () -> Unit,
     onHelpClick: () -> Unit,
     onServiceInfoClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDefaultLocationClick: () -> Unit = {}
 ) {
     // 하단 여백을 포함한 전체 배경을 Green300으로 설정 (상단은 각 섹션에서 명시적으로 Green200 처리)
     Column(
@@ -133,6 +134,7 @@ fun MypageScreen(
         ) {
             SettingsCard(
                 onNotificationSettingsClick = onNotificationSettingsClick,
+                onDefaultLocationClick = onDefaultLocationClick,
                 onLocationSharingSettingsClick = onLocationSharingSettingsClick,
                 onHelpClick = onHelpClick,
                 onServiceInfoClick = onServiceInfoClick
@@ -530,6 +532,7 @@ private fun CircleXIcon(
 @Composable
 private fun SettingsCard(
     onNotificationSettingsClick: () -> Unit,
+    onDefaultLocationClick: () -> Unit,
     onLocationSharingSettingsClick: () -> Unit,
     onHelpClick: () -> Unit,
     onServiceInfoClick: () -> Unit,
@@ -548,6 +551,13 @@ private fun SettingsCard(
             title = "알림 설정",
             subtitle = "약속·멤버 도착 알림",
             onClick = onNotificationSettingsClick,
+            isLast = false
+        )
+        SettingsMenuItem(
+            iconRes = R.drawable.place,
+            title = "기본 위치 설정",
+            subtitle = "집·회사 등 자주 출발하는 위치 등록",
+            onClick = onDefaultLocationClick,
             isLast = false
         )
         SettingsMenuItem(
