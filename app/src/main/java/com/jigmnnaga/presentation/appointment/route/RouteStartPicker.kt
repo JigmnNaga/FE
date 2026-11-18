@@ -190,7 +190,7 @@ private fun SearchSection(
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall.sized(15, 20),
@@ -200,7 +200,7 @@ private fun SectionTitle(text: String) {
 }
 
 @Composable
-private fun Hint(text: String, tag: String) {
+internal fun Hint(text: String, tag: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelSmall.sized(12, 16),
@@ -210,7 +210,7 @@ private fun Hint(text: String, tag: String) {
 }
 
 @Composable
-private fun LocationCard(
+internal fun LocationCard(
     title: String,
     detail: String?,
     selected: Boolean,

@@ -18,13 +18,15 @@ data object MypageRoute
 fun MypageRoute(
     onBackClick: () -> Unit,
     onEditProfileClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDefaultLocationClick: () -> Unit = {}
 ) {
     MypageScreen(
         state = MypageUiState.PreviewDefault,
         onBackClick = onBackClick,
         onEditProfileClick = onEditProfileClick,
         onNotificationSettingsClick = { /* TODO: 알림 설정 화면 연결 */ },
+        onDefaultLocationClick = onDefaultLocationClick,
         onLocationSharingSettingsClick = { /* TODO: 위치 공유 설정 화면 연결 */ },
         onHelpClick = { /* TODO: 도움말 및 문의 화면 연결 */ },
         onServiceInfoClick = { /* TODO: 서비스 정보 화면 연결 */ },
