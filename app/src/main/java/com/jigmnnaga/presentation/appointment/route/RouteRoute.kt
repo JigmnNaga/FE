@@ -47,7 +47,8 @@ fun RouteRoute(
         onArrive = viewModel::onArrive,
         onMyLocationClick = {},
         modifier = modifier,
-        onOpenStartPicker = viewModel::onOpenStartPicker
+        onOpenStartPicker = viewModel::onOpenStartPicker,
+        onRetryOptions = viewModel::onRetryTravelOptions
     )
 
     if (state.startPicker.isOpen) {

@@ -32,7 +32,16 @@ data class RouteOptionUiState(
     val summary: String,
     val steps: List<RouteStepUiState> = emptyList(),
     /** 이 옵션을 골랐을 때 아래에 보여 줄 권장 출발·도착 요약. */
-    val timeSummary: RouteTimeSummaryUiState? = null
+    val timeSummary: RouteTimeSummaryUiState? = null,
+    /** 서버가 알려 준 예상 소요 시간(분). 서버에서 받은 이동수단이면 0보다 크다. */
+    val durationMinutes: Int = 0,
+    /** 이 옵션을 골랐을 때 도착지 카드 오른쪽에 보여 줄 두 줄. 없으면 카드를 그대로 둔다. */
+    val estimateTitle: String? = null,
+    val estimateNote: String? = null,
+    /** 약속 이동 단계의 구간 목록을 출발 시각 기준으로 다시 만들 때 쓰는 서버 구간과 이름. */
+    val travelSteps: List<com.jigmnnaga.domain.model.TravelStep> = emptyList(),
+    val startName: String? = null,
+    val destinationName: String? = null
 )
 
 enum class RouteMemberStatus { NOT_STARTED, MOVING, ARRIVED }
@@ -107,12 +116,15 @@ data class RouteStartPickerUiState(
     val canConfirm: Boolean get() = selected?.hasCoordinates == true
 }
 
+/** 서버 요청이 진행 중인지 실패했는지. */
+enum class RouteRequestStatus { IDLE, LOADING, FAILED }
+
 /** 화면이 보여 주는 단계. 초기화면 → 내 이동 경로 설정 → 약속 이동 순으로 넘어간다. */
 enum class RouteStage { OVERVIEW, SELECT, MOVING }
 
 /**
- * 이동 경로 화면(ROU-001) 상태. 서버 연동과 위치 공유는 후속 작업이라, 화면에 보일 문구와 시간은
- * 모두 바깥에서 만들어 넘기고 이 클래스는 단계 전환 규칙만 가진다.
+ * 이동 경로 화면(ROU-001) 상태. 화면에 보일 문구와 시간은 모두 바깥에서 만들어 넘기고
+ * 이 클래스는 단계 전환 규칙만 가진다. 서버 요청은 [RouteViewModel]이 맡는다.
  */
 data class RouteUiState(
     val appointmentTitle: String = "",
@@ -132,19 +144,32 @@ data class RouteUiState(
     val isMyRouteExpanded: Boolean = false,
     /** 내가 고른 출발 위치. 아직 고르지 않았으면 null이다. */
     val startLocation: RouteStartLocation? = null,
-    val startPicker: RouteStartPickerUiState = RouteStartPickerUiState()
+    val startPicker: RouteStartPickerUiState = RouteStartPickerUiState(),
+    /** 고른 출발 위치에서 이동수단 후보를 불러오는 상태. */
+    val optionsStatus: RouteRequestStatus = RouteRequestStatus.IDLE,
+    /** "지금 출발하기"와 "도착" 요청 상태. */
+    val actionStatus: RouteRequestStatus = RouteRequestStatus.IDLE
 ) {
     val selectedOption: RouteOptionUiState?
         get() = options.firstOrNull { it.transport == selectedTransport }
 
-    /** 경로 선택 단계에서 "지금 출발하기"를 누를 수 있는지. 이동수단을 골라야 하고 이동 정보가 있어야 한다. */
-    fun canStart(): Boolean =
-        stage == RouteStage.SELECT && selectedOption != null && moving != null
+    /**
+     * 경로 선택 단계에서 "지금 출발하기"를 누를 수 있는지. 이동수단을 골라야 하고 이동 정보가 있어야 한다.
+     * 서버에서 받은 이동수단(소요 시간이 있는 옵션)은 출발한 뒤에 이동 정보를 만들고,
+     * 이 후보는 출발 위치를 고른 뒤에만 불러오므로 출발 위치 없이는 고를 수 없다.
+     * 요청이 진행 중일 때는 누를 수 없다.
+     */
+    fun canStart(): Boolean {
+        val option = selectedOption ?: return false
+        val hasMovingInfo = moving != null || (option.durationMinutes > 0 && startLocation != null)
+        return stage == RouteStage.SELECT && hasMovingInfo && actionStatus != RouteRequestStatus.LOADING
+    }
 
     /** 약속 이동 단계의 "도착" 버튼을 누를 수 있는지. */
     fun canArrive(): Boolean {
         val moving = moving ?: return false
-        return stage == RouteStage.MOVING && moving.canArrive && !moving.hasArrived
+        return stage == RouteStage.MOVING && moving.canArrive && !moving.hasArrived &&
+            actionStatus != RouteRequestStatus.LOADING
     }
 
     /** 초기화면에서 내 카드를 눌러 경로 선택으로 들어간다. 이미 다른 단계면 그대로 둔다. */
@@ -188,12 +213,18 @@ data class RouteUiState(
         }
 
     /** 줄 전체를 누르면 이동수단을 고른다. 목록에 없는 이동수단은 무시한다. */
-    fun selectTransport(transport: RouteTransport): RouteUiState =
-        if (stage == RouteStage.SELECT && options.any { it.transport == transport }) {
-            copy(selectedTransport = transport)
+    fun selectTransport(transport: RouteTransport): RouteUiState {
+        val option = options.firstOrNull { it.transport == transport }
+        return if (stage == RouteStage.SELECT && option != null) {
+            copy(
+                selectedTransport = transport,
+                destinationEstimateTitle = option.estimateTitle ?: destinationEstimateTitle,
+                destinationEstimateNote = option.estimateNote ?: destinationEstimateNote
+            )
         } else {
             this
         }
+    }
 
     /** 줄 오른쪽 화살표를 누르면 상세를 펼치거나 접는다. 한 번에 하나만 펼친다. */
     fun toggleOptionExpanded(transport: RouteTransport): RouteUiState =
@@ -206,6 +237,47 @@ data class RouteUiState(
     /** 경로 선택을 마치고 약속 이동으로 넘어간다. [canStart]가 아니면 그대로 둔다. */
     fun startMoving(): RouteUiState =
         if (canStart()) copy(stage = RouteStage.MOVING, expandedTransport = null) else this
+
+    /**
+     * 서버에 출발을 알린 뒤 약속 이동 단계로 넘어간다. 이동 정보는 서버에서 받은 이동수단으로 만든 값이다.
+     * 내 멤버 카드는 이동 중으로 바꾸고, 선택 단계에서 열어 둔 상세는 접는다.
+     */
+    fun departed(moving: RouteMovingUiState): RouteUiState =
+        if (stage == RouteStage.SELECT) {
+            copy(
+                stage = RouteStage.MOVING,
+                expandedTransport = null,
+                moving = moving,
+                actionStatus = RouteRequestStatus.IDLE,
+                members = members.map { member ->
+                    if (member.isMe) {
+                        member.copy(
+                            status = RouteMemberStatus.MOVING,
+                            statusLabel = null,
+                            description = moving.mySubtitle,
+                            transport = moving.myTransport
+                        )
+                    } else {
+                        member
+                    }
+                }
+            )
+        } else {
+            this
+        }
+
+    /** 이동 중에 남은 시간이 바뀌었을 때. 내 카드의 한 줄도 같이 바꾼다. */
+    fun withMoving(moving: RouteMovingUiState): RouteUiState =
+        if (stage == RouteStage.MOVING) {
+            copy(
+                moving = moving,
+                members = members.map { member ->
+                    if (member.isMe) member.copy(description = moving.mySubtitle) else member
+                }
+            )
+        } else {
+            this
+        }
 
     fun toggleMyRouteExpanded(): RouteUiState =
         if (stage == RouteStage.MOVING) copy(isMyRouteExpanded = !isMyRouteExpanded) else this

@@ -13,8 +13,8 @@ data class RouteMemberLabels(
 
 /**
  * 약속 상세로 이동 경로 화면(ROU-001) 상태를 만든다.
- * 제목, 멤버 요약, 약속 장소, 멤버 목록은 약속 상세 값이다. 경로 선택지와 도착 예정 시각은
- * 이동 경로 API(이동·실시간 위치 업무)가 붙기 전까지 [RouteSampleData]의 예시 값을 그대로 쓴다.
+ * 제목, 멤버 요약, 약속 시각, 약속 장소, 멤버 목록은 약속 상세 값이다. 경로 선택지와 도착 예정 시각은
+ * 출발 위치를 고른 뒤 이동 API로 받아 오므로 처음에는 비어 있다.
  * 서버 응답에는 내 멤버 ID가 없을 수 있어서, [myMemberId]를 알 수 없으면 방장일 때만 방장 멤버를 "나"로 본다.
  */
 internal fun AppointmentDetail.toRouteUiState(
@@ -38,10 +38,11 @@ internal fun AppointmentDetail.toRouteUiState(
         )
     }.sortedByDescending { it.isMe }
 
-    return RouteSampleData.overview.copy(
+    return RouteUiState(
         appointmentTitle = title,
         memberSummary = memberSummary,
         destinationName = placeSummary().orEmpty(),
+        meetingTimeLabel = RouteTime.formatClockText(confirmedTime),
         members = routeMembers
     )
 }
