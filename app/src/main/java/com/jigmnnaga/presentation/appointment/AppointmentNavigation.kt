@@ -30,6 +30,7 @@ import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.ScheduleEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
+import com.jigmnnaga.di.MemberLocationEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Modifier
@@ -49,6 +50,7 @@ import com.jigmnnaga.presentation.appointment.detail.toHostRoomUiState
 import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
 import com.jigmnnaga.presentation.appointment.detail.toParticipantManagementUiState
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
+import com.jigmnnaga.presentation.appointment.route.AndroidCurrentLocationProvider
 import com.jigmnnaga.presentation.appointment.route.RouteRoute
 import com.jigmnnaga.presentation.appointment.route.RouteViewModel
 import com.jigmnnaga.presentation.appointment.route.rememberRouteMemberLabels
@@ -649,6 +651,7 @@ object AppointmentNavigationGraph : AppNavigationGraph {
     ) {
         val applicationContext = LocalContext.current.applicationContext
         val routeLabels = rememberRouteMemberLabels()
+        val currentLocationName = stringResource(R.string.route_start_current_title)
         var myMemberId by remember { mutableStateOf<Long?>(null) }
         var myMemberResolved by remember { mutableStateOf(false) }
         LaunchedEffect(Unit) {
@@ -665,11 +668,19 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                     viewModelFactory {
                         initializer {
                             RouteViewModel(
-                                detail.toRouteUiState(
+                                initialState = detail.toRouteUiState(
                                     memberSummary = labels.memberSummary(detail.joinedCount),
                                     labels = routeLabels,
                                     myMemberId = myMemberId
-                                )
+                                ),
+                                memberLocationRepository = EntryPointAccessors
+                                    .fromApplication(applicationContext, MemberLocationEntryPoint::class.java)
+                                    .memberLocationRepository(),
+                                placeSearchRepository = EntryPointAccessors
+                                    .fromApplication(applicationContext, PlaceSearchEntryPoint::class.java)
+                                    .placeSearchRepository(),
+                                currentLocationProvider = AndroidCurrentLocationProvider(applicationContext),
+                                currentLocationName = currentLocationName
                             )
                         }
                     }

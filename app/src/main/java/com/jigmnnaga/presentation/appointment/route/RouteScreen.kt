@@ -38,6 +38,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -74,7 +75,8 @@ fun RouteScreen(
     onToggleMyRoute: () -> Unit,
     onArrive: () -> Unit,
     onMyLocationClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenStartPicker: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -99,7 +101,8 @@ fun RouteScreen(
             onToggleMyRoute = onToggleMyRoute,
             onArrive = onArrive,
             onMyLocationClick = onMyLocationClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            onOpenStartPicker = onOpenStartPicker
         )
     }
 }
@@ -117,7 +120,8 @@ fun RouteBody(
     onToggleMyRoute: () -> Unit,
     onArrive: () -> Unit,
     onMyLocationClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onOpenStartPicker: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Column(
@@ -132,7 +136,8 @@ fun RouteBody(
                     state = state,
                     onSelectTransport = onSelectTransport,
                     onToggleOption = onToggleOption,
-                    onMyLocationClick = onMyLocationClick
+                    onMyLocationClick = onMyLocationClick,
+                    onOpenStartPicker = onOpenStartPicker
                 )
                 RouteStage.MOVING -> MovingBody(
                     state = state,
@@ -441,14 +446,15 @@ private fun SelectBody(
     state: RouteUiState,
     onSelectTransport: (RouteTransport) -> Unit,
     onToggleOption: (RouteTransport) -> Unit,
-    onMyLocationClick: () -> Unit
+    onMyLocationClick: () -> Unit,
+    onOpenStartPicker: () -> Unit
 ) {
     RouteMap(state = state, onMyLocationClick = onMyLocationClick)
     Column(
         modifier = Modifier.padding(horizontal = AppDimens.Spacing20, vertical = AppDimens.Spacing12),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        DestinationCard(state)
+        DestinationCard(state, onOpenStartPicker)
         state.options.forEach { option ->
             OptionCard(
                 option = option,
@@ -472,7 +478,7 @@ private fun SelectBody(
 }
 
 @Composable
-private fun DestinationCard(state: RouteUiState) {
+private fun DestinationCard(state: RouteUiState, onOpenStartPicker: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -496,10 +502,28 @@ private fun DestinationCard(state: RouteUiState) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            // 출발 위치를 고르기 전에는 "출발 위치 선택", 고른 뒤에는 "○○에서 출발"을 보여 주고 누르면 선택 화면이 열린다.
+            // 선택 화면을 열 수 없는 단계(약속 이동)에서는 고른 위치만 글자로 보여 주고, 없으면 "약속 장소"를 쓴다.
+            val startText = state.startLocation?.let { stringResource(R.string.route_start_from, it.name) }
+                ?: if (onOpenStartPicker != null) {
+                    stringResource(R.string.route_start_pick_prompt)
+                } else {
+                    stringResource(R.string.route_destination_caption)
+                }
             Text(
-                text = stringResource(R.string.route_destination_caption),
+                text = startText,
                 style = MaterialTheme.typography.labelSmall.sized(11, 16),
-                color = AppColors.Monotone.Gray600
+                color = AppColors.Monotone.Gray600,
+                textDecoration = if (onOpenStartPicker != null) TextDecoration.Underline else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (onOpenStartPicker != null) {
+                    Modifier
+                        .clickable(onClick = onOpenStartPicker)
+                        .testTag("route-start-location-link")
+                } else {
+                    Modifier
+                }
             )
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {

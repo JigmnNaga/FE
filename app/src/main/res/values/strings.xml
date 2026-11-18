@@ -536,4 +536,23 @@
     <string name="route_member_not_started">미출발</string>
     <string name="route_member_waiting">아직 출발 전이에요</string>
     <string name="route_member_set_route_hint">이동 경로를 설정해주세요.</string>
+    <string name="route_start_pick_prompt">출발 위치 선택</string>
+    <string name="route_start_from">%1$s에서 출발</string>
+    <string name="route_start_picker_title">출발 위치 선택</string>
+    <string name="route_start_basic_title">내 기본 위치</string>
+    <string name="route_start_basic_count">%1$d / 3</string>
+    <string name="route_start_basic_caption">자주 출발하는 위치는 마이페이지에서 수정할 수 있어요.</string>
+    <string name="route_start_basic_empty">등록한 기본 위치가 없어요.</string>
+    <string name="route_start_basic_failed">기본 위치를 불러오지 못했어요.</string>
+    <string name="route_start_current_title">현재 위치</string>
+    <string name="route_start_current_loading">현재 위치를 확인하고 있어요.</string>
+    <string name="route_start_current_failed">현재 위치를 가져오지 못했어요. 위치 설정을 확인해 주세요.</string>
+    <string name="route_start_current_denied">위치 권한을 허용하면 현재 위치에서 출발할 수 있어요.</string>
+    <string name="route_start_other_title">그 외 출발 위치 선택</string>
+    <string name="route_start_search_hint">위치 검색...</string>
+    <string name="route_start_results_title">위치 선택</string>
+    <string name="route_start_search_loading">검색하고 있어요.</string>
+    <string name="route_start_search_empty">검색 결과가 없어요.</string>
+    <string name="route_start_search_failed">검색하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
+    <string name="route_start_confirm">여기에서 출발하기</string>
 </resources>

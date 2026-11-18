@@ -21,7 +21,11 @@ class RouteScreenTest {
     val composeRule = createComposeRule()
 
     /** 화면이 알린 사실을 [RouteUiState]의 전환 규칙으로 되먹여, 실제 ViewModel과 같은 흐름을 만든다. */
-    private fun setScreen(initial: RouteUiState, onArrived: () -> Unit = {}) {
+    private fun setScreen(
+        initial: RouteUiState,
+        onArrived: () -> Unit = {},
+        onOpenStartPicker: () -> Unit = {}
+    ) {
         val state = mutableStateOf(initial)
         composeRule.setContent {
             JigmnnagaTheme {
@@ -41,7 +45,8 @@ class RouteScreenTest {
                         onArrived()
                         state.value = state.value.arrive()
                     },
-                    onMyLocationClick = {}
+                    onMyLocationClick = {},
+                    onOpenStartPicker = onOpenStartPicker
                 )
             }
         }
@@ -75,6 +80,29 @@ class RouteScreenTest {
         composeRule.onNodeWithTag("route-option-BUS").assertIsSelected()
         composeRule.onNodeWithTag("route-time-summary").assertExists()
         composeRule.onNodeWithTag("route-action-button").assertIsEnabled()
+    }
+
+    @Test
+    fun destinationCardShowsStartLocationLinkAndReportsClick() {
+        var opened = 0
+        setScreen(RouteSampleData.selecting, onOpenStartPicker = { opened++ })
+        composeRule.onNodeWithTag("route-start-location-link").assertExists()
+        composeRule.onNodeWithText("출발 위치 선택").assertExists()
+        composeRule.onNodeWithTag("route-start-location-link").performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun destinationCardShowsChosenStartLocationName() {
+        val home = RouteStartLocation(
+            id = "basic-1",
+            kind = RouteStartKind.BASIC,
+            name = "집",
+            latitude = 37.5,
+            longitude = 127.0
+        )
+        setScreen(RouteSampleData.selecting.copy(startLocation = home))
+        composeRule.onNodeWithText("집에서 출발").assertExists()
     }
 
     @Test
