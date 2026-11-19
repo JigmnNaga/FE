@@ -2,13 +2,20 @@ package com.jigmnnaga.presentation.appointment.route
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jigmnnaga.domain.model.LocationShareEnd
+import com.jigmnnaga.domain.model.LocationShareError
+import com.jigmnnaga.domain.model.MemberArrival
+import com.jigmnnaga.domain.model.MemberDepartureStatus
+import com.jigmnnaga.domain.model.MemberEtaUpdate
 import com.jigmnnaga.domain.model.MemberLocationResult
+import com.jigmnnaga.domain.model.MemberLocationUpdate
 import com.jigmnnaga.domain.model.PlaceSearchPage
 import com.jigmnnaga.domain.model.PlaceSearchResult
 import com.jigmnnaga.domain.model.PlaceSearchType
 import com.jigmnnaga.domain.model.SearchedPlace
 import com.jigmnnaga.domain.model.TravelRejectReason
 import com.jigmnnaga.domain.model.TravelResult
+import com.jigmnnaga.domain.repository.LocationRealtime
 import com.jigmnnaga.domain.repository.MemberLocationRepository
 import com.jigmnnaga.domain.repository.PlaceSearchRepository
 import com.jigmnnaga.domain.repository.TravelRepository
@@ -16,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,15 +31,19 @@ import kotlinx.coroutines.launch
 /**
  * 이동 경로 화면(ROU-001)의 단계 전환, 출발 위치 선택, 이동 API 연동을 맡는다.
  * 고른 출발 위치를 약속에 등록하고 이동수단 후보를 불러오며, "지금 출발하기"와 "도착"을 서버에 알린다.
- * 위치 공유(WebSocket)와 지도 위 내 위치 갱신은 후속 작업이다.
+ * 실시간 위치 공유(STOMP)도 맡는다. 화면이 만들어지면 연결해 친구들의 이동·도착 소식과 내 도착 예정 시각을 받고,
+ * 내가 출발하면 내 위치를 일정 간격으로 서버에 보낸다. 지도 위 표식 그리기는 후속 작업이다.
  *
- * 저장소와 현재 위치 제공자는 없어도 동작한다(없으면 해당 목록이 비어 있고, 이동수단은 화면 안에서만 바뀐다).
+ * 저장소, 현재 위치 제공자, 실시간 연결은 없어도 동작한다(없으면 해당 목록이 비어 있고, 이동수단은 화면 안에서만 바뀐다).
  *
  * @param currentLocationName "현재 위치" 후보에 붙일 이름
  * @param searchDebounceMillis 검색어 입력이 멈춘 뒤 검색을 시작하기까지 기다리는 시간
  * @param appointmentId 이동 API를 부를 약속 ID
  * @param nowMillis 지금 시각. 이동 중 남은 시간을 계산할 때 쓴다.
  * @param movingTickMillis 이동 중 남은 시간을 다시 계산하는 간격
+ * @param locationRealtime 실시간 위치 공유 연결
+ * @param locationUpdates 이동 중 내 위치 변화
+ * @param locationSendIntervalMillis 내 위치를 서버에 보내는 최소 간격(서버는 1초 안의 반복 전송을 거절한다)
  */
 class RouteViewModel(
     initialState: RouteUiState = RouteUiState(),
@@ -44,7 +56,10 @@ class RouteViewModel(
     private val travelRepository: TravelRepository? = null,
     private val travelLabels: RouteTravelLabels = RouteTravelLabels(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
-    private val movingTickMillis: Long = DEFAULT_MOVING_TICK_MILLIS
+    private val movingTickMillis: Long = DEFAULT_MOVING_TICK_MILLIS,
+    private val locationRealtime: LocationRealtime? = null,
+    private val locationUpdates: CurrentLocationUpdates? = null,
+    private val locationSendIntervalMillis: Long = DEFAULT_LOCATION_SEND_MILLIS
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(initialState)
     val uiState: StateFlow<RouteUiState> = _uiState.asStateFlow()
@@ -55,6 +70,16 @@ class RouteViewModel(
     private var movingTickerJob: Job? = null
     private var departedAtMillis: Long = 0L
     private var appointmentMillis: Long? = null
+    private var movingOption: RouteOptionUiState? = null
+    private var serverArrivalMillis: Long? = null
+    private var shareJob: Job? = null
+    private val realtimeJobs = mutableListOf<Job>()
+    private var lastSentMillis: Long? = null
+    private val myMemberId: String? = initialState.members.firstOrNull { it.isMe }?.id
+
+    init {
+        startRealtime()
+    }
 
     /** 초기화면에서 내 카드를 눌렀을 때. */
     fun onMyCardClick() = _uiState.update { it.openRouteSelection() }
@@ -85,8 +110,11 @@ class RouteViewModel(
             if (departed.isSuccessOr(TravelRejectReason.ALREADY_DEPARTED)) {
                 val now = nowMillis()
                 departedAtMillis = now
+                movingOption = option
+                serverArrivalMillis = null
                 _uiState.update { it.departed(option.toMoving(now, now, travelLabels)) }
-                startMovingTicker(option)
+                startMovingTicker()
+                startLocationSharing()
             } else {
                 setActionStatus(RouteRequestStatus.FAILED)
             }
@@ -110,23 +138,29 @@ class RouteViewModel(
         viewModelScope.launch {
             val result = repository.arrive(appointmentId)
             if (result.isSuccessOr(TravelRejectReason.ALREADY_ARRIVED)) {
-                movingTickerJob?.cancel()
-                val now = nowMillis()
-                _uiState.update { state ->
-                    val arrived = state.copy(actionStatus = RouteRequestStatus.IDLE).arrive()
-                    val moving = arrived.moving?.toArrived(now, appointmentMillis, travelLabels)
-                    arrived.copy(
-                        moving = moving,
-                        destinationEstimateTitle = travelLabels.arrivedEstimateTitle.format(RouteTime.formatClock(now)),
-                        destinationEstimateNote = arrivedEstimateNote(now, appointmentMillis, travelLabels),
-                        members = arrived.members.map { member ->
-                            if (member.isMe && moving != null) member.copy(description = moving.mySubtitle) else member
-                        }
-                    )
-                }
+                applyMyArrival(nowMillis())
             } else {
                 setActionStatus(RouteRequestStatus.FAILED)
             }
+        }
+    }
+
+    /** 내 도착을 화면에 반영한다. 서버 응답으로도, 서버가 위치로 도착을 알아챈 소식으로도 들어오며 한 번만 반영한다. */
+    private fun applyMyArrival(at: Long) {
+        if (_uiState.value.moving?.hasArrived != false) return
+        movingTickerJob?.cancel()
+        stopLocationSharing()
+        _uiState.update { state ->
+            val arrived = state.copy(actionStatus = RouteRequestStatus.IDLE).forceArrive()
+            val moving = arrived.moving?.toArrived(at, appointmentMillis, travelLabels)
+            arrived.copy(
+                moving = moving,
+                destinationEstimateTitle = travelLabels.arrivedEstimateTitle.format(RouteTime.formatClock(at)),
+                destinationEstimateNote = arrivedEstimateNote(at, appointmentMillis, travelLabels),
+                members = arrived.members.map { member ->
+                    if (member.isMe && moving != null) member.copy(description = moving.mySubtitle) else member
+                }
+            )
         }
     }
 
@@ -134,23 +168,137 @@ class RouteViewModel(
         _uiState.update { it.copy(actionStatus = status) }
 
     /** 이동 중에는 일정 간격으로 남은 시간을 다시 계산한다. 도착 직전이면 "도착" 버튼이 켜진다. */
-    private fun startMovingTicker(option: RouteOptionUiState) {
+    private fun startMovingTicker() {
         movingTickerJob?.cancel()
         movingTickerJob = viewModelScope.launch {
             while (true) {
                 delay(movingTickMillis)
-                _uiState.update { state ->
-                    val current = state.moving
-                    if (current == null || current.hasArrived) {
-                        state
-                    } else {
-                        state.withMoving(
-                            option.toMoving(departedAtMillis, nowMillis(), travelLabels, current.canArrive)
-                        )
-                    }
+                refreshMoving()
+            }
+        }
+    }
+
+    /** 지금 시각과 서버가 알려 준 도착 예정 시각(있으면)으로 약속 이동 단계의 값을 다시 만든다. */
+    private fun refreshMoving() {
+        val option = movingOption ?: return
+        _uiState.update { state ->
+            val current = state.moving
+            if (current == null || current.hasArrived) {
+                state
+            } else {
+                state.withMoving(
+                    option.toMoving(
+                        departedAtMillis, nowMillis(), travelLabels, current.canArrive, serverArrivalMillis
+                    )
+                )
+            }
+        }
+    }
+
+    // ---- 실시간 위치 공유 ----
+
+    /** 연결하고 약속의 위치·도착 예정·도착·공유 종료·오류 소식을 받기 시작한다. 내 위치 전송은 출발한 뒤에 시작한다. */
+    private fun startRealtime() {
+        val realtime = locationRealtime ?: return
+        realtime.connect()
+        collectRealtime(realtime.locations(appointmentId), ::onLocationUpdate)
+        collectRealtime(realtime.etas(appointmentId), ::onEtaUpdate)
+        collectRealtime(realtime.arrivals(appointmentId), ::onArrivalUpdate)
+        collectRealtime(realtime.sharingEnds(appointmentId), ::onSharingEnd)
+        collectRealtime(realtime.errors(), ::onShareError)
+    }
+
+    private fun <T> collectRealtime(flow: Flow<T>, handle: (T) -> Unit) {
+        realtimeJobs += viewModelScope.launch { flow.collect(handle) }
+    }
+
+    /** 출발한 뒤 내 위치가 바뀔 때마다(최소 [locationSendIntervalMillis] 간격으로) 서버에 보낸다. */
+    private fun startLocationSharing() {
+        val realtime = locationRealtime ?: return
+        val updates = locationUpdates ?: return
+        shareJob?.cancel()
+        lastSentMillis = null
+        shareJob = viewModelScope.launch {
+            updates.updates().collect { coordinates ->
+                val now = nowMillis()
+                val last = lastSentMillis
+                if (last == null || now - last >= locationSendIntervalMillis) {
+                    lastSentMillis = now
+                    realtime.sendLocation(appointmentId, coordinates.latitude, coordinates.longitude)
                 }
             }
         }
+    }
+
+    private fun stopLocationSharing() {
+        shareJob?.cancel()
+        shareJob = null
+    }
+
+    private fun isMe(memberId: Long): Boolean = myMemberId != null && myMemberId == memberId.toString()
+
+    /** 친구의 위치 소식. 이동 중이면 이동수단과 함께 "이동 중"으로, 도착했으면 "도착 완료"로 바꾼다. */
+    private fun onLocationUpdate(update: MemberLocationUpdate) {
+        if (isMe(update.memberId)) return
+        _uiState.update { state ->
+            state.updateFriend(update.memberId.toString()) { member ->
+                val located = member.copy(latitude = update.latitude, longitude = update.longitude)
+                when {
+                    member.status == RouteMemberStatus.ARRIVED -> located
+                    update.departureStatus == MemberDepartureStatus.DEPARTED -> located.asMoving(travelLabels)
+                    update.departureStatus == MemberDepartureStatus.ARRIVED -> located.asArrived(travelLabels)
+                    else -> located
+                }
+            }
+        }
+    }
+
+    /** 내 도착 예정 시각이 서버에서 다시 계산되어 오면 남은 시간과 도착지 카드를 그 시각으로 맞춘다. */
+    private fun onEtaUpdate(update: MemberEtaUpdate) {
+        if (!isMe(update.memberId)) return
+        val arrival = RouteTime.parseServer(update.estimatedArrivalTime) ?: return
+        val state = _uiState.value
+        if (state.stage != RouteStage.MOVING || state.moving?.hasArrived != false) return
+        serverArrivalMillis = arrival
+        refreshMoving()
+        val gap = appointmentMillis?.let { RouteTime.minutesBetween(arrival, it) }
+        _uiState.update {
+            it.copy(
+                destinationEstimateTitle = travelLabels.estimateTitle.format(RouteTime.formatClock(arrival)),
+                destinationEstimateNote = estimateNote(appointmentMillis, gap, travelLabels)
+                    ?: it.destinationEstimateNote
+            )
+        }
+    }
+
+    private fun onArrivalUpdate(update: MemberArrival) {
+        if (isMe(update.memberId)) {
+            applyMyArrival(RouteTime.parseServer(update.arrivedAt) ?: nowMillis())
+        } else {
+            _uiState.update { state ->
+                state.updateFriend(update.memberId.toString()) { it.asArrived(travelLabels) }
+            }
+        }
+    }
+
+    /** 내 위치 공유가 끝났으면(직접 껐거나 도착) 더 보내지 않는다. 친구의 공유 종료는 마지막 상태를 그대로 둔다. */
+    private fun onSharingEnd(end: LocationShareEnd) {
+        if (isMe(end.memberId)) stopLocationSharing()
+    }
+
+    /** 서버가 내 위치를 거절했을 때. 너무 자주 보낸 경우와 출발 전 오류는 다음 갱신에서 풀리므로 계속 보낸다. */
+    private fun onShareError(error: LocationShareError) {
+        when (error) {
+            LocationShareError.SHARING_STOPPED, LocationShareError.OTHER -> stopLocationSharing()
+            LocationShareError.NOT_DEPARTED, LocationShareError.TOO_FREQUENT -> Unit
+        }
+    }
+
+    override fun onCleared() {
+        realtimeJobs.forEach { it.cancel() }
+        realtimeJobs.clear()
+        stopLocationSharing()
+        locationRealtime?.disconnect()
     }
 
     /** 도착지 카드의 출발 위치 줄을 눌렀을 때. 열 때마다 내 기본 위치를 새로 불러온다. */
@@ -335,6 +483,7 @@ class RouteViewModel(
         const val DEFAULT_CURRENT_LOCATION_NAME = "현재 위치"
         const val DEFAULT_SEARCH_DEBOUNCE_MILLIS = 300L
         const val DEFAULT_MOVING_TICK_MILLIS = 30_000L
+        const val DEFAULT_LOCATION_SEND_MILLIS = 5_000L
         const val CURRENT_LOCATION_ID = "current"
         const val BASIC_LOCATION_ID_PREFIX = "basic-"
     }
@@ -366,6 +515,23 @@ private fun SearchedPlace.toStartLocation(): RouteStartLocation? {
         longitude = lng
     )
 }
+
+/** 친구가 이동을 시작했다. 약속 상세가 알려 준 이동수단이 있으면 함께 보여 준다. */
+private fun RouteMemberUiState.asMoving(labels: RouteTravelLabels): RouteMemberUiState {
+    val shown = plannedTransport ?: transport
+    return copy(
+        status = RouteMemberStatus.MOVING,
+        statusLabel = null,
+        description = labels.friendMovingText(shown),
+        transport = shown
+    )
+}
+
+private fun RouteMemberUiState.asArrived(labels: RouteTravelLabels): RouteMemberUiState = copy(
+    status = RouteMemberStatus.ARRIVED,
+    statusLabel = null,
+    description = labels.friendArrived
+)
 
 /** 성공했거나, 서버가 [alreadyDone]이라고 답한 경우(이미 같은 상태라는 뜻)면 true. */
 private fun TravelResult<Unit>.isSuccessOr(alreadyDone: TravelRejectReason): Boolean =

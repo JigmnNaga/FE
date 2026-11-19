@@ -76,8 +76,20 @@ data class RouteTravelLabels(
     val arrivedEstimateTitle: String = "도착 완료 %1\$s",
     val arrivedEstimateNoteEarly: String = "약속 %1\$d분 전 도착",
     val arrivedEstimateNoteLate: String = "약속 %1\$d분 후 도착",
-    val arrivedEstimateNoteJustInTime: String = "약속 시각에 도착"
+    val arrivedEstimateNoteJustInTime: String = "약속 시각에 도착",
+    val friendMovingBus: String = "버스로 이동 중",
+    val friendMovingSubway: String = "지하철로 이동 중",
+    val friendMovingTaxi: String = "택시로 이동 중",
+    val friendMoving: String = "이동 중",
+    val friendArrived: String = "도착 완료"
 ) {
+    fun friendMovingText(transport: RouteTransport?): String = when (transport) {
+        RouteTransport.BUS -> friendMovingBus
+        RouteTransport.SUBWAY -> friendMovingSubway
+        RouteTransport.TAXI -> friendMovingTaxi
+        null -> friendMoving
+    }
+
     fun transportName(mode: TravelMode): String = when (mode) {
         TravelMode.BUS -> transportBus
         TravelMode.SUBWAY -> transportSubway
@@ -180,16 +192,7 @@ private fun TravelOption.toRouteOption(
         },
         durationMinutes = durationMinutes,
         estimateTitle = arrivalMillis?.let { labels.estimateTitle.format(RouteTime.formatClock(it)) },
-        estimateNote = if (appointmentMillis != null && gap != null) {
-            val meeting = RouteTime.formatClock(appointmentMillis)
-            when {
-                gap > 0 -> labels.estimateNoteEarly.format(meeting, gap.toInt())
-                gap < 0 -> labels.estimateNoteLate.format(meeting, (-gap).toInt())
-                else -> labels.estimateNoteJustInTime.format(meeting)
-            }
-        } else {
-            null
-        },
+        estimateNote = estimateNote(appointmentMillis, gap, labels),
         travelSteps = steps,
         startName = startName,
         destinationName = destinationName
@@ -291,6 +294,17 @@ internal fun buildRouteSteps(
     }
 }
 
+/** 도착지 카드 오른쪽 두 번째 줄. [gap]은 도착 예정에서 약속 시각까지 분(양수면 여유). 모르면 null. */
+internal fun estimateNote(appointmentMillis: Long?, gap: Long?, labels: RouteTravelLabels): String? {
+    if (appointmentMillis == null || gap == null) return null
+    val meeting = RouteTime.formatClock(appointmentMillis)
+    return when {
+        gap > 0 -> labels.estimateNoteEarly.format(meeting, gap.toInt())
+        gap < 0 -> labels.estimateNoteLate.format(meeting, (-gap).toInt())
+        else -> labels.estimateNoteJustInTime.format(meeting)
+    }
+}
+
 private fun Long.meetingGapNote(labels: RouteTravelLabels): String = when {
     this > 0 -> labels.minutesBeforeMeeting.format(toInt())
     this < 0 -> labels.minutesAfterMeeting.format((-this).toInt())
@@ -327,14 +341,16 @@ private fun TravelStep.toRouteStepKind(): RouteStepKind = when (type) {
 /**
  * 출발한 시각([departedAt])과 지금([now])으로 약속 이동 단계(ROU-001-03)의 값을 만든다.
  * 도착까지 1분 이하로 남으면 "도착" 버튼을 켜고, 한 번 켜진 버튼은 도착하기 전까지 끄지 않는다.
+ * 서버가 실시간 위치로 다시 계산한 도착 예정 시각([serverArrivalMillis])을 받았으면 그 시각을 기준으로 한다.
  */
 internal fun RouteOptionUiState.toMoving(
     departedAt: Long,
     now: Long,
     labels: RouteTravelLabels,
-    canArriveAlready: Boolean = false
+    canArriveAlready: Boolean = false,
+    serverArrivalMillis: Long? = null
 ): RouteMovingUiState {
-    val arrival = departedAt + RouteTime.minutesToMillis(durationMinutes)
+    val arrival = serverArrivalMillis ?: (departedAt + RouteTime.minutesToMillis(durationMinutes))
     val remaining = ((arrival - now + 59_999L) / 60_000L).coerceAtLeast(0L).toInt()
     val elapsed = (durationMinutes - remaining).coerceIn(0, durationMinutes)
     val arrivalClock = RouteTime.formatClock(arrival)

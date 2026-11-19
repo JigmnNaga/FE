@@ -30,6 +30,7 @@ import com.jigmnnaga.di.ConfirmationEntryPoint
 import com.jigmnnaga.di.PlaceSearchEntryPoint
 import com.jigmnnaga.di.ScheduleEntryPoint
 import com.jigmnnaga.di.InviteEntryPoint
+import com.jigmnnaga.di.LocationRealtimeEntryPoint
 import com.jigmnnaga.di.MemberLocationEntryPoint
 import com.jigmnnaga.di.TravelEntryPoint
 import com.jigmnnaga.domain.model.AppointmentDetail
@@ -52,6 +53,7 @@ import com.jigmnnaga.presentation.appointment.detail.toMemberResponses
 import com.jigmnnaga.presentation.appointment.detail.toParticipantManagementUiState
 import com.jigmnnaga.presentation.appointment.detail.toParticipantRoomUiState
 import com.jigmnnaga.presentation.appointment.route.AndroidCurrentLocationProvider
+import com.jigmnnaga.presentation.appointment.route.AndroidCurrentLocationUpdates
 import com.jigmnnaga.presentation.appointment.route.RouteRoute
 import com.jigmnnaga.presentation.appointment.route.RouteViewModel
 import com.jigmnnaga.presentation.appointment.route.rememberRouteMemberLabels
@@ -685,7 +687,11 @@ object AppointmentNavigationGraph : AppNavigationGraph {
                                 appointmentId = appointmentId,
                                 travelRepository = EntryPointAccessors
                                     .fromApplication(applicationContext, TravelEntryPoint::class.java)
-                                    .travelRepository()
+                                    .travelRepository(),
+                                locationRealtime = EntryPointAccessors
+                                    .fromApplication(applicationContext, LocationRealtimeEntryPoint::class.java)
+                                    .locationRealtime(),
+                                locationUpdates = AndroidCurrentLocationUpdates(applicationContext)
                             )
                         }
                     }

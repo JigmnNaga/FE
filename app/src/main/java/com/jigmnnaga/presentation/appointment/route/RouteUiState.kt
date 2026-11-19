@@ -55,7 +55,12 @@ data class RouteMemberUiState(
     /** "미출발"처럼 이름 옆 칩에 보여 줄 문구. 없으면 칩을 그리지 않는다. */
     val statusLabel: String? = null,
     val description: String,
-    val transport: RouteTransport? = null
+    val transport: RouteTransport? = null,
+    /** 약속 상세가 알려 준 이 멤버의 이동수단. 이동을 시작했다는 소식을 받으면 [transport]로 보여 준다. */
+    val plannedTransport: RouteTransport? = null,
+    /** 실시간 위치 공유로 받은 마지막 위치. 받은 적이 없으면 null이다. */
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )
 
 /** 약속 이동 단계(ROU-001-03)에서만 쓰는 값. */
@@ -279,8 +284,31 @@ data class RouteUiState(
             this
         }
 
+    /** [id] 멤버 한 명(나 제외)의 카드를 [transform]으로 바꾼다. 없는 멤버면 그대로 둔다. */
+    fun updateFriend(id: String, transform: (RouteMemberUiState) -> RouteMemberUiState): RouteUiState =
+        if (members.any { it.id == id && !it.isMe }) {
+            copy(members = members.map { if (it.id == id && !it.isMe) transform(it) else it })
+        } else {
+            this
+        }
+
     fun toggleMyRouteExpanded(): RouteUiState =
         if (stage == RouteStage.MOVING) copy(isMyRouteExpanded = !isMyRouteExpanded) else this
+
+    /** 서버가 위치로 도착을 알아챘을 때. 버튼이 아직 꺼져 있어도 이동 중이면 도착 완료로 바꾼다. */
+    fun forceArrive(): RouteUiState {
+        val current = moving
+        return if (stage == RouteStage.MOVING && current != null && !current.hasArrived) {
+            copy(
+                moving = current.copy(canArrive = false, hasArrived = true),
+                members = members.map { member ->
+                    if (member.isMe) member.copy(status = RouteMemberStatus.ARRIVED) else member
+                }
+            )
+        } else {
+            this
+        }
+    }
 
     /** 도착 버튼. 도착 직전이 아니면 그대로 둔다. */
     fun arrive(): RouteUiState {

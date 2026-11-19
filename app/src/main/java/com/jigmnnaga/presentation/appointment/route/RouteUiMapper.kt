@@ -2,6 +2,7 @@ package com.jigmnnaga.presentation.appointment.route
 
 import com.jigmnnaga.domain.model.AppointmentDetail
 import com.jigmnnaga.domain.model.AppointmentMemberRole
+import com.jigmnnaga.domain.model.AppointmentTravelMode
 import com.jigmnnaga.presentation.appointment.detail.placeSummary
 
 /** 이동 경로 화면 멤버 카드에 보여 줄 문구. */
@@ -34,7 +35,8 @@ internal fun AppointmentDetail.toRouteUiState(
             isMe = isMe,
             status = RouteMemberStatus.NOT_STARTED,
             statusLabel = labels.notStarted,
-            description = if (isMe) labels.setRoute else labels.waiting
+            description = if (isMe) labels.setRoute else labels.waiting,
+            plannedTransport = if (isMe) null else member.travelMode?.toRouteTransport()
         )
     }.sortedByDescending { it.isMe }
 
@@ -45,4 +47,11 @@ internal fun AppointmentDetail.toRouteUiState(
         meetingTimeLabel = RouteTime.formatClockText(confirmedTime),
         members = routeMembers
     )
+}
+
+private fun AppointmentTravelMode.toRouteTransport(): RouteTransport? = when (this) {
+    AppointmentTravelMode.BUS -> RouteTransport.BUS
+    AppointmentTravelMode.SUBWAY -> RouteTransport.SUBWAY
+    AppointmentTravelMode.TAXI -> RouteTransport.TAXI
+    AppointmentTravelMode.OTHER -> null
 }
