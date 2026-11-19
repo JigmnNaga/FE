@@ -5,6 +5,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.mypage.location.DefaultLocationRoute
+import com.jigmnnaga.presentation.mypage.sharing.LocationSharingSettingsRoute
 
 /**
  * 마이페이지 기능이 소유하는 네비게이션 그래프.
@@ -16,7 +17,8 @@ object MypageNavigationGraph : AppNavigationGraph {
             MypageRoute(
                 onBackClick = { navigator.navigateBack() },
                 onEditProfileClick = { navigator.navigate(ProfileEditRoute) },
-                onDefaultLocationClick = { navigator.navigate(DefaultLocationRoute) }
+                onDefaultLocationClick = { navigator.navigate(DefaultLocationRoute) },
+                onLocationSharingSettingsClick = { navigator.navigate(LocationSharingSettingsRoute) }
             )
         }
         builder.composable<ProfileEditRoute> {
