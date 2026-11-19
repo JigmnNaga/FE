@@ -592,6 +592,8 @@
     <string name="location_sharing_permission_title">현재 위치 권한</string>
     <string name="location_sharing_permission_granted_description">앱 사용 중 위치 접근이 허용되어 있어요</string>
     <string name="location_sharing_permission_granted_badge">허용됨</string>
+    <string name="location_sharing_permission_denied_description">위치 접근이 꺼져 있어요. 눌러서 설정에서 허용해 주세요</string>
+    <string name="location_sharing_permission_denied_badge">허용 안 됨</string>
     <string name="location_sharing_friends_title">친구와 위치 공유</string>
     <string name="location_sharing_friends_description">약속 시간에만 참여 친구와 위치를 나눠요</string>
     <string name="location_sharing_enable_title">위치 공유 사용</string>

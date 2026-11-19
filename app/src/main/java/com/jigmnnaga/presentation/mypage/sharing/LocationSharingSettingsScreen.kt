@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +44,8 @@ import com.jigmnnaga.core.designsystem.component.BackHeader
 import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.domain.model.LocationSharingScope
+import com.jigmnnaga.domain.model.LocationSharingStartTime
 
 // Figma MYP-004의 아이콘 배지·안내 배너 배경. 디자인 시스템 색상에 없는 값이라 이 화면에서만 쓴다.
 private val BadgeColor = Color(0xFFE1E9D9)
@@ -54,7 +57,7 @@ private fun TextStyle.sized(size: Int, line: Int, weight: FontWeight): TextStyle
 
 /**
  * 위치 공유 설정 화면(MYP-004). 위치 권한 상태, 위치 공유 사용, 공유 범위, 공유 시작 시간, 안내를 보여 주고
- * 바꾼 사실만 콜백으로 알린다.
+ * 바꾼 사실만 콜백으로 알린다. 위치 권한이 없으면 권한 카드를 눌러 [onPermissionClick]으로 앱 설정을 열 수 있다.
  */
 @Composable
 fun LocationSharingSettingsScreen(
@@ -63,7 +66,8 @@ fun LocationSharingSettingsScreen(
     onSharingEnabledChange: (Boolean) -> Unit,
     onScopeSelect: (LocationSharingScope) -> Unit,
     onStartTimeSelect: (LocationSharingStartTime) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPermissionClick: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -81,7 +85,7 @@ fun LocationSharingSettingsScreen(
                 .padding(AppDimens.Spacing20),
             verticalArrangement = Arrangement.spacedBy(30.dp)
         ) {
-            PermissionCard()
+            PermissionCard(granted = state.locationPermissionGranted, onClick = onPermissionClick)
             SharingEnableSection(enabled = state.sharingEnabled, onChange = onSharingEnabledChange)
             ScopeSection(selected = state.scope, onSelect = onScopeSelect)
             StartTimeSection(selected = state.startTime, onSelect = onStartTimeSelect)
@@ -136,8 +140,12 @@ private fun SectionTitle(title: String, description: String? = null) {
 }
 
 @Composable
-private fun PermissionCard() {
-    SettingsCard(modifier = Modifier.testTag("location-sharing-permission")) {
+private fun PermissionCard(granted: Boolean, onClick: () -> Unit) {
+    SettingsCard(
+        modifier = Modifier
+            .testTag("location-sharing-permission")
+            .then(if (granted) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick))
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,20 +161,32 @@ private fun PermissionCard() {
                     color = AppColors.Monotone.SoftBlack
                 )
                 Text(
-                    text = stringResource(R.string.location_sharing_permission_granted_description),
+                    text = stringResource(
+                        if (granted) {
+                            R.string.location_sharing_permission_granted_description
+                        } else {
+                            R.string.location_sharing_permission_denied_description
+                        }
+                    ),
                     style = MaterialTheme.typography.labelSmall.sized(11, 16, FontWeight.Normal),
                     color = AppColors.Monotone.Gray500
                 )
             }
             Box(
                 modifier = Modifier
-                    .background(BadgeColor, CircleShape)
+                    .background(if (granted) BadgeColor else AppColors.Danger.Red200, CircleShape)
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.location_sharing_permission_granted_badge),
+                    text = stringResource(
+                        if (granted) {
+                            R.string.location_sharing_permission_granted_badge
+                        } else {
+                            R.string.location_sharing_permission_denied_badge
+                        }
+                    ),
                     style = MaterialTheme.typography.labelSmall.sized(11, 14, FontWeight.Bold),
-                    color = AppColors.MainGreen.Green700
+                    color = if (granted) AppColors.MainGreen.Green700 else AppColors.Danger.Red600
                 )
             }
         }

@@ -11,6 +11,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
+import com.jigmnnaga.domain.model.LocationSharingScope
+import com.jigmnnaga.domain.model.LocationSharingStartTime
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,7 +27,8 @@ class LocationSharingSettingsScreenTest {
         state: LocationSharingSettingsUiState = LocationSharingSettingsUiState(),
         onEnabledChange: (Boolean) -> Unit = {},
         onScope: (LocationSharingScope) -> Unit = {},
-        onTime: (LocationSharingStartTime) -> Unit = {}
+        onTime: (LocationSharingStartTime) -> Unit = {},
+        onPermissionClick: () -> Unit = {}
     ) {
         composeRule.setContent {
             JigmnnagaTheme {
@@ -34,7 +37,8 @@ class LocationSharingSettingsScreenTest {
                     onBackClick = {},
                     onSharingEnabledChange = onEnabledChange,
                     onScopeSelect = onScope,
-                    onStartTimeSelect = onTime
+                    onStartTimeSelect = onTime,
+                    onPermissionClick = onPermissionClick
                 )
             }
         }
@@ -105,5 +109,37 @@ class LocationSharingSettingsScreenTest {
         composeRule.onNodeWithTag("location-sharing-time-MINUTES_10").performScrollTo().performClick()
         assertEquals(LocationSharingScope.NONE, scope)
         assertEquals(LocationSharingStartTime.MINUTES_10, time)
+    }
+
+    @Test
+    fun showsDeniedPermissionGuidance() {
+        setScreen(state = LocationSharingSettingsUiState(locationPermissionGranted = false))
+
+        composeRule.onNodeWithText("허용 안 됨").assertExists()
+        composeRule.onNodeWithText("위치 접근이 꺼져 있어요. 눌러서 설정에서 허용해 주세요").assertExists()
+        composeRule.onNodeWithText("허용됨").assertDoesNotExist()
+    }
+
+    @Test
+    fun deniedPermissionCardOpensAppSettings() {
+        var clicks = 0
+        setScreen(
+            state = LocationSharingSettingsUiState(locationPermissionGranted = false),
+            onPermissionClick = { clicks++ }
+        )
+
+        composeRule.onNodeWithTag("location-sharing-permission").performClick()
+
+        assertEquals(1, clicks)
+    }
+
+    @Test
+    fun grantedPermissionCardIsNotClickable() {
+        var clicks = 0
+        setScreen(onPermissionClick = { clicks++ })
+
+        composeRule.onNodeWithTag("location-sharing-permission").performClick()
+
+        assertEquals(0, clicks)
     }
 }
