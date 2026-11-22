@@ -8,9 +8,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
+import com.jigmnnaga.core.navigation.AppNavigationOptions
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.di.LocationSharingSettingsEntryPoint
 import com.jigmnnaga.presentation.appointment.route.hasLocationPermission
+import com.jigmnnaga.presentation.common.login.LoginRoute
+import com.jigmnnaga.presentation.home.HomeRoute
 import dagger.hilt.android.EntryPointAccessors
 
 /**
@@ -37,7 +40,17 @@ object LocationSharingSettingsNavigationGraph : AppNavigationGraph {
             )
             LocationSharingSettingsRoute(
                 viewModel = viewModel,
-                onBackClick = { navigator.navigateBack() }
+                onBackClick = { navigator.navigateBack() },
+                onLoginRequired = {
+                    navigator.navigate(
+                        destination = LoginRoute,
+                        options = AppNavigationOptions(
+                            popUpTo = HomeRoute,
+                            inclusive = true,
+                            launchSingleTop = true
+                        )
+                    )
+                }
             )
         }
     }
