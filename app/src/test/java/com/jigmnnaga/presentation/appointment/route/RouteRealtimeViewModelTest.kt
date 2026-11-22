@@ -15,6 +15,7 @@ import com.jigmnnaga.domain.repository.TravelRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -23,6 +24,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -311,5 +313,96 @@ class RouteRealtimeViewModelTest {
         dispatcher.scheduler.runCurrent()
 
         assertEquals(before, vm.uiState.value)
+    }
+
+    /** 처음에는 권한이 없어 바로 끝나는 위치 흐름을, 이후에는 [myPositions]를 돌려 주는 뷰모델. */
+    private fun vmWithoutPermissionAtFirst(): Pair<RouteViewModel, () -> Int> {
+        var calls = 0
+        val vm = RouteViewModel(
+            initialState = RouteSampleData.selecting.selectTransport(RouteTransport.BUS),
+            appointmentId = 7L,
+            travelRepository = FakeTravel(),
+            nowMillis = { now },
+            locationRealtime = realtime,
+            locationUpdates = { calls++; if (calls == 1) emptyFlow() else myPositions },
+            locationSendIntervalMillis = 5_000L
+        ).also { dispatcher.scheduler.runCurrent() }
+        return vm to { calls }
+    }
+
+    @Test
+    fun `권한이 없다고 확인되면 이동 중에 권한 없음 화면을 보여 준다`() {
+        val (vm, _) = vmWithoutPermissionAtFirst()
+        vm.depart()
+
+        assertFalse(vm.uiState.value.needsLocationPermission)
+        vm.onLocationPermissionChecked(false)
+
+        assertTrue(vm.uiState.value.needsLocationPermission)
+    }
+
+    @Test
+    fun `권한이 없어 시작되지 못한 위치 전송은 권한을 허용하고 돌아오면 다시 시작한다`() {
+        val (vm, calls) = vmWithoutPermissionAtFirst()
+        vm.depart()
+        vm.onLocationPermissionChecked(false)
+        assertEquals(1, calls())
+
+        vm.onLocationPermissionChecked(true)
+        dispatcher.scheduler.runCurrent()
+        assertFalse(vm.uiState.value.needsLocationPermission)
+        assertEquals(2, calls())
+
+        myPositions.tryEmit(RouteCoordinates(37.1, 127.1))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(listOf(Triple(7L, 37.1, 127.1)), realtime.sent)
+    }
+
+    @Test
+    fun `위치 전송이 이어지는 중이면 권한을 다시 확인해도 전송을 새로 시작하지 않는다`() {
+        var calls = 0
+        val vm = RouteViewModel(
+            initialState = RouteSampleData.selecting.selectTransport(RouteTransport.BUS),
+            appointmentId = 7L,
+            travelRepository = FakeTravel(),
+            nowMillis = { now },
+            locationRealtime = realtime,
+            locationUpdates = { calls++; myPositions },
+            locationSendIntervalMillis = 5_000L
+        ).also { dispatcher.scheduler.runCurrent() }
+        vm.depart()
+
+        vm.onLocationPermissionChecked(true)
+        vm.onLocationPermissionChecked(true)
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun `도착한 뒤에는 권한이 없어도 권한 없음 화면을 보여 주지 않고 전송도 다시 시작하지 않는다`() {
+        val (vm, calls) = vmWithoutPermissionAtFirst()
+        vm.depart()
+        now = RouteTime.parseServer("2026-11-20T16:50:00")!!
+        realtime.arrivals.tryEmit(MemberArrival(1L, "2026-11-20T16:50:00"))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(true, vm.uiState.value.moving?.hasArrived)
+
+        vm.onLocationPermissionChecked(false)
+        assertFalse(vm.uiState.value.needsLocationPermission)
+
+        vm.onLocationPermissionChecked(true)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, calls())
+    }
+
+    @Test
+    fun `출발하기 전에는 권한이 없어도 권한 없음 화면을 보여 주지 않는다`() {
+        val vm = vm()
+
+        vm.onLocationPermissionChecked(false)
+
+        assertFalse(vm.uiState.value.needsLocationPermission)
+        assertFalse(vm.uiState.value.locationPermissionGranted)
     }
 }

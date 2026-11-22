@@ -166,4 +166,22 @@ class RouteUiStateTest {
         val arrived = RouteSampleData.nearArrival.arrive()
         assertSame(arrived, arrived.arrive())
     }
+
+    @Test
+    fun locationPermissionGrantedByDefaultSoNoPermissionScreenShows() {
+        assertTrue(RouteSampleData.moving.locationPermissionGranted)
+        assertFalse(RouteSampleData.moving.needsLocationPermission)
+    }
+
+    @Test
+    fun noPermissionScreenShowsOnlyWhileMovingWithoutPermission() {
+        assertTrue(RouteSampleData.moving.copy(locationPermissionGranted = false).needsLocationPermission)
+        assertFalse(overview.copy(locationPermissionGranted = false).needsLocationPermission)
+        assertFalse(selecting.copy(locationPermissionGranted = false).needsLocationPermission)
+    }
+
+    @Test
+    fun noPermissionScreenDoesNotShowAfterArrival() {
+        assertFalse(RouteSampleData.arrived.copy(locationPermissionGranted = false).needsLocationPermission)
+    }
 }
