@@ -1,9 +1,5 @@
 package com.jigmnnaga.presentation.mypage.sharing
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -17,6 +13,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jigmnnaga.R
 import com.jigmnnaga.presentation.appointment.route.hasLocationPermission
+import com.jigmnnaga.presentation.appointment.route.openAppSettings
 import kotlinx.serialization.Serializable
 
 /** 위치 공유 설정 화면 네비게이션 목적지 타입. */
@@ -72,11 +69,4 @@ fun LocationSharingSettingsRoute(
         onPermissionClick = { context.openAppSettings() },
         modifier = modifier
     )
-}
-
-/** 이 앱의 시스템 설정 화면을 연다. 열 수 있는 화면이 없으면 아무 일도 하지 않는다. */
-private fun Context.openAppSettings() {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    runCatching { startActivity(intent) }
 }

@@ -153,8 +153,17 @@ data class RouteUiState(
     /** 고른 출발 위치에서 이동수단 후보를 불러오는 상태. */
     val optionsStatus: RouteRequestStatus = RouteRequestStatus.IDLE,
     /** "지금 출발하기"와 "도착" 요청 상태. */
-    val actionStatus: RouteRequestStatus = RouteRequestStatus.IDLE
+    val actionStatus: RouteRequestStatus = RouteRequestStatus.IDLE,
+    /** 위치 접근 권한을 허용했는지. 화면이 앞에 올 때마다 새로 확인한다. */
+    val locationPermissionGranted: Boolean = true
 ) {
+    /**
+     * 위치 권한 없음 화면(COM-003-03)을 보여 줄지. 실시간 위치 공유가 이어지는 이동 중에만 해당하며,
+     * 도착한 뒤에는 위치를 더 보내지 않으므로 권한이 없어도 보여 주지 않는다.
+     */
+    val needsLocationPermission: Boolean
+        get() = stage == RouteStage.MOVING && moving?.hasArrived != true && !locationPermissionGranted
+
     val selectedOption: RouteOptionUiState?
         get() = options.firstOrNull { it.transport == selectedTransport }
 

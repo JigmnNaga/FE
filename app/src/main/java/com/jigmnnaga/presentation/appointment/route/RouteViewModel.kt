@@ -230,6 +230,19 @@ class RouteViewModel(
         }
     }
 
+    /**
+     * 위치 권한 상태를 새로 확인한 결과. 권한이 없어서 위치 전송이 시작되지 못했다가 나중에 허용되면 전송을 다시 시작한다.
+     * 도착했거나 공유가 끝나서 멈춘 경우([stopLocationSharing])에는 다시 시작하지 않는다.
+     */
+    fun onLocationPermissionChecked(granted: Boolean) {
+        _uiState.update { if (it.locationPermissionGranted == granted) it else it.copy(locationPermissionGranted = granted) }
+        val state = _uiState.value
+        val ended = shareJob?.let { !it.isActive } ?: false
+        if (granted && ended && state.stage == RouteStage.MOVING && state.moving?.hasArrived == false) {
+            startLocationSharing()
+        }
+    }
+
     private fun stopLocationSharing() {
         shareJob?.cancel()
         shareJob = null
