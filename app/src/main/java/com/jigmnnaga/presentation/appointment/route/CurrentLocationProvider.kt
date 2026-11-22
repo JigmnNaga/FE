@@ -3,11 +3,14 @@ package com.jigmnnaga.presentation.appointment.route
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationManager
+import android.net.Uri
 import android.os.Build
 import android.os.CancellationSignal
+import android.provider.Settings
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -27,6 +30,13 @@ fun interface CurrentLocationProvider {
 fun Context.hasLocationPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+
+/** 이 앱의 시스템 설정 화면을 연다. 열 수 있는 화면이 없으면 아무 일도 하지 않는다. */
+fun Context.openAppSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { startActivity(intent) }
+}
 
 /** 안드로이드 위치 서비스로 현재 위치를 가져온다. 권한이 없거나 위치를 켜지 않았으면 null이다. */
 class AndroidCurrentLocationProvider(context: Context) : CurrentLocationProvider {

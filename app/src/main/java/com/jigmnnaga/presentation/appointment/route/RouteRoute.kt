@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.Manifest
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -13,7 +14,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.jigmnnaga.R
+import com.jigmnnaga.presentation.common.error.ErrorScreen
+import com.jigmnnaga.presentation.common.error.ErrorType
 
 /**
  * 약속방 "지도·현황" 탭에 들어가는 이동 경로 내용([RouteBody])과 [RouteViewModel]을 연결한다.
@@ -31,13 +37,32 @@ fun RouteRoute(
     BackHandler(enabled = state.stage == RouteStage.SELECT) { viewModel.onBack() }
 
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // 앱 설정에서 권한을 바꾸고 돌아오면 화면이 다시 앞에 오는 때 권한 상태를 새로 확인한다.
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.onLocationPermissionChecked(context.hasLocationPermission())
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { result ->
         if (result.values.any { it }) viewModel.requestCurrentLocation() else viewModel.onCurrentLocationPermissionDenied()
     }
 
-    RouteBody(
+    if (state.needsLocationPermission) {
+        ErrorScreen(
+            type = ErrorType.LocationPermission,
+            onActionClick = { context.openAppSettings() },
+            modifier = modifier
+        )
+    } else RouteBody(
         state = state,
         onMyCardClick = viewModel::onMyCardClick,
         onSelectTransport = viewModel::onSelectTransport,
