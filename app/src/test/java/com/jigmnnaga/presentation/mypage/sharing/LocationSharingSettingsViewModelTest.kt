@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.mypage.sharing
 import com.jigmnnaga.domain.model.LocationSharingScope
 import com.jigmnnaga.domain.model.LocationSharingSettings
 import com.jigmnnaga.domain.model.LocationSharingStartTime
+import com.jigmnnaga.domain.model.LocationSharingSyncResult
 import com.jigmnnaga.domain.repository.LocationSharingSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,17 +28,23 @@ class LocationSharingSettingsViewModelTest {
         LocationSharingSettingsRepository {
         val current = MutableStateFlow(initial)
         override val settings: Flow<LocationSharingSettings> = current
+        var refreshResult: LocationSharingSyncResult = LocationSharingSyncResult.Success
+        var updateResult: LocationSharingSyncResult = LocationSharingSyncResult.Success
+        var refreshCalls = 0
+        var updateCalls = 0
 
-        override suspend fun setSharingEnabled(enabled: Boolean) {
-            current.update { it.copy(sharingEnabled = enabled) }
+        override suspend fun refresh(): LocationSharingSyncResult {
+            refreshCalls++
+            return refreshResult
         }
 
-        override suspend fun setScope(scope: LocationSharingScope) {
-            current.update { it.copy(scope = scope) }
-        }
-
-        override suspend fun setStartTime(startTime: LocationSharingStartTime) {
-            current.update { it.copy(startTime = startTime) }
+        override suspend fun update(
+            transform: (LocationSharingSettings) -> LocationSharingSettings
+        ): LocationSharingSyncResult {
+            updateCalls++
+            // 실제 저장소처럼 서버 저장에 성공했을 때만 바뀐 값이 남는다.
+            if (updateResult == LocationSharingSyncResult.Success) current.update(transform)
+            return updateResult
         }
     }
 
@@ -77,6 +84,38 @@ class LocationSharingSettingsViewModelTest {
         assertFalse(state.sharingEnabled)
         assertEquals(LocationSharingScope.NONE, state.scope)
         assertEquals(LocationSharingStartTime.HOUR_1, state.startTime)
+    }
+
+    @Test
+    fun `화면을 열면 서버 값을 한 번 받아 온다`() = runTest(dispatcher) {
+        val repository = FakeRepository()
+        LocationSharingSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.refreshCalls)
+    }
+
+    @Test
+    fun `서버 값을 받지 못해도 안내를 띄우지 않고 기기 값을 보여 준다`() = runTest(dispatcher) {
+        val repository = FakeRepository().apply { refreshResult = LocationSharingSyncResult.Failure(retryable = true) }
+        val viewModel = LocationSharingSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.saveFailed)
+        assertFalse(viewModel.uiState.value.loginRequired)
+    }
+
+    @Test
+    fun `서버 값을 받을 때 로그인이 만료됐으면 로그인이 필요하다고 알린다`() = runTest(dispatcher) {
+        val repository = FakeRepository().apply { refreshResult = LocationSharingSyncResult.LoginRequired }
+        val viewModel = LocationSharingSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.loginRequired)
+
+        viewModel.consumeLoginRequired()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.loginRequired)
     }
 
     @Test
@@ -130,6 +169,36 @@ class LocationSharingSettingsViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.sharingEnabled)
         assertEquals(LocationSharingScope.FRIENDS_ONLY, state.scope)
+    }
+
+    @Test
+    fun `서버에 저장하지 못하면 이전 값 그대로 두고 저장 실패를 알린다`() = runTest(dispatcher) {
+        val repository = FakeRepository().apply { updateResult = LocationSharingSyncResult.Failure(retryable = true) }
+        val viewModel = LocationSharingSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.onSharingEnabledChange(false)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.saveFailed)
+        assertTrue(viewModel.uiState.value.sharingEnabled)
+
+        viewModel.consumeSaveFailed()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.saveFailed)
+    }
+
+    @Test
+    fun `저장할 때 로그인이 만료됐으면 로그인이 필요하다고 알린다`() = runTest(dispatcher) {
+        val repository = FakeRepository().apply { updateResult = LocationSharingSyncResult.LoginRequired }
+        val viewModel = LocationSharingSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.onScopeSelect(LocationSharingScope.NONE)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.loginRequired)
+        assertFalse(viewModel.uiState.value.saveFailed)
     }
 
     @Test

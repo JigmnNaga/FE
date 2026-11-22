@@ -3,6 +3,7 @@ package com.jigmnnaga.presentation.mypage.sharing
 import com.jigmnnaga.domain.model.LocationSharingScope
 import com.jigmnnaga.domain.model.LocationSharingStartTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -16,6 +17,8 @@ class LocationSharingSettingsUiStateTest {
         assertEquals(LocationSharingScope.FRIENDS_ONLY, state.scope)
         assertEquals(LocationSharingStartTime.MINUTES_30, state.startTime)
         assertTrue(state.locationPermissionGranted)
+        assertFalse(state.saveFailed)
+        assertFalse(state.loginRequired)
     }
 
     @Test
