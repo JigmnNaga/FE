@@ -20,6 +20,7 @@ fun MypageRoute(
     onEditProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
     onNotificationSettingsClick: () -> Unit = {},
+    onHelpClick: () -> Unit = {},
     onDefaultLocationClick: () -> Unit = {},
     onLocationSharingSettingsClick: () -> Unit = {}
 ) {
@@ -28,9 +29,9 @@ fun MypageRoute(
         onBackClick = onBackClick,
         onEditProfileClick = onEditProfileClick,
         onNotificationSettingsClick = onNotificationSettingsClick,
+        onHelpClick = onHelpClick,
         onDefaultLocationClick = onDefaultLocationClick,
         onLocationSharingSettingsClick = onLocationSharingSettingsClick,
-        onHelpClick = { /* TODO: 도움말 및 문의 화면 연결 */ },
         onServiceInfoClick = { /* TODO: 서비스 정보 화면 연결 */ },
         modifier = modifier
     )
