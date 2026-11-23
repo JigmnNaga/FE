@@ -1,6 +1,7 @@
 package com.jigmnnaga.data.remote.api
 
 import com.jigmnnaga.data.remote.dto.ApiResponse
+import com.jigmnnaga.data.remote.dto.AppointmentStatsResponseDto
 import com.jigmnnaga.data.remote.dto.MyInfoResponseDto
 import com.jigmnnaga.data.remote.dto.ProfileImageUploadUrlRequestDto
 import com.jigmnnaga.data.remote.dto.ProfileImageUploadUrlResponseDto
@@ -36,4 +37,9 @@ interface MemberApi {
     suspend fun deleteProfileImage(
         @Header("Authorization") authorization: String?
     ): Response<ApiResponse<Unit>>
+
+    @GET("api/v1/members/me/stats")
+    suspend fun getMyStats(
+        @Header("Authorization") authorization: String?
+    ): Response<ApiResponse<AppointmentStatsResponseDto>>
 }

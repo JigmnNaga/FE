@@ -43,3 +43,15 @@ data class ProfileImageUploadUrlResponseDto(
     val profileImageKey: String,
     val expiresAt: String
 )
+
+/**
+ * GET api/v1/members/me/stats 응답 DTO.
+ * onTimeRate는 약속이 0개일 때 null로 내려온다.
+ */
+@Serializable
+data class AppointmentStatsResponseDto(
+    val totalCount: Int,
+    val onTimeCount: Int,
+    val lateCount: Int,
+    val onTimeRate: Double? = null
+)
