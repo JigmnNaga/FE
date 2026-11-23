@@ -42,8 +42,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.component.AppButton
 import com.jigmnnaga.core.designsystem.component.BackHeader
@@ -57,6 +59,9 @@ fun ProfileEditScreen(
     onBackClick: () -> Unit,
     onNicknameChange: (String) -> Unit,
     onSaveClick: () -> Unit,
+    onSelectFromLibrary: () -> Unit = {},
+    onTakePhoto: () -> Unit = {},
+    onDeletePhoto: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showPhotoSheet by remember { mutableStateOf(false) }
@@ -86,6 +91,7 @@ fun ProfileEditScreen(
             ) {
                 ProfileImageSection(
                     profileInitial = state.profileInitial,
+                    profileImageUrl = state.profileImageUrl,
                     onPhotoChangeClick = { showPhotoSheet = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
@@ -131,9 +137,9 @@ fun ProfileEditScreen(
             // 시트 패널
             PhotoChangeBottomSheet(
                 onDismiss = { showPhotoSheet = false },
-                onSelectFromLibrary = { showPhotoSheet = false },
-                onTakePhoto = { showPhotoSheet = false },
-                onDeletePhoto = { showPhotoSheet = false },
+                onSelectFromLibrary = { onSelectFromLibrary(); showPhotoSheet = false },
+                onTakePhoto = { onTakePhoto(); showPhotoSheet = false },
+                onDeletePhoto = { onDeletePhoto(); showPhotoSheet = false },
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -146,6 +152,7 @@ fun ProfileEditScreen(
 @Composable
 private fun ProfileImageSection(
     profileInitial: String?,
+    profileImageUrl: String?,
     onPhotoChangeClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -166,7 +173,14 @@ private fun ProfileImageSection(
                     .clickable(onClick = onPhotoChangeClick),
                 contentAlignment = Alignment.Center
             ) {
-                if (profileInitial != null) {
+                if (profileImageUrl != null) {
+                    AsyncImage(
+                        model = profileImageUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (profileInitial != null) {
                     Text(
                         text = profileInitial,
                         color = AppColors.MainGreen.Green200,

@@ -134,6 +134,10 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 
+    // Coil (이미지 로딩)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     // Kakao
     implementation(libs.kakao.user)
     implementation(libs.kakao.map)
