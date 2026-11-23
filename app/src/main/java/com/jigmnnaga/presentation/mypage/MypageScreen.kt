@@ -52,8 +52,7 @@ import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 
-// Figma: #2F721B — 통계 숫자 및 도착률 색상 (AppColors에 없는 별도 녹색)
-private val StatGreenColor = Color(0xFF2F721B)
+// Figma: 통계 숫자 색상 → Green700, 도착률 퍼센트 색상 → SubYellow Yellow600
 
 /**
  * MYP-001 마이페이지 메인 화면 순수 UI Composable.
@@ -69,7 +68,9 @@ fun MypageScreen(
     onHelpClick: () -> Unit,
     onServiceInfoClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onDefaultLocationClick: () -> Unit = {}
+    onDefaultLocationClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {},
+    onWithdrawClick: () -> Unit = {}
 ) {
     // 하단 여백을 포함한 전체 배경을 Green300으로 설정 (상단은 각 섹션에서 명시적으로 Green200 처리)
     Column(
@@ -121,7 +122,7 @@ fun MypageScreen(
         // 경계 곡선: Figma imgIcon6 — Green300 위에 Green200 돔 아치
         WaveDivider()
 
-        // 하단 body: 설정 메뉴 + Footer (Green300 배경, 경계 곡선과 자연스럽게 연결)
+        // 하단 body: 설정 메뉴 + 로그아웃/회원탈퇴 + Footer (Green300 배경)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -130,7 +131,7 @@ fun MypageScreen(
                     horizontal = AppDimens.Spacing20,
                     vertical = AppDimens.Spacing20
                 ),
-            verticalArrangement = Arrangement.spacedBy(50.dp)
+            verticalArrangement = Arrangement.spacedBy(30.dp)
         ) {
             SettingsCard(
                 onNotificationSettingsClick = onNotificationSettingsClick,
@@ -138,6 +139,10 @@ fun MypageScreen(
                 onLocationSharingSettingsClick = onLocationSharingSettingsClick,
                 onHelpClick = onHelpClick,
                 onServiceInfoClick = onServiceInfoClick
+            )
+            LogoutWithdrawRow(
+                onLogoutClick = onLogoutClick,
+                onWithdrawClick = onWithdrawClick
             )
             AppFooter()
         }
@@ -431,7 +436,7 @@ private fun ArrivalRateChart(
                 color = AppColors.Monotone.SoftBlack
             )
             Spacer(modifier = Modifier.height(4.dp))
-            // Figma: 23sp / font-black → Bold 대체, 색상 #2F721B
+            // Figma: 23sp / font-black → Bold 대체, 색상 SubYellow Yellow600 (#DDC55B)
             Text(
                 text = rateText,
                 style = TextStyle(
@@ -440,7 +445,7 @@ private fun ArrivalRateChart(
                     fontSize = 23.sp,
                     lineHeight = 34.5.sp
                 ),
-                color = StatGreenColor
+                color = AppColors.SubYellow.Yellow600
             )
         }
     }
@@ -473,7 +478,7 @@ private fun StatItem(
             color = AppColors.Monotone.SoftBlack,
             modifier = Modifier.weight(1f)
         )
-        // 숫자: 22sp / font-black → Bold 대체, 색상 #2F721B
+        // 숫자: 22sp / font-black → Bold 대체, 색상 Green700 (#566149)
         Text(
             text = count.toString(),
             style = TextStyle(
@@ -482,7 +487,7 @@ private fun StatItem(
                 fontSize = 22.sp,
                 lineHeight = 33.sp
             ),
-            color = StatGreenColor
+            color = AppColors.MainGreen.Green700
         )
     }
 }
@@ -657,6 +662,66 @@ private fun SettingsMenuItem(
                 thickness = (0.667).dp
             )
         }
+    }
+}
+
+// ─────────────────────────────────────────
+// 로그아웃 / 회원탈퇴 행
+// ─────────────────────────────────────────
+
+/**
+ * Figma MYP-001: "로그아웃 · 회원탈퇴" 텍스트 버튼 행.
+ * Gray700, 14sp Bold, 중앙 정렬. 가운데 점 구분자.
+ */
+@Composable
+private fun LogoutWithdrawRow(
+    onLogoutClick: () -> Unit,
+    onWithdrawClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "로그아웃",
+            style = TextStyle(
+                fontFamily = MaterialTheme.typography.titleSmall.fontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            ),
+            color = AppColors.Monotone.Gray700,
+            modifier = Modifier
+                .clickable(onClick = onLogoutClick)
+                .padding(vertical = 8.dp)
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Text(
+            text = "·",
+            style = TextStyle(
+                fontFamily = MaterialTheme.typography.titleSmall.fontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            ),
+            color = AppColors.Monotone.Gray700
+        )
+        Spacer(modifier = Modifier.width(20.dp))
+        Text(
+            text = "회원탈퇴",
+            style = TextStyle(
+                fontFamily = MaterialTheme.typography.titleSmall.fontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            ),
+            color = AppColors.Monotone.Gray700,
+            modifier = Modifier
+                .clickable(onClick = onWithdrawClick)
+                .padding(vertical = 8.dp)
+        )
     }
 }
 

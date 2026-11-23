@@ -1,4 +1,4 @@
-package com.jigmnnaga.presentation.mypage
+package com.jigmnnaga.presentation.mypage.profile
 
 data class ProfileEditUiState(
     val nickname: String = "",

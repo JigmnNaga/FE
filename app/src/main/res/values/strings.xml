@@ -645,4 +645,47 @@
     <string name="location_sharing_start_1_hour">약속 1시간 전</string>
     <string name="location_sharing_notice_title">위치는 안전하게 보호돼요</string>
     <string name="location_sharing_notice_description">위치 정보는 약속 진행을 위해서만 사용하며, 공유 종료 후 다른 친구가 확인할 수 없어요.</string>
+
+    <!-- 개인정보 설정 (MYP-002-01) -->
+    <string name="account_settings_title">개인정보 설정</string>
+    <string name="account_settings_kakao_connected">카카오 계정으로 연결됨</string>
+    <string name="account_settings_connected">연결됨</string>
+    <string name="account_settings_account_section">계정 및 개인정보</string>
+    <string name="account_settings_email_title">이메일</string>
+    <string name="account_settings_email_subtitle">로그인 시에 사용해요</string>
+    <string name="account_settings_privacy_title">개인정보 처리방침</string>
+    <string name="account_settings_privacy_subtitle">수집·이용 내역을 확인해요</string>
+    <string name="account_settings_manage_section">계정 관리</string>
+    <string name="account_settings_logout_title">로그아웃</string>
+    <string name="account_settings_logout_subtitle">현재 기기에서 바로 로그아웃해요</string>
+    <string name="account_settings_withdraw_title">회원탈퇴</string>
+    <string name="account_settings_withdraw_subtitle">모든 약속 기록과 친구 정보가 삭제돼요</string>
+    <string name="account_settings_privacy_note">개인정보는 안전하게 암호화되어 보관됩니다.</string>
+
+    <!-- 회원탈퇴 확인 팝업 -->
+    <string name="withdrawal_dialog_title">정말 회원탈퇴할까요?</string>
+    <string name="withdrawal_dialog_body">약속 23회 기록과 친구 목록이 모두 삭제되며,\n탈퇴 후에는 되돌릴 수 없어요.</string>
+    <string name="withdrawal_dialog_active_warning">진행 중인 약속 %d건이 남아있어요</string>
+    <string name="withdrawal_dialog_cancel">취소</string>
+    <string name="withdrawal_dialog_confirm">탈퇴하기</string>
+
+    <!-- 방장 회원탈퇴 안내 (MYP-002-02) -->
+    <string name="withdrawal_guide_header">회원 탈퇴</string>
+    <string name="withdrawal_guide_title">방장인 약속방이 %d개 있어요</string>
+    <string name="withdrawal_guide_description">3인 이상 방은 방장이 자동으로 위임돼요. 1~2인 방은 회원탈퇴 시 자동 삭제돼요.</string>
+    <string name="withdrawal_guide_badge_transfer">방장 위임</string>
+    <string name="withdrawal_guide_badge_delete">탈퇴 시 삭제</string>
+    <string name="withdrawal_guide_member_leader">참여 %d명 · 방장</string>
+    <string name="withdrawal_guide_member_participant">참여 %d명 · 참여자</string>
+    <string name="withdrawal_guide_transfer_info">수락 시점이 가장 빠른 멤버에게 방장이 자동으로 위임돼요.</string>
+    <string name="withdrawal_guide_delete_info">위임 없이 회원탈퇴 시 약속방이 자동 삭제돼요.</string>
+    <string name="withdrawal_guide_member_info">회원탈퇴 시 약속방 나가기 처리돼요.</string>
+    <string name="withdrawal_guide_action">탈퇴하기</string>
+
+    <!-- 로그아웃/회원탈퇴 완료 (MYP-002-03) -->
+    <string name="logout_complete_title">로그아웃했어요</string>
+    <string name="logout_complete_message">다음 약속이 기다리고 있어요.\n언제든 다시 로그인해 주세요.</string>
+    <string name="withdrawal_complete_title">회원탈퇴가 완료됐어요</string>
+    <string name="withdrawal_complete_message">함께한 약속의 순간을 소중히 기억할게요.\n그동안 지금 나가를 이용해 주셔서 감사합니다.</string>
+    <string name="account_action_complete_button">지금 나가기</string>
 </resources>

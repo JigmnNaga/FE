@@ -1,4 +1,4 @@
-package com.jigmnnaga.presentation.mypage
+package com.jigmnnaga.presentation.mypage.profile
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

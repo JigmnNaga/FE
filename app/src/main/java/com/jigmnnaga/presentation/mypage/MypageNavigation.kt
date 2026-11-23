@@ -4,9 +4,12 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
+import com.jigmnnaga.presentation.mypage.account.LogoutCompleteRoute
+import com.jigmnnaga.presentation.mypage.account.WithdrawalGuideRoute
 import com.jigmnnaga.presentation.mypage.help.HelpSupportRoute
 import com.jigmnnaga.presentation.mypage.location.DefaultLocationRoute
 import com.jigmnnaga.presentation.mypage.notification.NotificationSettingsRoute
+import com.jigmnnaga.presentation.mypage.profile.ProfileEditRoute
 import com.jigmnnaga.presentation.mypage.sharing.LocationSharingSettingsRoute
 
 /**
@@ -22,7 +25,9 @@ object MypageNavigationGraph : AppNavigationGraph {
                 onNotificationSettingsClick = { navigator.navigate(NotificationSettingsRoute) },
                 onHelpClick = { navigator.navigate(HelpSupportRoute) },
                 onDefaultLocationClick = { navigator.navigate(DefaultLocationRoute) },
-                onLocationSharingSettingsClick = { navigator.navigate(LocationSharingSettingsRoute) }
+                onLocationSharingSettingsClick = { navigator.navigate(LocationSharingSettingsRoute) },
+                onLogoutClick = { navigator.navigate(LogoutCompleteRoute) },
+                onWithdrawConfirmed = { navigator.navigate(WithdrawalGuideRoute) }
             )
         }
         builder.composable<ProfileEditRoute> {
