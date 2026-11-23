@@ -688,4 +688,8 @@
     <string name="withdrawal_complete_title">회원탈퇴가 완료됐어요</string>
     <string name="withdrawal_complete_message">함께한 약속의 순간을 소중히 기억할게요.\n그동안 지금 나가를 이용해 주셔서 감사합니다.</string>
     <string name="account_action_complete_button">지금 나가기</string>
+
+    <!-- 푸시 알림 채널 (Figma COM-004) -->
+    <string name="push_notification_channel_name">지금 나가 알림</string>
+    <string name="push_notification_channel_description">투표, 약속 확정, 출발·도착 등 약속 관련 알림을 받습니다.</string>
 </resources>
