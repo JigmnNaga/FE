@@ -22,6 +22,9 @@ import com.jigmnnaga.presentation.appointment.invite.AppointmentInviteLinkParser
 import com.jigmnnaga.presentation.calendar.CalendarNavigationGraph
 import com.jigmnnaga.presentation.home.HomeNavigationGraph
 import com.jigmnnaga.presentation.mypage.MypageNavigationGraph
+import com.jigmnnaga.presentation.mypage.account.LogoutCompleteNavigationGraph
+import com.jigmnnaga.presentation.mypage.account.WithdrawalCompleteNavigationGraph
+import com.jigmnnaga.presentation.mypage.account.WithdrawalGuideNavigationGraph
 import com.jigmnnaga.presentation.mypage.help.HelpSupportNavigationGraph
 import com.jigmnnaga.presentation.mypage.location.DefaultLocationNavigationGraph
 import com.jigmnnaga.presentation.mypage.notification.NotificationSettingsNavigationGraph
@@ -122,6 +125,9 @@ class MainActivity : ComponentActivity() {
                     CalendarNavigationGraph.register(this, navigator)
                     NotificationNavigationGraph.register(this, navigator)
                     MypageNavigationGraph.register(this, navigator)
+                    WithdrawalGuideNavigationGraph.register(this, navigator)
+                    LogoutCompleteNavigationGraph.register(this, navigator)
+                    WithdrawalCompleteNavigationGraph.register(this, navigator)
                     HelpSupportNavigationGraph.register(this, navigator)
                     NotificationSettingsNavigationGraph.register(this, navigator)
                     DefaultLocationNavigationGraph.register(this, navigator)
