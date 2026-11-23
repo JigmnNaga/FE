@@ -29,10 +29,36 @@ import dagger.hilt.android.EntryPointAccessors
  */
 object MypageNavigationGraph : AppNavigationGraph {
     override fun register(builder: NavGraphBuilder, navigator: AppNavigator) {
-        builder.composable<MypageRoute> {
+        builder.composable<MypageRoute> { backStackEntry ->
+            val applicationContext = LocalContext.current.applicationContext
+            val viewModel: MypageViewModel = viewModel(
+                viewModelStoreOwner = backStackEntry,
+                factory = remember(applicationContext) {
+                    viewModelFactory {
+                        initializer {
+                            MypageViewModel(
+                                repository = EntryPointAccessors
+                                    .fromApplication(applicationContext, MypageEntryPoint::class.java)
+                                    .mypageRepository()
+                            )
+                        }
+                    }
+                }
+            )
             MypageRoute(
+                viewModel = viewModel,
                 onBackClick = { navigator.navigateBack() },
                 onEditProfileClick = { navigator.navigate(ProfileEditRoute) },
+                onLoginRequired = {
+                    navigator.navigate(
+                        destination = LoginRoute,
+                        options = AppNavigationOptions(
+                            popUpTo = HomeRoute,
+                            inclusive = true,
+                            launchSingleTop = true
+                        )
+                    )
+                },
                 onNotificationSettingsClick = { navigator.navigate(NotificationSettingsRoute) },
                 onHelpClick = { navigator.navigate(HelpSupportRoute) },
                 onDefaultLocationClick = { navigator.navigate(DefaultLocationRoute) },

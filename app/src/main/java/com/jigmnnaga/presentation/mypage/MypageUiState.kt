@@ -12,9 +12,16 @@ data class MypageUiState(
     val email: String = "",
     /** 프로필 아바타에 표시할 첫 글자. null이면 기본 아이콘 표시. */
     val profileInitial: String? = null,
+    /** 프로필 이미지 URL. null이면 이니셜 또는 기본 아이콘 표시. */
+    val profileImageUrl: String? = null,
     val totalAppointments: Int = 0,
     val onTimeCount: Int = 0,
-    val lateCount: Int = 0
+    val lateCount: Int = 0,
+    val isProfileLoading: Boolean = false,
+    val isStatsLoading: Boolean = false,
+    val profileLoadFailed: Boolean = false,
+    val statsLoadFailed: Boolean = false,
+    val loginRequired: Boolean = false
 ) {
     /** 제때 도착률 (0~100). 약속이 0개면 0f. */
     val onTimeRatePercent: Float

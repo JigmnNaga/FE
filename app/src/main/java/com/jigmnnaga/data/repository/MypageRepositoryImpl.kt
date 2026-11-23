@@ -10,6 +10,7 @@ import com.jigmnnaga.domain.model.MyProfile
 import com.jigmnnaga.domain.model.ProfileImageUploadUrlResult
 import com.jigmnnaga.domain.model.ProfileResult
 import com.jigmnnaga.domain.model.ProfileUpdateResult
+import com.jigmnnaga.domain.model.StatsResult
 import com.jigmnnaga.domain.repository.MypageRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -48,6 +49,29 @@ class MypageRepositoryImpl @Inject constructor(
             ProfileResult.Failure(retryable = true)
         } catch (e: Exception) {
             ProfileResult.Failure(retryable = false)
+        }
+    }
+
+    override suspend fun getMyStats(): StatsResult {
+        val token = tokenManager.accessToken.first()
+        if (token.isNullOrBlank()) return StatsResult.LoginRequired
+
+        return try {
+            val response = api.getMyStats("Bearer $token")
+            if (response.isSuccessful) {
+                val stats = response.body()?.data?.toDomain()
+                    ?: return StatsResult.Failure(retryable = false)
+                StatsResult.Success(stats)
+            } else {
+                val code = response.errorBody()?.string()?.let { parseErrorCode(it) }
+                mapStatsError(response.code(), code)
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            StatsResult.Failure(retryable = true)
+        } catch (e: Exception) {
+            StatsResult.Failure(retryable = false)
         }
     }
 
@@ -189,6 +213,13 @@ internal fun mapImageUploadUrlError(httpStatus: Int, errorCode: String? = null):
     httpStatus == 401 -> ProfileImageUploadUrlResult.LoginRequired
     httpStatus >= 500 -> ProfileImageUploadUrlResult.Failure(retryable = true)
     else -> ProfileImageUploadUrlResult.Failure(retryable = false)
+}
+
+internal fun mapStatsError(httpStatus: Int, errorCode: String? = null): StatsResult = when {
+    errorCode in PROFILE_LOGIN_REQUIRED_CODES -> StatsResult.LoginRequired
+    httpStatus == 401 -> StatsResult.LoginRequired
+    httpStatus >= 500 -> StatsResult.Failure(retryable = true)
+    else -> StatsResult.Failure(retryable = false)
 }
 
 private val PROFILE_LOGIN_REQUIRED_CODES = setOf(
