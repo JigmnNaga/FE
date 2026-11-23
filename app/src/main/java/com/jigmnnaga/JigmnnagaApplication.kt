@@ -3,6 +3,7 @@ package com.jigmnnaga
 import android.app.Application
 import com.kakao.sdk.common.KakaoSdk
 import com.kakao.vectormap.KakaoMapSdk
+import com.jigmnnaga.notification.PushNotificationHelper
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -15,5 +16,6 @@ class JigmnnagaApplication : Application() {
             KakaoSdk.init(this, appKey)
             KakaoMapSdk.init(this, appKey)
         }
+        PushNotificationHelper.createChannels(this)
     }
 }
