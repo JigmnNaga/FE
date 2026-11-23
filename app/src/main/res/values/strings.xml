@@ -587,6 +587,22 @@
     <string name="route_options_failed">경로를 불러오지 못했어요. 눌러서 다시 시도해 주세요.</string>
     <string name="route_action_failed">요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <!-- 도움말 및 문의 (MYP-006) -->
+    <string name="help_support_title">도움말 및 문의</string>
+    <string name="help_support_notice_title">답변 안내</string>
+    <string name="help_support_notice_description">평일 오전 10시부터 오후 6시까지 순차적으로 답변드려요.</string>
+    <string name="help_support_faq_section_title">자주 묻는 질문</string>
+    <string name="help_support_faq_section_description">궁금한 항목을 눌러 답변을 확인해 보세요</string>
+    <string name="help_support_faq_q1">계정 정보는 어디에서 변경하나요?</string>
+    <string name="help_support_faq_a1">프로필 화면의 \'프로필 편집\'에서 이름과 프로필 정보를 변경할 수 있어요.</string>
+    <string name="help_support_faq_q2">약속을 만들거나 수정하려면 어떻게 하나요?</string>
+    <string name="help_support_faq_a2">홈 화면의 \'약속 만들기\'에서 새 약속을 만들고, 약속 상세 화면에서 내용을 수정할 수 있어요.</string>
+    <string name="help_support_faq_q3">위치 공유는 언제 시작되고 종료되나요?</string>
+    <string name="help_support_faq_a3">약속 시간 30분 전부터 위치 공유가 시작되며, 약속이 종료되면 자동으로 끝나요.</string>
+    <string name="help_support_faq_q4">알림이 오지 않을 때는 어떻게 하나요?</string>
+    <string name="help_support_faq_a4">휴대폰 설정에서 알림 권한이 켜져 있는지 확인하고, 앱의 알림 설정도 다시 확인해 주세요.</string>
+    <string name="help_support_inquiry_button">문의하기</string>
+
     <!-- 알림 설정 (MYP-003) -->
     <string name="notification_settings_title">알림 설정</string>
     <string name="notification_settings_all_title">전체 알림</string>
