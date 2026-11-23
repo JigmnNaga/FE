@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -79,6 +83,8 @@ fun ParticipantAppointmentRoomScreen(
         modifier = modifier
             .fillMaxSize()
             .background(AppColors.MainGreen.Green200)
+            // 키보드가 올라오면 화면 전체가 밀려 올라가지 않고 입력창만 키보드 위로 올라오도록 한다.
+            .imePadding()
             .testTag("participant-appointment-room")
     ) {
         MeetingHeader(
@@ -93,7 +99,10 @@ fun ParticipantAppointmentRoomScreen(
 
         when (state.selectedTab) {
             ParticipantAppointmentRoomTab.CHAT -> {
-                ParticipantAppointmentSummary(state, onSummaryExpandedChange, onConfirmationClick)
+                // 키보드가 올라와 있는 동안은 약속 요약을 숨겨, 작은 화면에서도 가장 아래 메시지가 보이게 한다.
+                if (WindowInsets.ime.getBottom(LocalDensity.current) == 0) {
+                    ParticipantAppointmentSummary(state, onSummaryExpandedChange, onConfirmationClick)
+                }
                 ParticipantChatList(state, canLoadMoreMessages, onLoadMoreMessages, Modifier.weight(1f))
                 ChatInputBar(
                     value = state.draftMessage,
