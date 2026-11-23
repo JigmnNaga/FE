@@ -106,4 +106,11 @@ class RouteUiMapperTest {
         assertEquals(RouteTime.formatClockText("15:00"), state.meetingTimeLabel)
         assertTrue(state.meetingTimeLabel.endsWith("3:00"))
     }
+
+    @Test
+    fun `약속 확정 날짜를 이동 화면 상태에 담는다`() {
+        val state = detail().toRouteUiState("3명", labels, myMemberId = 1L)
+
+        assertEquals("2026-11-20", state.meetingDate)
+    }
 }

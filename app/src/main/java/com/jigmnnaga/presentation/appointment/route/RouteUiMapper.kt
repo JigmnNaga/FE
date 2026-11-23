@@ -45,6 +45,7 @@ internal fun AppointmentDetail.toRouteUiState(
         memberSummary = memberSummary,
         destinationName = placeSummary().orEmpty(),
         meetingTimeLabel = RouteTime.formatClockText(confirmedTime),
+        meetingDate = confirmedDate,
         members = routeMembers
     )
 }
