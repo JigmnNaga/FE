@@ -184,4 +184,17 @@ class RouteUiStateTest {
     fun noPermissionScreenDoesNotShowAfterArrival() {
         assertFalse(RouteSampleData.arrived.copy(locationPermissionGranted = false).needsLocationPermission)
     }
+
+    @Test
+    fun startIsBlockedWhenTodayIsNotTheMeetingDay() {
+        val chosen = selecting.selectTransport(RouteTransport.BUS)
+        assertTrue(chosen.canStart())
+        assertFalse(chosen.copy(departureOpen = false).canStart())
+    }
+
+    @Test
+    fun startIsOpenByDefaultWhenMeetingDateIsUnknown() {
+        assertNull(overview.meetingDate)
+        assertTrue(overview.departureOpen)
+    }
 }

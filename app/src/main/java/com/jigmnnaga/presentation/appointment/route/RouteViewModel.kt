@@ -78,11 +78,24 @@ class RouteViewModel(
     private val myMemberId: String? = initialState.members.firstOrNull { it.isMe }?.id
 
     init {
+        refreshDepartureOpen()
         startRealtime()
     }
 
+    /** 오늘이 약속 당일인지 다시 확인해 "지금 출발하기"를 열거나 닫는다. 약속 날짜를 모르면 열어 둔다. */
+    private fun refreshDepartureOpen() {
+        val today = RouteTime.dayOf(nowMillis())
+        _uiState.update { state ->
+            val open = state.meetingDate.isNullOrBlank() || state.meetingDate == today
+            if (state.departureOpen == open) state else state.copy(departureOpen = open)
+        }
+    }
+
     /** 초기화면에서 내 카드를 눌렀을 때. */
-    fun onMyCardClick() = _uiState.update { it.openRouteSelection() }
+    fun onMyCardClick() {
+        refreshDepartureOpen()
+        _uiState.update { it.openRouteSelection() }
+    }
 
     fun onSelectTransport(transport: RouteTransport) = _uiState.update { it.selectTransport(transport) }
 
@@ -93,6 +106,8 @@ class RouteViewModel(
      * 이미 출발한 상태라는 응답은 출발한 것으로 본다. 저장소가 없으면 화면 안에서만 넘어간다.
      */
     fun onStartMoving() {
+        refreshDepartureOpen()
+        if (!_uiState.value.departureOpen) return
         val repository = travelRepository
         if (repository == null) {
             _uiState.update { it.startMoving() }
