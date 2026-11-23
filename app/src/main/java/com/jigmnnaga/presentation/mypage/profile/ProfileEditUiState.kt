@@ -2,14 +2,24 @@ package com.jigmnnaga.presentation.mypage.profile
 
 data class ProfileEditUiState(
     val nickname: String = "",
+    val originalNickname: String = "",
     val profileInitial: String? = null,
+    val profileImageUrl: String? = null,
     val joinDate: String = "",
     val totalAppointments: Int = 0,
-    val isSaveEnabled: Boolean = false
+    val isLoading: Boolean = false,
+    val loadFailed: Boolean = false,
+    val isSaveEnabled: Boolean = false,
+    val saveSuccess: Boolean = false,
+    val saveFailed: Boolean = false,
+    val isImageUploading: Boolean = false,
+    val imageUploadFailed: Boolean = false,
+    val loginRequired: Boolean = false
 ) {
     companion object {
         val PreviewDefault = ProfileEditUiState(
             nickname = "김지금",
+            originalNickname = "김지금",
             profileInitial = "나",
             joinDate = "2026. 04. 12",
             totalAppointments = 23,
@@ -18,6 +28,7 @@ data class ProfileEditUiState(
 
         val PreviewDisabled = ProfileEditUiState(
             nickname = "",
+            originalNickname = "",
             profileInitial = null,
             joinDate = "2026. 04. 12",
             totalAppointments = 0,
