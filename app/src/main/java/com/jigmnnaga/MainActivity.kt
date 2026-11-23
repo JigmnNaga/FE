@@ -23,6 +23,7 @@ import com.jigmnnaga.presentation.calendar.CalendarNavigationGraph
 import com.jigmnnaga.presentation.home.HomeNavigationGraph
 import com.jigmnnaga.presentation.mypage.MypageNavigationGraph
 import com.jigmnnaga.presentation.mypage.location.DefaultLocationNavigationGraph
+import com.jigmnnaga.presentation.mypage.notification.NotificationSettingsNavigationGraph
 import com.jigmnnaga.presentation.mypage.sharing.LocationSharingSettingsNavigationGraph
 import com.jigmnnaga.presentation.notification.NotificationNavigationGraph
 import com.jigmnnaga.presentation.home.HomeRoute
@@ -120,6 +121,7 @@ class MainActivity : ComponentActivity() {
                     CalendarNavigationGraph.register(this, navigator)
                     NotificationNavigationGraph.register(this, navigator)
                     MypageNavigationGraph.register(this, navigator)
+                    NotificationSettingsNavigationGraph.register(this, navigator)
                     DefaultLocationNavigationGraph.register(this, navigator)
                     LocationSharingSettingsNavigationGraph.register(this, navigator)
                 }

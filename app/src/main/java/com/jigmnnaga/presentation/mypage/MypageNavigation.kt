@@ -5,6 +5,7 @@ import androidx.navigation.compose.composable
 import com.jigmnnaga.core.navigation.AppNavigationGraph
 import com.jigmnnaga.core.navigation.AppNavigator
 import com.jigmnnaga.presentation.mypage.location.DefaultLocationRoute
+import com.jigmnnaga.presentation.mypage.notification.NotificationSettingsRoute
 import com.jigmnnaga.presentation.mypage.sharing.LocationSharingSettingsRoute
 
 /**
@@ -17,6 +18,7 @@ object MypageNavigationGraph : AppNavigationGraph {
             MypageRoute(
                 onBackClick = { navigator.navigateBack() },
                 onEditProfileClick = { navigator.navigate(ProfileEditRoute) },
+                onNotificationSettingsClick = { navigator.navigate(NotificationSettingsRoute) },
                 onDefaultLocationClick = { navigator.navigate(DefaultLocationRoute) },
                 onLocationSharingSettingsClick = { navigator.navigate(LocationSharingSettingsRoute) }
             )
