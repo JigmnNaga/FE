@@ -587,6 +587,24 @@
     <string name="route_options_failed">경로를 불러오지 못했어요. 눌러서 다시 시도해 주세요.</string>
     <string name="route_action_failed">요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.</string>
 
+    <!-- 알림 설정 (MYP-003) -->
+    <string name="notification_settings_title">알림 설정</string>
+    <string name="notification_settings_all_title">전체 알림</string>
+    <string name="notification_settings_all_description">지금나가의 모든 푸시 알림을 받아요</string>
+    <string name="notification_settings_appointment_section_title">약속 알림</string>
+    <string name="notification_settings_appointment_section_description">약속 전후의 중요한 순간을 놓치지 않도록 알려드려요</string>
+    <string name="notification_settings_reminder_title">약속 리마인드</string>
+    <string name="notification_settings_reminder_description">약속 1시간 전과 10분 전에 알려드려요</string>
+    <string name="notification_settings_departure_title">출발 시간 안내</string>
+    <string name="notification_settings_departure_description">이동 시간을 반영해 나갈 시간을 알려드려요</string>
+    <string name="notification_settings_arrival_title">친구 도착 알림</string>
+    <string name="notification_settings_arrival_description">약속 장소에 친구가 도착하면 알려드려요</string>
+    <string name="notification_settings_social_section_title">소셜 및 서비스 알림</string>
+    <string name="notification_settings_marketing_title">마케팅 알림</string>
+    <string name="notification_settings_marketing_description">이벤트와 새로운 기능 소식을 받아요</string>
+    <string name="notification_settings_notice_title">알림이 오지 않나요?</string>
+    <string name="notification_settings_notice_description">기기 설정에서 지금나가의 알림 권한이 허용되어 있는지 확인해 주세요.</string>
+
     <!-- 위치 공유 설정 (MYP-004) -->
     <string name="location_sharing_title">위치 공유 설정</string>
     <string name="location_sharing_permission_title">현재 위치 권한</string>

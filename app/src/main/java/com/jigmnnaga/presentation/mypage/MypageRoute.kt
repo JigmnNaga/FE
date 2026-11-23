@@ -19,6 +19,7 @@ fun MypageRoute(
     onBackClick: () -> Unit,
     onEditProfileClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onNotificationSettingsClick: () -> Unit = {},
     onDefaultLocationClick: () -> Unit = {},
     onLocationSharingSettingsClick: () -> Unit = {}
 ) {
@@ -26,7 +27,7 @@ fun MypageRoute(
         state = MypageUiState.PreviewDefault,
         onBackClick = onBackClick,
         onEditProfileClick = onEditProfileClick,
-        onNotificationSettingsClick = { /* TODO: 알림 설정 화면 연결 */ },
+        onNotificationSettingsClick = onNotificationSettingsClick,
         onDefaultLocationClick = onDefaultLocationClick,
         onLocationSharingSettingsClick = onLocationSharingSettingsClick,
         onHelpClick = { /* TODO: 도움말 및 문의 화면 연결 */ },
