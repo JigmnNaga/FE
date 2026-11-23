@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -243,6 +244,8 @@ internal fun RouteMap(
         modifier = modifier
             .fillMaxWidth()
             .height(RouteMapHeight)
+            // 배경 블록이 지도 높이보다 아래까지 그려지므로 지도 영역 밖은 잘라 낸다.
+            .clipToBounds()
             .semantics { contentDescription = description }
             .testTag("route-map")
     ) {
