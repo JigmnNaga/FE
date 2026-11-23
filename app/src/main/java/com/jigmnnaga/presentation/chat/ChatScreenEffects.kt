@@ -1,5 +1,6 @@
 package com.jigmnnaga.presentation.chat
 
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -7,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.Lifecycle
@@ -73,6 +75,23 @@ fun ChatListEffects(
             listState.animateScrollToItem(lastIndex)
         }
         previousLastId = lastId
+    }
+
+    // 키보드가 올라와 목록 높이가 줄어들 때, 줄어들기 전에 맨 아래를 보고 있었다면 가장 아래 메시지가 계속 보이게 한다.
+    val latestMessageCount by rememberUpdatedState(messages.size)
+    LaunchedEffect(listState) {
+        var previousHeight = 0
+        var wasAtBottom = true
+        snapshotFlow { listState.layoutInfo.viewportSize.height to !listState.canScrollForward }
+            .collect { (height, atBottom) ->
+                val shrank = previousHeight > 0 && height in 1 until previousHeight
+                if (shrank && wasAtBottom && latestMessageCount > 0) {
+                    listState.scrollToItem(leadingItemCount + latestMessageCount - 1)
+                    listState.scrollBy(Float.MAX_VALUE)
+                }
+                previousHeight = height
+                wasAtBottom = atBottom
+            }
     }
 
     LaunchedEffect(listState, hasMore, messages.size) {
