@@ -1,0 +1,263 @@
+package com.jigmnnaga.presentation.appointment.route
+
+import com.jigmnnaga.domain.model.TravelMode
+import com.jigmnnaga.domain.model.TravelOption
+import com.jigmnnaga.domain.model.TravelOptions
+import com.jigmnnaga.domain.model.TravelStep
+import com.jigmnnaga.domain.model.TravelStepType
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+/**
+ * 이동수단 후보와 이동 중 문구에 쓰는 문구 틀. `%1\$s`, `%1\$d` 같은 자리는 [String.format]으로 채운다.
+ * 화면 전체가 한국어 문구라서 기본값을 한국어로 둔다.
+ */
+internal data class RouteTravelLabels(
+    val transportBus: String = "버스",
+    val transportSubway: String = "지하철",
+    val transportTaxi: String = "택시",
+    val durationMinutes: String = "%1\$d분",
+    val stepWalk: String = "도보 %1\$d분",
+    val stepBus: String = "버스 %1\$d분",
+    val stepSubway: String = "지하철 %1\$d분",
+    val stepTaxi: String = "택시 %1\$d분",
+    val stepOther: String = "이동 %1\$d분",
+    val stepWalkDescription: String = "도보 이동",
+    val stepBusDescription: String = "버스 탑승",
+    val stepSubwayDescription: String = "지하철 탑승",
+    val stepTaxiDescription: String = "택시로 이동",
+    val stepOtherDescription: String = "이동",
+    val stepTimeRange: String = "%1\$s~%2\$s",
+    val summaryArrow: String = " → ",
+    val recommendedStartCaption: String = "권장 출발 시간",
+    val recommendedStartNote: String = "(%1\$s에서 출발 시)",
+    val arrivalCaption: String = "도착 예정",
+    val minutesBeforeMeeting: String = "약속 %1\$d분 전",
+    val minutesAfterMeeting: String = "약속 %1\$d분 후",
+    val justInTime: String = "약속 시각에 도착",
+    val estimateTitle: String = "도착 예정 %1\$s",
+    val estimateNoteEarly: String = "약속 %1\$s · %2\$d분 여유",
+    val estimateNoteLate: String = "약속 %1\$s · %2\$d분 늦음",
+    val estimateNoteJustInTime: String = "약속 %1\$s · 여유 없음",
+    val movingTitle: String = "나 · %1\$s 이동 중",
+    val movingMapLabel: String = "%1\$s 이동 중",
+    val movingSubtitle: String = "%1\$s 도착 · %2\$d분 남음",
+    val routeTotal: String = "전체 %1\$d분",
+    val movingFootnote: String = "전체 %1\$d분 중 %2\$d분이 지났어요. %3\$d분 후 도착 예정이에요.",
+    val nowCaption: String = "현재 시각",
+    val remainingNote: String = "%1\$d분 남음",
+    val arrivedTitle: String = "나 · 도착 완료",
+    val arrivedSubtitle: String = "%1\$s 도착 완료",
+    val arrivedEstimateTitle: String = "도착 완료 %1\$s"
+) {
+    fun transportName(mode: TravelMode): String = when (mode) {
+        TravelMode.BUS -> transportBus
+        TravelMode.SUBWAY -> transportSubway
+        TravelMode.TAXI -> transportTaxi
+    }
+}
+
+/**
+ * minSdk 24에서는 java.time을 쓸 수 없어서 서버 시각 문자열(`yyyy-MM-dd'T'HH:mm:ss`)을
+ * [SimpleDateFormat]으로 다룬다. 기기의 시간대를 서버와 같은 한국 시간으로 본다.
+ */
+internal object RouteTime {
+    private const val SERVER_FORMAT = "yyyy-MM-dd'T'HH:mm:ss"
+    private const val CLOCK_FORMAT = "a h:mm"
+    private const val MILLIS_PER_MINUTE = 60_000L
+
+    fun parseServer(value: String?): Long? {
+        val text = value?.takeIf { it.length >= SERVER_FORMAT.length - 2 }?.take(19) ?: return null
+        return try {
+            SimpleDateFormat(SERVER_FORMAT, Locale.KOREA).parse(text)?.time
+        } catch (e: ParseException) {
+            null
+        }
+    }
+
+    /** 오후 4:50 같은 시각 문구. */
+    fun formatClock(millis: Long): String = SimpleDateFormat(CLOCK_FORMAT, Locale.KOREA).format(Date(millis))
+
+    /** `HH:mm` 문자열을 오후 5:00 같은 문구로 바꾼다. 읽을 수 없으면 빈 문자열. */
+    fun formatClockText(hhmm: String?): String {
+        if (hhmm.isNullOrBlank()) return ""
+        return try {
+            val parsed = SimpleDateFormat("HH:mm", Locale.KOREA).parse(hhmm.take(5)) ?: return ""
+            SimpleDateFormat(CLOCK_FORMAT, Locale.KOREA).format(parsed)
+        } catch (e: ParseException) {
+            ""
+        }
+    }
+
+    fun minutesToMillis(minutes: Int): Long = minutes * MILLIS_PER_MINUTE
+
+    /** [from]에서 [to]까지 분 단위. [to]가 더 나중이면 양수. 초는 버린다. */
+    fun minutesBetween(from: Long, to: Long): Long = Math.floorDiv(to - from, MILLIS_PER_MINUTE)
+}
+
+/** 서버의 이동수단 후보를 경로 선택 화면(ROU-001-02)의 이동수단 줄로 바꾼다. */
+internal fun TravelOptions.toRouteOptions(
+    startName: String?,
+    labels: RouteTravelLabels
+): List<RouteOptionUiState> {
+    val appointmentMillis = RouteTime.parseServer(appointmentDateTime)
+    return options.map { option -> option.toRouteOption(appointmentMillis, startName, labels) }
+}
+
+private fun TravelOption.toRouteOption(
+    appointmentMillis: Long?,
+    startName: String?,
+    labels: RouteTravelLabels
+): RouteOptionUiState {
+    val arrivalMillis = RouteTime.parseServer(estimatedArrivalTime)
+    val startMillis = arrivalMillis?.let { it - RouteTime.minutesToMillis(durationMinutes) }
+    var cursor = startMillis
+    val stepStates = steps.map { step ->
+        val from = cursor
+        val to = from?.plus(RouteTime.minutesToMillis(step.minutes))
+        cursor = to
+        step.toRouteStep(labels, timeLabel = if (from != null && to != null) {
+            labels.stepTimeRange.format(RouteTime.formatClock(from), RouteTime.formatClock(to))
+        } else {
+            ""
+        })
+    }
+    val summary = if (steps.isEmpty()) {
+        labels.durationMinutes.format(durationMinutes)
+    } else {
+        steps.joinToString(labels.summaryArrow) { it.label(labels) }
+    }
+    val recommendedStart = appointmentMillis?.minus(RouteTime.minutesToMillis(durationMinutes))
+    val gap = if (appointmentMillis != null && arrivalMillis != null) {
+        RouteTime.minutesBetween(arrivalMillis, appointmentMillis)
+    } else {
+        null
+    }
+    return RouteOptionUiState(
+        transport = mode.toRouteTransport(),
+        title = labels.transportName(mode),
+        durationLabel = labels.durationMinutes.format(durationMinutes),
+        summary = summary,
+        steps = stepStates,
+        timeSummary = if (recommendedStart != null && arrivalMillis != null && gap != null) {
+            RouteTimeSummaryUiState(
+                startCaption = labels.recommendedStartCaption,
+                startTime = RouteTime.formatClock(recommendedStart),
+                startNote = startName?.let { labels.recommendedStartNote.format(it) }.orEmpty(),
+                endCaption = labels.arrivalCaption,
+                endTime = RouteTime.formatClock(arrivalMillis),
+                endNote = gap.meetingGapNote(labels)
+            )
+        } else {
+            null
+        },
+        durationMinutes = durationMinutes,
+        estimateTitle = arrivalMillis?.let { labels.estimateTitle.format(RouteTime.formatClock(it)) },
+        estimateNote = if (appointmentMillis != null && gap != null) {
+            val meeting = RouteTime.formatClock(appointmentMillis)
+            when {
+                gap > 0 -> labels.estimateNoteEarly.format(meeting, gap.toInt())
+                gap < 0 -> labels.estimateNoteLate.format(meeting, (-gap).toInt())
+                else -> labels.estimateNoteJustInTime.format(meeting)
+            }
+        } else {
+            null
+        }
+    )
+}
+
+private fun Long.meetingGapNote(labels: RouteTravelLabels): String = when {
+    this > 0 -> labels.minutesBeforeMeeting.format(toInt())
+    this < 0 -> labels.minutesAfterMeeting.format((-this).toInt())
+    else -> labels.justInTime
+}
+
+private fun TravelMode.toRouteTransport(): RouteTransport = when (this) {
+    TravelMode.BUS -> RouteTransport.BUS
+    TravelMode.SUBWAY -> RouteTransport.SUBWAY
+    TravelMode.TAXI -> RouteTransport.TAXI
+}
+
+internal fun RouteTransport.toTravelMode(): TravelMode = when (this) {
+    RouteTransport.BUS -> TravelMode.BUS
+    RouteTransport.SUBWAY -> TravelMode.SUBWAY
+    RouteTransport.TAXI -> TravelMode.TAXI
+}
+
+private fun TravelStep.label(labels: RouteTravelLabels): String = when (type) {
+    TravelStepType.WALK -> labels.stepWalk
+    TravelStepType.BUS -> labels.stepBus
+    TravelStepType.SUBWAY -> labels.stepSubway
+    TravelStepType.TAXI -> labels.stepTaxi
+    TravelStepType.OTHER -> labels.stepOther
+}.format(minutes)
+
+private fun TravelStep.toRouteStep(labels: RouteTravelLabels, timeLabel: String): RouteStepUiState {
+    val description = when (type) {
+        TravelStepType.WALK -> labels.stepWalkDescription
+        TravelStepType.BUS -> name?.let { "$it ${labels.stepBusDescription}" } ?: labels.stepBusDescription
+        TravelStepType.SUBWAY -> name?.let { "$it ${labels.stepSubwayDescription}" } ?: labels.stepSubwayDescription
+        TravelStepType.TAXI -> labels.stepTaxiDescription
+        TravelStepType.OTHER -> labels.stepOtherDescription
+    }
+    val kind = when (type) {
+        TravelStepType.BUS -> RouteStepKind.BUS
+        TravelStepType.SUBWAY -> RouteStepKind.SUBWAY
+        TravelStepType.TAXI -> RouteStepKind.TAXI
+        else -> RouteStepKind.WALK
+    }
+    return RouteStepUiState(kind = kind, title = label(labels), description = description, timeLabel = timeLabel)
+}
+
+/**
+ * 출발한 시각([departedAt])과 지금([now])으로 약속 이동 단계(ROU-001-03)의 값을 만든다.
+ * 도착까지 1분 이하로 남으면 "도착" 버튼을 켜고, 한 번 켜진 버튼은 도착하기 전까지 끄지 않는다.
+ */
+internal fun RouteOptionUiState.toMoving(
+    departedAt: Long,
+    now: Long,
+    labels: RouteTravelLabels,
+    canArriveAlready: Boolean = false
+): RouteMovingUiState {
+    val arrival = departedAt + RouteTime.minutesToMillis(durationMinutes)
+    val remaining = ((arrival - now + 59_999L) / 60_000L).coerceAtLeast(0L).toInt()
+    val elapsed = (durationMinutes - remaining).coerceIn(0, durationMinutes)
+    val arrivalClock = RouteTime.formatClock(arrival)
+    return RouteMovingUiState(
+        myTransport = transport,
+        myTitle = labels.movingTitle.format(title),
+        myMapLabel = labels.movingMapLabel.format(title),
+        mySubtitle = labels.movingSubtitle.format(arrivalClock, remaining),
+        routeTotalLabel = labels.routeTotal.format(durationMinutes),
+        steps = steps,
+        footnote = labels.movingFootnote.format(durationMinutes, elapsed, remaining),
+        timeSummary = RouteTimeSummaryUiState(
+            startCaption = labels.nowCaption,
+            startTime = RouteTime.formatClock(now),
+            startNote = labels.movingMapLabel.format(title),
+            endCaption = labels.arrivalCaption,
+            endTime = arrivalClock,
+            endNote = labels.remainingNote.format(remaining)
+        ),
+        canArrive = canArriveAlready || remaining <= 1
+    )
+}
+
+/** 도착을 마친 뒤의 약속 이동 값. */
+internal fun RouteMovingUiState.toArrived(now: Long, labels: RouteTravelLabels): RouteMovingUiState {
+    val clock = RouteTime.formatClock(now)
+    return copy(
+        myTitle = labels.arrivedTitle,
+        mySubtitle = labels.arrivedSubtitle.format(clock),
+        canArrive = false,
+        hasArrived = true,
+        timeSummary = timeSummary.copy(
+            startCaption = labels.arrivalCaption,
+            startTime = clock,
+            startNote = "",
+            endNote = ""
+        )
+    )
+}

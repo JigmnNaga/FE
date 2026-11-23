@@ -155,7 +155,11 @@ data class RouteUiState(
     /** "지금 출발하기"와 "도착" 요청 상태. */
     val actionStatus: RouteRequestStatus = RouteRequestStatus.IDLE,
     /** 위치 접근 권한을 허용했는지. 화면이 앞에 올 때마다 새로 확인한다. */
-    val locationPermissionGranted: Boolean = true
+    val locationPermissionGranted: Boolean = true,
+    /** 약속이 확정된 날짜(`yyyy-MM-dd`). 알 수 없으면 null이다. */
+    val meetingDate: String? = null,
+    /** 오늘이 약속 당일이라 "지금 출발하기"를 누를 수 있는지. 약속 날짜를 모르면 막지 않는다. */
+    val departureOpen: Boolean = true
 ) {
     /**
      * 위치 권한 없음 화면(COM-003-03)을 보여 줄지. 실시간 위치 공유가 이어지는 이동 중에만 해당하며,
@@ -171,12 +175,13 @@ data class RouteUiState(
      * 경로 선택 단계에서 "지금 출발하기"를 누를 수 있는지. 이동수단을 골라야 하고 이동 정보가 있어야 한다.
      * 서버에서 받은 이동수단(소요 시간이 있는 옵션)은 출발한 뒤에 이동 정보를 만들고,
      * 이 후보는 출발 위치를 고른 뒤에만 불러오므로 출발 위치 없이는 고를 수 없다.
-     * 요청이 진행 중일 때는 누를 수 없다.
+     * 요청이 진행 중일 때는 누를 수 없고, 약속 당일이 아니면([departureOpen]) 경로를 골라도 누를 수 없다.
      */
     fun canStart(): Boolean {
         val option = selectedOption ?: return false
         val hasMovingInfo = moving != null || (option.durationMinutes > 0 && startLocation != null)
-        return stage == RouteStage.SELECT && hasMovingInfo && actionStatus != RouteRequestStatus.LOADING
+        return stage == RouteStage.SELECT && hasMovingInfo && departureOpen &&
+            actionStatus != RouteRequestStatus.LOADING
     }
 
     /** 약속 이동 단계의 "도착" 버튼을 누를 수 있는지. */

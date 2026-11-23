@@ -453,4 +453,80 @@ class RouteTravelViewModelTest {
         assertEquals(listOf("register:7:학교:37.6,127.1", "options:7:37.6,127.1"), travel.calls)
         assertEquals("학교", vm.uiState.value.startLocation?.name)
     }
+
+    /** 약속 날짜가 [meetingDate]인 경로 선택 단계. */
+    private fun vmOn(meetingDate: String?) = RouteViewModel(
+        initialState = RouteSampleData.overview
+            .copy(options = emptyList(), moving = null, meetingDate = meetingDate)
+            .openRouteSelection(),
+        appointmentId = 7L,
+        travelRepository = travel,
+        nowMillis = { now },
+        movingTickMillis = 30_000L
+    )
+
+    private fun RouteViewModel.chooseRoute() {
+        pickStart()
+        onSelectTransport(RouteTransport.BUS)
+        dispatcher.scheduler.runCurrent()
+    }
+
+    @Test
+    fun `약속 당일이 아니면 경로를 골라도 출발할 수 없고 서버에 출발을 알리지 않는다`() {
+        val vm = vmOn(RouteTime.dayOf(now + 6 * 24 * 60 * 60_000L))
+
+        vm.chooseRoute()
+        assertFalse(vm.uiState.value.departureOpen)
+        assertFalse(vm.uiState.value.canStart())
+
+        vm.onStartMoving()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(RouteStage.SELECT, vm.uiState.value.stage)
+        assertTrue(travel.calls.none { it.startsWith("depart") })
+    }
+
+    @Test
+    fun `약속 당일이면 경로를 고른 뒤 출발할 수 있다`() {
+        val vm = vmOn(RouteTime.dayOf(now))
+
+        vm.chooseRoute()
+        assertTrue(vm.uiState.value.departureOpen)
+        assertTrue(vm.uiState.value.canStart())
+
+        vm.onStartMoving()
+        dispatcher.scheduler.runCurrent()
+
+        assertEquals(RouteStage.MOVING, vm.uiState.value.stage)
+        assertTrue(travel.calls.contains("depart:7"))
+    }
+
+    @Test
+    fun `약속 날짜를 모르면 출발을 막지 않는다`() {
+        val vm = vmOn(null)
+
+        vm.chooseRoute()
+
+        assertTrue(vm.uiState.value.departureOpen)
+        assertTrue(vm.uiState.value.canStart())
+    }
+
+    @Test
+    fun `자정이 지나 약속 당일이 되면 경로 선택 화면에 들어올 때 다시 확인해 출발할 수 있다`() {
+        now = RouteTime.parseServer("2026-11-19T23:50:00")!!
+        val vm = vmOn("2026-11-20")
+        assertFalse(vm.uiState.value.departureOpen)
+
+        now = RouteTime.parseServer("2026-11-20T00:10:00")!!
+        vm.onMyCardClick()
+
+        assertTrue(vm.uiState.value.departureOpen)
+    }
+
+    @Test
+    fun `약속이 이미 지난 날이면 출발할 수 없다`() {
+        val vm = vmOn("2026-11-19")
+
+        assertFalse(vm.uiState.value.departureOpen)
+    }
 }

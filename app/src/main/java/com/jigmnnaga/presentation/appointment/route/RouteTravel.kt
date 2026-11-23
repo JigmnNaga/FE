@@ -133,6 +133,9 @@ internal object RouteTime {
         }
     }
 
+    /** [millis]가 속한 날짜를 `yyyy-MM-dd`로. 약속 날짜와 같은지 비교할 때 쓴다. */
+    fun dayOf(millis: Long): String = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(Date(millis))
+
     fun minutesToMillis(minutes: Int): Long = minutes * MILLIS_PER_MINUTE
 
     /** [from]에서 [to]까지 분 단위. [to]가 더 나중이면 양수. 초는 버린다. */
