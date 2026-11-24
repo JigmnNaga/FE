@@ -2,7 +2,9 @@ package com.jigmnnaga.presentation.common.splash
 
 import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.domain.model.LoginResult
+import com.jigmnnaga.domain.model.LogoutResult
 import com.jigmnnaga.domain.model.ReissueResult
+import com.jigmnnaga.domain.model.WithdrawResult
 import com.jigmnnaga.domain.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +47,8 @@ class SplashViewModelTest {
             LoginResult.Success(isNewMember = false)
 
         override suspend fun reissueTokens(): ReissueResult = nextReissueResult
+        override suspend fun logout(): LogoutResult = LogoutResult.Success
+        override suspend fun withdraw(): WithdrawResult = WithdrawResult.Success
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -91,6 +95,8 @@ class SplashViewModelTest {
                 reissueCalled = true
                 return ReissueResult.Success
             }
+            override suspend fun logout(): LogoutResult = LogoutResult.Success
+            override suspend fun withdraw(): WithdrawResult = WithdrawResult.Success
         }
         viewModel(tokenManager, repo)
 

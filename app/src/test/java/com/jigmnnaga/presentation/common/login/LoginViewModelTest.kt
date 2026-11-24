@@ -35,6 +35,8 @@ class LoginViewModelTest {
 
         override suspend fun kakaoLogin(kakaoAccessToken: String): LoginResult = nextResult
         override suspend fun reissueTokens() = com.jigmnnaga.domain.model.ReissueResult.Success
+        override suspend fun logout() = com.jigmnnaga.domain.model.LogoutResult.Success
+        override suspend fun withdraw() = com.jigmnnaga.domain.model.WithdrawResult.Success
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
