@@ -2,13 +2,18 @@ package com.jigmnnaga.data.repository
 
 import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.AuthApi
+import com.jigmnnaga.data.remote.api.MemberApi
 import com.jigmnnaga.data.remote.dto.ApiResponse
 import com.jigmnnaga.data.remote.dto.KakaoLoginRequestDto
 import com.jigmnnaga.data.remote.dto.LoginResponseDto
+import com.jigmnnaga.data.remote.dto.ProfileImageUploadUrlRequestDto
+import com.jigmnnaga.data.remote.dto.ProfileUpdateRequestDto
 import com.jigmnnaga.data.remote.dto.TokenReissueRequestDto
 import com.jigmnnaga.data.remote.dto.TokenReissueResponseDto
 import com.jigmnnaga.domain.model.LoginResult
+import com.jigmnnaga.domain.model.LogoutResult
 import com.jigmnnaga.domain.model.ReissueResult
+import com.jigmnnaga.domain.model.WithdrawResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -39,6 +44,10 @@ class AuthRepositoryImplTest {
             { error("not set") }
         var lastReissueRequest: TokenReissueRequestDto? = null
 
+        var onLogout: suspend (String?) -> Response<ApiResponse<Unit>> =
+            { Response.success(ApiResponse()) }
+        var lastLogoutAuth: String? = null
+
         override suspend fun kakaoLogin(
             request: KakaoLoginRequestDto
         ): Response<ApiResponse<LoginResponseDto>> {
@@ -52,19 +61,37 @@ class AuthRepositoryImplTest {
             lastReissueRequest = request
             return onReissueTokens(request)
         }
+
+        override suspend fun logout(authorization: String?): Response<ApiResponse<Unit>> {
+            lastLogoutAuth = authorization
+            return onLogout(authorization)
+        }
+    }
+
+    private class FakeMemberApi : MemberApi {
+        var onWithdraw: suspend (String?) -> Response<ApiResponse<Unit>> =
+            { Response.success(ApiResponse()) }
+
+        override suspend fun getMyInfo(authorization: String?) = error("not used")
+        override suspend fun updateProfile(authorization: String?, request: ProfileUpdateRequestDto) = error("not used")
+        override suspend fun getProfileImageUploadUrl(authorization: String?, request: ProfileImageUploadUrlRequestDto) = error("not used")
+        override suspend fun deleteProfileImage(authorization: String?) = error("not used")
+        override suspend fun getMyStats(authorization: String?) = error("not used")
+        override suspend fun withdraw(authorization: String?): Response<ApiResponse<Unit>> =
+            onWithdraw(authorization)
     }
 
     private class FakeTokenManager(
-        storedRefreshToken: String? = null
+        storedRefreshToken: String? = null,
+        storedAccessToken: String? = null
     ) : TokenManager {
         var savedAccessToken: String? = null
         var savedRefreshToken: String? = null
         var saveShouldThrow: Boolean = false
         var clearCalled: Boolean = false
-        private val _storedRefreshToken = storedRefreshToken
 
-        override val accessToken: Flow<String?> = flowOf(null)
-        override val refreshToken: Flow<String?> = flowOf(_storedRefreshToken)
+        override val accessToken: Flow<String?> = flowOf(storedAccessToken)
+        override val refreshToken: Flow<String?> = flowOf(storedRefreshToken)
 
         override suspend fun saveTokens(accessToken: String, refreshToken: String) {
             if (saveShouldThrow) throw IOException("DataStore 오류")
@@ -79,8 +106,13 @@ class AuthRepositoryImplTest {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    private fun repo(api: FakeAuthApi, tokenManager: FakeTokenManager = FakeTokenManager()) =
-        AuthRepositoryImpl(api, tokenManager, json)
+    private val defaultMemberApi = FakeMemberApi()
+
+    private fun repo(
+        api: FakeAuthApi,
+        tokenManager: FakeTokenManager = FakeTokenManager(),
+        memberApi: FakeMemberApi = defaultMemberApi
+    ) = AuthRepositoryImpl(api, memberApi, tokenManager, json)
 
     private fun kakaoSuccessResponse(isNewMember: Boolean = false) = Response.success(
         ApiResponse(
@@ -305,5 +337,137 @@ class AuthRepositoryImplTest {
         val result = repo(api, tokenManager).kakaoLogin("kakao-token")
 
         assertTrue(result is LoginResult.Success)
+    }
+
+    // ── logout 성공 케이스 ───────────────────────────────────────────────────
+
+    @Test
+    fun `로그아웃 성공 시 토큰이 삭제된다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "valid-access-token")
+        val api = FakeAuthApi().apply { onLogout = { Response.success(ApiResponse()) } }
+
+        repo(api, tokenManager).logout()
+
+        assertTrue(tokenManager.clearCalled)
+    }
+
+    @Test
+    fun `로그아웃 성공 시 LogoutResult_Success를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "valid-access-token")
+        val api = FakeAuthApi().apply { onLogout = { Response.success(ApiResponse()) } }
+
+        assertEquals(LogoutResult.Success, repo(api, tokenManager).logout())
+    }
+
+    @Test
+    fun `액세스 토큰이 없으면 로그아웃 API를 호출하지 않고 LoginRequired를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager() // storedAccessToken = null
+        val api = FakeAuthApi()
+
+        val result = repo(api, tokenManager).logout()
+
+        assertEquals(LogoutResult.LoginRequired, result)
+        assertNull(api.lastLogoutAuth)
+    }
+
+    @Test
+    fun `로그아웃 HTTP 401이면 토큰을 삭제하지 않고 LoginRequired를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "access-token")
+        val api = FakeAuthApi().apply {
+            onLogout = {
+                """{"success":false,"code":"UNAUTHORIZED","message":"error"}"""
+                    .toResponseBody("application/json".toMediaType())
+                    .let { Response.error(401, it) }
+            }
+        }
+
+        val result = repo(api, tokenManager).logout()
+
+        assertEquals(LogoutResult.LoginRequired, result)
+        assertFalse(tokenManager.clearCalled)
+    }
+
+    @Test
+    fun `로그아웃 HTTP 500이면 retryable Failure를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "access-token")
+        val api = FakeAuthApi().apply {
+            onLogout = {
+                """{"success":false,"code":"SERVER_ERROR","message":"error"}"""
+                    .toResponseBody("application/json".toMediaType())
+                    .let { Response.error(500, it) }
+            }
+        }
+
+        val result = repo(api, tokenManager).logout() as LogoutResult.Failure
+
+        assertTrue(result.retryable)
+    }
+
+    @Test
+    fun `로그아웃 IOException이면 retryable Failure를 반환하고 토큰을 유지한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "access-token")
+        val api = FakeAuthApi().apply { onLogout = { throw IOException("연결 실패") } }
+
+        val result = repo(api, tokenManager).logout()
+
+        assertTrue((result as LogoutResult.Failure).retryable)
+        assertFalse(tokenManager.clearCalled)
+    }
+
+    // ── withdraw 성공 케이스 ──────────────────────────────────────────────────
+
+    @Test
+    fun `회원탈퇴 성공 시 토큰이 삭제된다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "valid-access-token")
+        val memberApi = FakeMemberApi().apply { onWithdraw = { Response.success(ApiResponse()) } }
+
+        repo(FakeAuthApi(), tokenManager, memberApi).withdraw()
+
+        assertTrue(tokenManager.clearCalled)
+    }
+
+    @Test
+    fun `회원탈퇴 성공 시 WithdrawResult_Success를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "valid-access-token")
+        val memberApi = FakeMemberApi().apply { onWithdraw = { Response.success(ApiResponse()) } }
+
+        assertEquals(WithdrawResult.Success, repo(FakeAuthApi(), tokenManager, memberApi).withdraw())
+    }
+
+    @Test
+    fun `액세스 토큰이 없으면 회원탈퇴 API를 호출하지 않고 LoginRequired를 반환한다`() = runTest {
+        val memberApi = FakeMemberApi()
+
+        val result = repo(FakeAuthApi(), FakeTokenManager(), memberApi).withdraw()
+
+        assertEquals(WithdrawResult.LoginRequired, result)
+    }
+
+    @Test
+    fun `회원탈퇴 HTTP 500이면 토큰을 삭제하지 않고 retryable Failure를 반환한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "access-token")
+        val memberApi = FakeMemberApi().apply {
+            onWithdraw = {
+                """{"success":false,"code":"SERVER_ERROR","message":"error"}"""
+                    .toResponseBody("application/json".toMediaType())
+                    .let { Response.error(500, it) }
+            }
+        }
+
+        val result = repo(FakeAuthApi(), tokenManager, memberApi).withdraw()
+
+        assertTrue((result as WithdrawResult.Failure).retryable)
+        assertFalse(tokenManager.clearCalled)
+    }
+
+    @Test
+    fun `회원탈퇴 IOException이면 retryable Failure를 반환하고 토큰을 유지한다`() = runTest {
+        val tokenManager = FakeTokenManager(storedAccessToken = "access-token")
+        val memberApi = FakeMemberApi().apply { onWithdraw = { throw IOException("연결 실패") } }
+
+        val result = repo(FakeAuthApi(), tokenManager, memberApi).withdraw()
+
+        assertTrue((result as WithdrawResult.Failure).retryable)
+        assertFalse(tokenManager.clearCalled)
     }
 }

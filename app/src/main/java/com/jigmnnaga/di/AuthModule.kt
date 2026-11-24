@@ -1,7 +1,10 @@
 package com.jigmnnaga.di
 
+import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.AuthApi
+import com.jigmnnaga.data.remote.api.MyAppointmentApi
 import com.jigmnnaga.data.repository.AuthRepositoryImpl
+import com.jigmnnaga.domain.repository.AppointmentDetailRepository
 import com.jigmnnaga.domain.repository.AuthRepository
 import dagger.Binds
 import dagger.Module
@@ -38,4 +41,17 @@ abstract class AuthModule {
 @InstallIn(SingletonComponent::class)
 interface AuthEntryPoint {
     fun authRepository(): AuthRepository
+}
+
+/**
+ * 로그아웃 · 회원탈퇴 화면의 [com.jigmnnaga.presentation.mypage.account.AccountViewModel]에
+ * 필요한 의존성을 넘겨 주기 위한 진입점입니다.
+ */
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AccountEntryPoint {
+    fun authRepository(): AuthRepository
+    fun myAppointmentApi(): MyAppointmentApi
+    fun tokenManager(): TokenManager
+    fun appointmentDetailRepository(): AppointmentDetailRepository
 }

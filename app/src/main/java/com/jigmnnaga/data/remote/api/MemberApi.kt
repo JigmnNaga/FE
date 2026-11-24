@@ -42,4 +42,9 @@ interface MemberApi {
     suspend fun getMyStats(
         @Header("Authorization") authorization: String?
     ): Response<ApiResponse<AppointmentStatsResponseDto>>
+
+    @DELETE("api/v1/members/me")
+    suspend fun withdraw(
+        @Header("Authorization") authorization: String?
+    ): Response<ApiResponse<Unit>>
 }

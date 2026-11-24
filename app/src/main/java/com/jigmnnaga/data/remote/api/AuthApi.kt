@@ -7,6 +7,7 @@ import com.jigmnnaga.data.remote.dto.TokenReissueRequestDto
 import com.jigmnnaga.data.remote.dto.TokenReissueResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface AuthApi {
@@ -20,4 +21,9 @@ interface AuthApi {
     suspend fun reissueTokens(
         @Body request: TokenReissueRequestDto
     ): Response<ApiResponse<TokenReissueResponseDto>>
+
+    @POST("api/v1/auth/logout")
+    suspend fun logout(
+        @Header("Authorization") authorization: String?
+    ): Response<ApiResponse<Unit>>
 }

@@ -3,11 +3,14 @@ package com.jigmnnaga.data.repository
 import android.util.Log
 import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.AuthApi
+import com.jigmnnaga.data.remote.api.MemberApi
 import com.jigmnnaga.data.remote.dto.ApiErrorBody
 import com.jigmnnaga.data.remote.dto.KakaoLoginRequestDto
 import com.jigmnnaga.data.remote.dto.TokenReissueRequestDto
 import com.jigmnnaga.domain.model.LoginResult
+import com.jigmnnaga.domain.model.LogoutResult
 import com.jigmnnaga.domain.model.ReissueResult
+import com.jigmnnaga.domain.model.WithdrawResult
 import com.jigmnnaga.domain.repository.AuthRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -19,6 +22,7 @@ private const val TAG = "LoginDebug"
 
 class AuthRepositoryImpl @Inject constructor(
     private val api: AuthApi,
+    private val memberApi: MemberApi,
     private val tokenManager: TokenManager,
     private val json: Json
 ) : AuthRepository {
@@ -95,12 +99,76 @@ class AuthRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun logout(): LogoutResult {
+        val token = tokenManager.accessToken.first()
+        if (token.isNullOrBlank()) return LogoutResult.LoginRequired
+
+        return try {
+            val response = api.logout("Bearer $token")
+            if (response.isSuccessful) {
+                tokenManager.clearTokens()
+                LogoutResult.Success
+            } else {
+                val errorCode = response.errorBody()?.string()?.let(::parseErrorCode)
+                Log.e(TAG, "로그아웃 HTTP 오류 ${response.code()}: errorCode=$errorCode")
+                when {
+                    errorCode in LOGIN_REQUIRED_CODES || response.code() == 401 ->
+                        LogoutResult.LoginRequired
+                    response.code() >= 500 -> LogoutResult.Failure(retryable = true)
+                    else -> LogoutResult.Failure(retryable = false)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "로그아웃 네트워크 오류 (${e.javaClass.simpleName}): ${e.message}")
+            LogoutResult.Failure(retryable = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "로그아웃 예상치 못한 오류 (${e.javaClass.simpleName}): ${e.message}")
+            LogoutResult.Failure(retryable = false)
+        }
+    }
+
+    override suspend fun withdraw(): WithdrawResult {
+        val token = tokenManager.accessToken.first()
+        if (token.isNullOrBlank()) return WithdrawResult.LoginRequired
+
+        return try {
+            val response = memberApi.withdraw("Bearer $token")
+            if (response.isSuccessful) {
+                tokenManager.clearTokens()
+                WithdrawResult.Success
+            } else {
+                val errorCode = response.errorBody()?.string()?.let(::parseErrorCode)
+                Log.e(TAG, "회원탈퇴 HTTP 오류 ${response.code()}: errorCode=$errorCode")
+                when {
+                    errorCode in LOGIN_REQUIRED_CODES || response.code() == 401 ->
+                        WithdrawResult.LoginRequired
+                    response.code() >= 500 -> WithdrawResult.Failure(retryable = true)
+                    else -> WithdrawResult.Failure(retryable = false)
+                }
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e(TAG, "회원탈퇴 네트워크 오류 (${e.javaClass.simpleName}): ${e.message}")
+            WithdrawResult.Failure(retryable = true)
+        } catch (e: Exception) {
+            Log.e(TAG, "회원탈퇴 예상치 못한 오류 (${e.javaClass.simpleName}): ${e.message}")
+            WithdrawResult.Failure(retryable = false)
+        }
+    }
+
     private fun parseErrorCode(body: String): String? = try {
         json.decodeFromString(ApiErrorBody.serializer(), body).code
     } catch (e: Exception) {
         null
     }
 }
+
+private val LOGIN_REQUIRED_CODES = setOf(
+    "UNAUTHORIZED", "EXPIRED_ACCESS_TOKEN", "INVALID_ACCESS_TOKEN", "WITHDRAWN_MEMBER"
+)
 
 private fun mapLoginError(httpStatus: Int, errorCode: String?): LoginResult = when (errorCode) {
     "KAKAO_TOKEN_INVALID" -> LoginResult.InvalidKakaoToken
