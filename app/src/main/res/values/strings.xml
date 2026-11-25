@@ -620,6 +620,7 @@
     <string name="notification_settings_marketing_description">이벤트와 새로운 기능 소식을 받아요</string>
     <string name="notification_settings_notice_title">알림이 오지 않나요?</string>
     <string name="notification_settings_notice_description">기기 설정에서 지금나가의 알림 권한이 허용되어 있는지 확인해 주세요.</string>
+    <string name="notification_settings_save_failed">설정을 저장하지 못했어요. 다시 시도해 주세요.</string>
 
     <!-- 위치 공유 설정 (MYP-004) -->
     <string name="location_sharing_title">위치 공유 설정</string>
