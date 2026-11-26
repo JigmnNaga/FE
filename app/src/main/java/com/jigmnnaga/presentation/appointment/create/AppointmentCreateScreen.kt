@@ -149,7 +149,8 @@ fun AppointmentCreateScreen(
 
                 AppointmentCreateStep.SCHEDULE -> AppointmentScheduleStep(
                     state = state,
-                    onStateChange = onStateChange
+                    onStateChange = onStateChange,
+                    blockPastDates = true
                 )
 
                 AppointmentCreateStep.LOCATIONS -> AppointmentLocationsStep(
@@ -401,7 +402,8 @@ private fun AppointmentNameStep(
 @Composable
 internal fun AppointmentScheduleStep(
     state: AppointmentCreateUiState,
-    onStateChange: (AppointmentCreateUiState) -> Unit
+    onStateChange: (AppointmentCreateUiState) -> Unit,
+    blockPastDates: Boolean = false
 ) {
     Text(
         text = stringResource(R.string.appointment_schedule_question),
@@ -477,6 +479,8 @@ internal fun AppointmentScheduleStep(
                     dates = state.selectedDates
                 ),
                 onMonthChange = { onStateChange(state.copy(displayedMonth = it)) },
+                isDateEnabled = { date -> !blockPastDates || date >= todayDate() },
+                minMonth = if (blockPastDates) todayDate().monthStart() else null,
                 onDateClick = { selectedDate ->
                     val updated = when (state.scheduleType) {
                         AppointmentScheduleType.SINGLE_DAY -> state.copy(
@@ -1305,8 +1309,10 @@ private fun AppointmentCalendar(
     onMonthChange: (AppointmentDate) -> Unit,
     onDateClick: (AppointmentDate) -> Unit,
     isDateEnabled: (AppointmentDate) -> Boolean = { true },
-    markedDate: AppointmentDate? = null
+    markedDate: AppointmentDate? = null,
+    minMonth: AppointmentDate? = null
 ) {
+    val canGoPrevious = minMonth == null || displayedMonth.monthStart() > minMonth.monthStart()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = AppointmentCardShape,
@@ -1323,7 +1329,8 @@ private fun AppointmentCalendar(
             ) {
                 CircleButton(
                     contentDescription = stringResource(R.string.appointment_calendar_previous),
-                    onClick = { onMonthChange(displayedMonth.shiftMonth(-1)) },
+                    onClick = { if (canGoPrevious) onMonthChange(displayedMonth.shiftMonth(-1)) },
+                    enabled = canGoPrevious,
                     width = 32.dp,
                     height = 32.dp,
                     text = "‹",

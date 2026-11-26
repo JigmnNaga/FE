@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assume
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -108,15 +109,87 @@ class AppointmentCreateScreenTest {
             }
         }
 
+        val today = java.util.Calendar.getInstance()
         composeRule.onNodeWithTag("appointment-schedule-single_day").performClick()
         composeRule.onNodeWithTag(
-            "appointment-date-${displayedMonth.year}-${displayedMonth.month}-1"
+            "appointment-date-${displayedMonth.year}-${displayedMonth.month}-" +
+                "${today.get(java.util.Calendar.DAY_OF_MONTH)}"
         ).performClick()
         composeRule.onNodeWithTag("appointment-next").assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, nextCount) }
         composeRule.onNodeWithTag("appointment-previous").assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, previousCount) }
     }
+
+    @Test
+    fun pastDatesAreDisabledAndCannotBeSelected() {
+        val today = java.util.Calendar.getInstance()
+        Assume.assumeTrue(today.get(java.util.Calendar.DAY_OF_MONTH) > 1)
+        val displayedMonth = AppointmentDate.currentMonth()
+        val state = mutableStateOf(
+            AppointmentCreateUiState(
+                step = AppointmentCreateStep.SCHEDULE,
+                displayedMonth = displayedMonth
+            )
+        )
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentCreateScreen(
+                    state = state.value,
+                    onStateChange = { state.value = it },
+                    onBack = {},
+                    onPrevious = {},
+                    onNext = {},
+                    onCreate = {},
+                    onShare = { _, _ -> },
+                    onDismissCopyConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("appointment-schedule-single_day").performClick()
+        val pastTag = "appointment-date-${displayedMonth.year}-${displayedMonth.month}-1"
+        composeRule.onNodeWithTag(pastTag).assertIsNotEnabled().performClick()
+        composeRule.runOnIdle { assertNull(state.value.selectedStartDate) }
+        composeRule.onNodeWithTag("appointment-next").assertIsNotEnabled()
+    }
+
+    @Test
+    fun previousMonthIsBlockedOnCurrentMonthAndNextMonthStillWorks() {
+        val displayedMonth = AppointmentDate.currentMonth()
+        val state = mutableStateOf(
+            AppointmentCreateUiState(
+                step = AppointmentCreateStep.SCHEDULE,
+                displayedMonth = displayedMonth
+            )
+        )
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentCreateScreen(
+                    state = state.value,
+                    onStateChange = { state.value = it },
+                    onBack = {},
+                    onPrevious = {},
+                    onNext = {},
+                    onCreate = {},
+                    onShare = { _, _ -> },
+                    onDismissCopyConfirmation = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("appointment-schedule-single_day").performClick()
+        composeRule.onNodeWithContentDescription("이전 달").assertIsNotEnabled().performClick()
+        composeRule.runOnIdle { assertEquals(displayedMonth, state.value.displayedMonth) }
+
+        composeRule.onNodeWithContentDescription("다음 달").assertIsEnabled().performClick()
+        composeRule.runOnIdle { assertEquals(displayedMonth.shiftedByOneMonth(), state.value.displayedMonth) }
+        composeRule.onNodeWithContentDescription("이전 달").assertIsEnabled().performClick()
+        composeRule.runOnIdle { assertEquals(displayedMonth, state.value.displayedMonth) }
+    }
+
+    private fun AppointmentDate.shiftedByOneMonth(): AppointmentDate =
+        if (month == 12) AppointmentDate(year + 1, 1, 1) else AppointmentDate(year, month + 1, 1)
 
     @Test
     fun createCallbackReceivesCompleteUiDraftWithoutServerAssumptions() {
