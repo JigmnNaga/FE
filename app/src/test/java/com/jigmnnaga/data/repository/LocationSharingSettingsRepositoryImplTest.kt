@@ -1,6 +1,8 @@
 package com.jigmnnaga.data.repository
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import com.jigmnnaga.core.datastore.TokenManager
 import com.jigmnnaga.data.remote.api.LocationSharingSettingsApi
 import com.jigmnnaga.data.remote.dto.ApiResponse
@@ -9,33 +11,43 @@ import com.jigmnnaga.domain.model.LocationSharingScope
 import com.jigmnnaga.domain.model.LocationSharingSettings
 import com.jigmnnaga.domain.model.LocationSharingStartTime
 import com.jigmnnaga.domain.model.LocationSharingSyncResult
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import retrofit2.Response
-import java.io.File
 import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LocationSharingSettingsRepositoryImplTest {
-    @get:Rule
-    val temporaryFolder = TemporaryFolder()
 
     private val json = Json { ignoreUnknownKeys = true }
+
+    /**
+     * 파일 I/O 없이 [Preferences]를 메모리에 보관하는 테스트용 [DataStore].
+     * Windows에서 DataStore가 연속 write 시 .tmp → .pb rename 경합으로 실패하는 문제를 회피한다.
+     */
+    private fun inMemoryDataStore(): DataStore<Preferences> {
+        val state = MutableStateFlow(emptyPreferences())
+        return object : DataStore<Preferences> {
+            override val data: Flow<Preferences> = state
+            override suspend fun updateData(
+                transform: suspend (t: Preferences) -> Preferences,
+            ): Preferences {
+                val updated = transform(state.value)
+                state.value = updated
+                return updated
+            }
+        }
+    }
 
     private class FakeApi : LocationSharingSettingsApi {
         var getResponse: () -> Response<ApiResponse<LocationSharingSettingsDto>> = { ok(LocationSharingSettingsDto(true, "PARTICIPANTS", 30)) }
@@ -73,20 +85,16 @@ class LocationSharingSettingsRepositoryImplTest {
     private fun runRepositoryTest(
         api: FakeApi,
         token: String? = "access",
-        block: suspend TestScope.(LocationSharingSettingsRepositoryImpl) -> Unit
+        block: suspend TestScope.(LocationSharingSettingsRepositoryImpl) -> Unit,
     ) = runTest {
-        val job = Job()
-        val dataStore = PreferenceDataStoreFactory.create(
-            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler) + job)
-        ) { File(temporaryFolder.root, "settings.preferences_pb") }
+        // 메모리 DataStore를 사용해 파일 I/O와 Windows rename 경합을 완전히 제거한다.
         val repository = LocationSharingSettingsRepositoryImpl(
             api = api,
             tokenManager = FakeTokenManager(token),
             json = json,
-            localStore = LocationSharingLocalStore(dataStore)
+            localStore = LocationSharingLocalStore(inMemoryDataStore()),
         )
         block(repository)
-        job.cancelAndJoin()
     }
 
     @Test

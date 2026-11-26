@@ -16,13 +16,14 @@ data object NotificationSettingsRoute
 
 /**
  * 알림 설정 화면과 [NotificationSettingsViewModel]을 연결한다.
- * 저장에 실패하면 안내 문구를 한 번 띄운다.
+ * 저장에 실패하면 안내 문구를 한 번 띄우고, 로그인이 만료됐으면 [onLoginRequired]를 한 번 부른다.
  */
 @Composable
 fun NotificationSettingsRoute(
     viewModel: NotificationSettingsViewModel,
     onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onLoginRequired: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsState()
@@ -34,6 +35,13 @@ fun NotificationSettingsRoute(
         }
     }
 
+    LaunchedEffect(state.loginRequired) {
+        if (state.loginRequired) {
+            viewModel.consumeLoginRequired()
+            onLoginRequired()
+        }
+    }
+
     NotificationSettingsScreen(
         state = state,
         onBackClick = onBackClick,
@@ -42,6 +50,6 @@ fun NotificationSettingsRoute(
         onDepartureTimeChange = viewModel::onDepartureTimeChange,
         onFriendArrivalChange = viewModel::onFriendArrivalChange,
         onMarketingChange = viewModel::onMarketingChange,
-        modifier = modifier
+        modifier = modifier,
     )
 }
