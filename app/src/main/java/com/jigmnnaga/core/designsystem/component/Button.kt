@@ -159,6 +159,48 @@ fun AppButton(
     }
 }
 
+/**
+ * 버튼 두 개를 가로로 나란히 놓는다. 약속 만들기 하단처럼 왼쪽 `이전`, 오른쪽 `다음`을 함께 둘 때 쓴다.
+ * 왼쪽·오른쪽 활성 여부를 따로 받아 Figma `button - horizontal`의 네 가지 조합을 그대로 만든다.
+ * 비활성 버튼은 [AppButton]과 같이 회색으로 표시되고 눌리지 않는다.
+ */
+@Composable
+fun AppButtonPair(
+    leftText: String,
+    rightText: String,
+    onLeftClick: () -> Unit,
+    onRightClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    leftEnabled: Boolean = true,
+    rightEnabled: Boolean = true,
+    leftTestTag: String? = null,
+    rightTestTag: String? = null
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing20)
+    ) {
+        AppButton(
+            text = leftText,
+            variant = ButtonVariant.DEFAULT,
+            enabled = leftEnabled,
+            onClick = onLeftClick,
+            modifier = Modifier
+                .weight(1f)
+                .then(if (leftTestTag != null) Modifier.testTag(leftTestTag) else Modifier)
+        )
+        AppButton(
+            text = rightText,
+            variant = ButtonVariant.DEFAULT,
+            enabled = rightEnabled,
+            onClick = onRightClick,
+            modifier = Modifier
+                .weight(1f)
+                .then(if (rightTestTag != null) Modifier.testTag(rightTestTag) else Modifier)
+        )
+    }
+}
+
 // Figma 시작하기 버튼의 Icon(18x18 SVG)을 그대로 옮긴 arrow_right 드로어블을 쓴다.
 @Composable
 private fun StartArrowIcon() {
@@ -187,6 +229,10 @@ private fun AppButtonPreview() {
                 enabled = false,
                 onClick = {}
             )
+            AppButtonPair("이전", "다음", {}, {}, leftEnabled = false, rightEnabled = false)
+            AppButtonPair("이전", "다음", {}, {}, leftEnabled = false, rightEnabled = true)
+            AppButtonPair("이전", "다음", {}, {}, leftEnabled = true, rightEnabled = false)
+            AppButtonPair("이전", "다음", {}, {}, leftEnabled = true, rightEnabled = true)
         }
     }
 }

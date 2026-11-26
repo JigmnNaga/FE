@@ -28,6 +28,7 @@ import com.jigmnnaga.core.designsystem.theme.AppColors
 import com.jigmnnaga.core.designsystem.theme.AppDimens
 import com.jigmnnaga.core.designsystem.theme.JigmnnagaTheme
 import com.jigmnnaga.core.designsystem.component.AppButton
+import com.jigmnnaga.core.designsystem.component.AppButtonPair
 import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.component.BottomNavigationBar
 import com.jigmnnaga.core.designsystem.component.BottomNavigationTab
@@ -120,6 +121,40 @@ fun ComponentTestScreen() {
                     modifier = Modifier.weight(1f)
                 )
             }
+
+            // 가로 두 버튼: 양쪽 비활성 / 왼쪽만 비활성 / 오른쪽만 비활성 / 양쪽 활성
+            AppButtonPair(
+                leftText = "이전",
+                rightText = "다음",
+                onLeftClick = {},
+                onRightClick = {},
+                leftEnabled = false,
+                rightEnabled = false
+            )
+            AppButtonPair(
+                leftText = "이전",
+                rightText = "다음",
+                onLeftClick = {},
+                onRightClick = {},
+                leftEnabled = false,
+                rightEnabled = true
+            )
+            AppButtonPair(
+                leftText = "이전",
+                rightText = "다음",
+                onLeftClick = {},
+                onRightClick = {},
+                leftEnabled = true,
+                rightEnabled = false
+            )
+            AppButtonPair(
+                leftText = "이전",
+                rightText = "다음",
+                onLeftClick = {},
+                onRightClick = {},
+                leftEnabled = true,
+                rightEnabled = true
+            )
         }
 
         Spacer(modifier = Modifier.height(AppDimens.Spacing4))

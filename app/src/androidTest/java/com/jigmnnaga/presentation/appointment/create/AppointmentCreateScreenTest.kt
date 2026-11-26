@@ -113,7 +113,8 @@ class AppointmentCreateScreenTest {
         ).performClick()
         composeRule.onNodeWithTag("appointment-next").assertIsEnabled().performClick()
         composeRule.runOnIdle { assertEquals(1, nextCount) }
-        composeRule.onNodeWithTag("appointment-previous").assertDoesNotExist()
+        composeRule.onNodeWithTag("appointment-previous").assertIsEnabled().performClick()
+        composeRule.runOnIdle { assertEquals(1, previousCount) }
     }
 
     @Test
