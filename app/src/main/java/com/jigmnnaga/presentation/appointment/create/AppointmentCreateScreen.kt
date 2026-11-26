@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.safeDrawingPadding
 import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.component.AppButton
+import com.jigmnnaga.core.designsystem.component.AppButtonPair
 import com.jigmnnaga.core.designsystem.component.BackHeader
 import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.component.CircleButton
@@ -186,12 +187,16 @@ fun AppointmentCreateScreen(
                     onNext()
                 }
             }
-            AppButton(
-                text = stringResource(R.string.appointment_next_button),
-                variant = ButtonVariant.DEFAULT,
-                enabled = ready && !state.isCreating,
-                onClick = continueAction,
-                modifier = Modifier.fillMaxWidth().then(footerPadding).testTag("appointment-next")
+            AppButtonPair(
+                leftText = stringResource(R.string.appointment_previous_button),
+                rightText = stringResource(R.string.appointment_next_button),
+                onLeftClick = onPrevious,
+                onRightClick = continueAction,
+                leftEnabled = canGoPrevious && !state.isCreating,
+                rightEnabled = ready && !state.isCreating,
+                modifier = footerPadding,
+                leftTestTag = "appointment-previous",
+                rightTestTag = "appointment-next"
             )
         }
     }
