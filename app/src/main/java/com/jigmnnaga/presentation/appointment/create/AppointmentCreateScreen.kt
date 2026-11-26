@@ -68,6 +68,7 @@ import com.jigmnnaga.R
 import com.jigmnnaga.core.designsystem.component.AppButton
 import com.jigmnnaga.core.designsystem.component.AppButtonPair
 import com.jigmnnaga.core.designsystem.component.BackHeader
+import com.jigmnnaga.presentation.appointment.manage.ManageConfirmDialog
 import com.jigmnnaga.core.designsystem.component.ButtonVariant
 import com.jigmnnaga.core.designsystem.component.CircleButton
 import com.jigmnnaga.core.designsystem.theme.AppColors
@@ -98,7 +99,15 @@ fun AppointmentCreateScreen(
     val focusManager = LocalFocusManager.current
     val canGoPrevious = state.step != AppointmentCreateStep.APPOINTMENT_NAME &&
         state.step != AppointmentCreateStep.INVITATION
-    BackHandler(enabled = canGoPrevious && !state.isCreating) { onPrevious() }
+    var showExitDialog by remember { mutableStateOf(false) }
+    val requestExit: () -> Unit = {
+        if (state.hasInput()) {
+            showExitDialog = true
+        } else {
+            onBack()
+        }
+    }
+    BackHandler(enabled = !state.isCreating) { requestExit() }
     val headerTitle = if (
         state.step == AppointmentCreateStep.LOCATIONS && state.appointmentName.isNotBlank()
     ) {
@@ -114,7 +123,7 @@ fun AppointmentCreateScreen(
             .safeDrawingPadding()
             .imePadding()
     ) {
-        BackHeader(title = headerTitle, onBackClick = if (canGoPrevious) onPrevious else onBack)
+        BackHeader(title = headerTitle, onBackClick = requestExit)
 
         if (state.step != AppointmentCreateStep.INVITATION) {
             AppointmentStepProgress(step = state.step)
@@ -199,6 +208,23 @@ fun AppointmentCreateScreen(
                 rightTestTag = "appointment-next"
             )
         }
+    }
+
+    if (showExitDialog) {
+        ManageConfirmDialog(
+            title = stringResource(R.string.appointment_exit_dialog_title),
+            message = stringResource(R.string.appointment_exit_dialog_message),
+            confirmText = stringResource(R.string.appointment_exit_dialog_confirm),
+            cancelText = stringResource(R.string.appointment_exit_dialog_cancel),
+            onDismiss = { showExitDialog = false },
+            onConfirm = {
+                showExitDialog = false
+                onBack()
+            },
+            dialogTag = "appointment-exit-dialog",
+            cancelTag = "appointment-exit-dialog-cancel",
+            confirmTag = "appointment-exit-dialog-confirm"
+        )
     }
 
     if (state.copyConfirmationVisible) {
