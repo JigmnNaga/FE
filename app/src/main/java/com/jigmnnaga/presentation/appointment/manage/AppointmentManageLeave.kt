@@ -455,7 +455,8 @@ internal fun ManageConfirmDialog(
     onConfirm: () -> Unit,
     dialogTag: String,
     cancelTag: String,
-    confirmTag: String
+    confirmTag: String,
+    cancelText: String = stringResource(R.string.appointment_manage_dialog_cancel)
 ) {
     Dialog(
         onDismissRequest = onDismiss,
@@ -499,7 +500,7 @@ internal fun ManageConfirmDialog(
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(AppDimens.Spacing12)) {
                     DialogButton(
-                        text = stringResource(R.string.appointment_manage_dialog_cancel),
+                        text = cancelText,
                         filled = false,
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f).testTag(cancelTag)

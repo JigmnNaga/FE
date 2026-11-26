@@ -136,6 +136,19 @@ data class AppointmentCreateUiState(
             else -> true
         }
 
+    /** 나가기 확인 팝업을 띄울지 정한다. 입력이 하나라도 있으면 true, 초대 화면에서는 항상 false. */
+    fun hasInput(): Boolean = step != AppointmentCreateStep.INVITATION && (
+        appointmentName.isNotBlank() ||
+            scheduleType != null ||
+            selectedStartDate != null ||
+            selectedEndDate != null ||
+            selectedDates.isNotEmpty() ||
+            locationQuery.isNotBlank() ||
+            selectedLocations.isNotEmpty() ||
+            deadlineChoice != null ||
+            customDeadline != null
+        )
+
     fun canContinue(): Boolean = isCurrentStepValid() &&
         !isCreating && submissionStatus == AppointmentCreateSubmissionStatus.READY
 

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -316,5 +317,72 @@ class AppointmentCreateScreenTest {
         composeRule.onNodeWithTag("appointment-share-kakao").performClick()
         composeRule.onNodeWithTag("appointment-share-kakao").performClick()
         composeRule.runOnIdle { assertEquals(listOf(inviteLink, inviteLink), sharedLinks) }
+    }
+
+    private fun setExitContent(
+        initial: AppointmentCreateUiState,
+        onBack: () -> Unit,
+        onPrevious: () -> Unit = {}
+    ) {
+        val state = mutableStateOf(initial)
+        composeRule.setContent {
+            JigmnnagaTheme {
+                AppointmentCreateScreen(
+                    state = state.value,
+                    onStateChange = { state.value = it },
+                    onBack = onBack,
+                    onPrevious = onPrevious,
+                    onNext = {},
+                    onCreate = {},
+                    onShare = { _, _ -> },
+                    onDismissCopyConfirmation = {}
+                )
+            }
+        }
+    }
+
+    @Test
+    fun backWithoutInputGoesHomeImmediately() {
+        var backCount = 0
+        setExitContent(AppointmentCreateUiState(), onBack = { backCount++ })
+
+        composeRule.onNodeWithContentDescription("뒤로가기").performClick()
+        composeRule.runOnIdle { assertEquals(1, backCount) }
+        composeRule.onNodeWithTag("appointment-exit-dialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun backWithInputShowsDialogAndKeepWritingStaysOnScreen() {
+        var backCount = 0
+        setExitContent(
+            AppointmentCreateUiState(step = AppointmentCreateStep.SCHEDULE, appointmentName = "저녁 모임"),
+            onBack = { backCount++ }
+        )
+
+        composeRule.onNodeWithContentDescription("뒤로가기").performClick()
+        composeRule.onNodeWithTag("appointment-exit-dialog").assertIsDisplayed()
+        composeRule.onNodeWithTag("appointment-exit-dialog-cancel").performClick()
+        composeRule.onNodeWithTag("appointment-exit-dialog").assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(0, backCount) }
+    }
+
+    @Test
+    fun exitConfirmGoesHomeAndPreviousButtonOnlyMovesStep() {
+        var backCount = 0
+        var previousCount = 0
+        setExitContent(
+            AppointmentCreateUiState(step = AppointmentCreateStep.SCHEDULE, appointmentName = "저녁 모임"),
+            onBack = { backCount++ },
+            onPrevious = { previousCount++ }
+        )
+
+        composeRule.onNodeWithTag("appointment-previous").performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, previousCount)
+            assertEquals(0, backCount)
+        }
+        composeRule.onNodeWithContentDescription("뒤로가기").performClick()
+        composeRule.onNodeWithTag("appointment-exit-dialog-confirm").performClick()
+        composeRule.runOnIdle { assertEquals(1, backCount) }
     }
 }
